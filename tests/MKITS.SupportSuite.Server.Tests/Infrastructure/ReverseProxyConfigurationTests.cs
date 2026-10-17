@@ -24,8 +24,11 @@ public sealed class ReverseProxyConfigurationTests
         Assert.Equal(ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto, forwarded.ForwardedHeaders);
         Assert.Equal(2, forwarded.ForwardLimit);
         Assert.Contains(IPAddress.Parse("10.0.0.5"), forwarded.KnownProxies);
-        Assert.Contains(IPAddress.Loopback, forwarded.KnownProxies);
         Assert.Contains(forwarded.KnownIPNetworks, n => n.Contains(IPAddress.Parse("172.30.80.1")));
+
+        // Framework defaults stay in place: ::1 as proxy, 127.0.0.0/8 as network.
+        Assert.Contains(IPAddress.IPv6Loopback, forwarded.KnownProxies);
+        Assert.Contains(forwarded.KnownIPNetworks, n => n.Contains(IPAddress.Loopback));
     }
 
     [Fact]

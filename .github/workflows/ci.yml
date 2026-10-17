@@ -46,6 +46,22 @@ jobs:
       - name: Test
         run: dotnet test MKITS.SupportSuite.slnx -c Release --no-build --logger trx --results-directory TestResults
 
+      - name: Report failed tests as annotations
+        if: failure()
+        shell: python
+        run: |
+          # Makes failing tests visible in the checks UI/API without opening the logs.
+          import glob, xml.etree.ElementTree as ET
+          ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+          for path in glob.glob("TestResults/**/*.trx", recursive=True):
+              for result in ET.parse(path).getroot().iterfind(".//t:UnitTestResult", ns):
+                  if result.get("outcome") != "Failed":
+                      continue
+                  message = result.find(".//t:Message", ns)
+                  text = (message.text or "") if message is not None else ""
+                  text = " ".join(text.split())[:900].replace("%", "%25")
+                  print(f"::error title=Test failed: {result.get('testName')}::{text}")
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
