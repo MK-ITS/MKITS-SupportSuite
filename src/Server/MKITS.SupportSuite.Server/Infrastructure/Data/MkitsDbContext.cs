@@ -4,7 +4,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
@@ -28,9 +27,9 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
     {
         ArgumentNullException.ThrowIfNull(configurationBuilder);
 
-        // SQLite has no native DateTimeOffset type; storing as binary (UTC ticks + offset) keeps
-        // comparisons and ORDER BY translatable to SQL. Applies to nullable properties as well.
-        configurationBuilder.Properties<DateTimeOffset>().HaveConversion<DateTimeOffsetToBinaryConverter>();
+        // SQLite has no native DateTimeOffset type; UTC ticks keep comparisons and ORDER BY translatable
+        // to SQL without losing precision. Applies to nullable properties as well.
+        configurationBuilder.Properties<DateTimeOffset>().HaveConversion<UtcTicksConverter>();
     }
 
     protected override void OnModelCreating(ModelBuilder builder)

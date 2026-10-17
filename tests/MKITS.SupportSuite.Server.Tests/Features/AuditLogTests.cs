@@ -82,6 +82,20 @@ public sealed class AuditLogTests : IDisposable
     }
 
     [Fact]
+    public async Task VerifyAsync_TimestampsWithSubMillisecondTicks_StayValid()
+    {
+        // Real clocks produce arbitrary ticks; storage must be lossless or the hash chain breaks.
+        _time.Advance(TimeSpan.FromTicks(1_234_567));
+        await _auditLog.WriteAsync(new AuditEntry(AuditEventTypes.ServerStarted, AuditActorType.System));
+        _time.Advance(TimeSpan.FromTicks(7));
+        await _auditLog.WriteAsync(new AuditEntry(AuditEventTypes.ServerStarted, AuditActorType.System));
+
+        var result = await _auditLog.VerifyAsync();
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
     public async Task WriteAsync_ConcurrentWriters_KeepChainLinear()
     {
         await Task.WhenAll(Enumerable.Range(0, 20).Select(i =>
