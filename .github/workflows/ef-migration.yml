@@ -53,15 +53,21 @@ jobs:
             --namespace MKITS.SupportSuite.Server.Infrastructure.Data.Migrations
           # Prepend the license header to new files (generated code is exempt from style rules, see .editorconfig).
           for f in src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations/*.cs; do
+            sed -i '1s/^\xEF\xBB\xBF//' "$f"   # drop UTF-8 BOM written by the EF tools
             if ! head -1 "$f" | grep -q "SPDX-License-Identifier"; then
               printf '%s\n%s\n\n' "// SPDX-License-Identifier: AGPL-3.0-only" "// Copyright (C) MK-ITSolutions and contributors" | cat - "$f" > "$f.tmp" && mv "$f.tmp" "$f"
             fi
           done
 
+      - name: List generated files
+        run: |
+          # Visible as annotations (logs may not be accessible from every environment).
+          for f in $(git status --porcelain --untracked-files=all | awk '{print $2}'); do echo "::notice title=Changed file::$f"; done
+
       - name: Commit migration
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations
+          git add -A src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations
           git commit -m "chore(server): generate EF migration ${{ steps.name.outputs.value }}"
           git push
