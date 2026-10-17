@@ -54,4 +54,36 @@ public sealed class FailureTrackerTests
 
         Assert.Equal(1, tracker.TrackedNetworks);
     }
+
+    [Fact]
+    public void RecordFailure_AtCapacity_StaysWithinBound()
+    {
+        var tracker = new FailureTracker(capacity: 3);
+
+        for (var i = 0; i < 50; i++)
+        {
+            tracker.RecordFailure($"net-{i}", Start.AddSeconds(i), Window);
+            Assert.True(tracker.TrackedNetworks <= 3);
+        }
+    }
+
+    [Fact]
+    public void RecordFailure_AtCapacity_PrefersPurgingStaleEntries()
+    {
+        var tracker = new FailureTracker(capacity: 2);
+        tracker.RecordFailure("stale", Start, Window);
+        tracker.RecordFailure("active", Start.AddMinutes(15), Window);
+
+        // "stale" is outside the window at this point and is purged instead of evicting "active".
+        tracker.RecordFailure("new", Start.AddMinutes(16), Window);
+
+        Assert.Equal(2, tracker.TrackedNetworks);
+        Assert.Equal(2, tracker.RecordFailure("active", Start.AddMinutes(17), Window));
+    }
+
+    [Fact]
+    public void Constructor_RejectsNonPositiveCapacity()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new FailureTracker(0));
+    }
 }

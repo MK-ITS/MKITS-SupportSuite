@@ -9,12 +9,23 @@ namespace MKITS.SupportSuite.Server.Features.IpBans;
 /// In-memory sliding-window failure counter per client network. Counters are intentionally not persisted:
 /// a restart only resets counting, existing bans are stored in the database.
 /// </summary>
-public sealed class FailureTracker
+/// <remarks>
+/// Memory is hard-bounded by <see cref="Capacity"/>: when full, stale entries are purged (at most every
+/// <see cref="PurgeInterval"/>, so a flood does not cause a full scan per request); if it is still full,
+/// an arbitrary existing entry is evicted. Under an address-rotation flood this may forget some counters –
+/// acceptable, because each rotated address only had a single failure anyway.
+/// </remarks>
+public sealed class FailureTracker(int capacity = FailureTracker.DefaultCapacity)
 {
-    /// <summary>Upper bound of tracked networks; protects memory against address-rotation floods.</summary>
-    internal const int MaxTrackedNetworks = 100_000;
+    public const int DefaultCapacity = 100_000;
+
+    internal static readonly TimeSpan PurgeInterval = TimeSpan.FromSeconds(10);
 
     private readonly ConcurrentDictionary<string, Queue<DateTimeOffset>> _failures = new(StringComparer.Ordinal);
+    private long _lastPurgeUtcTicks;
+
+    /// <summary>Maximum number of tracked networks.</summary>
+    public int Capacity { get; } = capacity > 0 ? capacity : throw new ArgumentOutOfRangeException(nameof(capacity));
 
     /// <summary>Number of networks currently tracked (for tests and diagnostics).</summary>
     public int TrackedNetworks => _failures.Count;
@@ -22,9 +33,9 @@ public sealed class FailureTracker
     /// <summary>Records a failure and returns the number of failures for <paramref name="networkKey"/> within <paramref name="window"/>.</summary>
     public int RecordFailure(string networkKey, DateTimeOffset now, TimeSpan window)
     {
-        if (_failures.Count >= MaxTrackedNetworks)
+        if (!_failures.ContainsKey(networkKey) && _failures.Count >= Capacity)
         {
-            Purge(now, window);
+            MakeRoom(now, window);
         }
 
         var timestamps = _failures.GetOrAdd(networkKey, static _ => new Queue<DateTimeOffset>());
@@ -42,6 +53,8 @@ public sealed class FailureTracker
     /// <summary>Removes networks without failures inside the window.</summary>
     public void Purge(DateTimeOffset now, TimeSpan window)
     {
+        Interlocked.Exchange(ref _lastPurgeUtcTicks, now.UtcTicks);
+
         foreach (var (key, timestamps) in _failures)
         {
             lock (timestamps)
@@ -52,6 +65,25 @@ public sealed class FailureTracker
                     _failures.TryRemove(key, out _);
                 }
             }
+        }
+    }
+
+    private void MakeRoom(DateTimeOffset now, TimeSpan window)
+    {
+        if (now.UtcTicks - Interlocked.Read(ref _lastPurgeUtcTicks) >= PurgeInterval.Ticks)
+        {
+            Purge(now, window);
+        }
+
+        // Still full (flood of recent, distinct networks): evict arbitrary entries until there is room.
+        foreach (var key in _failures.Keys)
+        {
+            if (_failures.Count < Capacity)
+            {
+                break;
+            }
+
+            _failures.TryRemove(key, out _);
         }
     }
 
