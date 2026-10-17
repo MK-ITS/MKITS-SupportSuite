@@ -49,8 +49,7 @@ jobs:
         run: |
           dotnet ef migrations add "${{ steps.name.outputs.value }}" \
             --project src/Server/MKITS.SupportSuite.Server \
-            --output-dir Infrastructure/Data/Migrations \
-            --namespace MKITS.SupportSuite.Server.Infrastructure.Data.Migrations
+            --output-dir Infrastructure/Data/Migrations
           # Prepend the license header to new files (generated code is exempt from style rules, see .editorconfig).
           for f in src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations/*.cs; do
             sed -i '1s/^\xEF\xBB\xBF//' "$f"   # drop UTF-8 BOM written by the EF tools

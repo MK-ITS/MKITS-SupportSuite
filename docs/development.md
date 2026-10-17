@@ -29,9 +29,10 @@ The schema lives in [`MkitsDbContext`](../src/Server/MKITS.SupportSuite.Server/I
 dotnet tool install --global dotnet-ef
 dotnet ef migrations add <PascalCaseName> \
   --project src/Server/MKITS.SupportSuite.Server \
-  --output-dir Infrastructure/Data/Migrations \
-  --namespace MKITS.SupportSuite.Server.Infrastructure.Data.Migrations
+  --output-dir Infrastructure/Data/Migrations
 ```
+
+(Do not pass `--namespace`: EF would then place the model snapshot in a folder derived from the namespace.)
 
 **Without NuGet access (e.g. sandboxed AI agents):** change the model, commit and push to your feature branch with the marker `[ef-migration:<PascalCaseName>]` in the commit message. The workflow [`ef-migration.yml`](../.github/workflows/ef-migration.yml) generates the migration and commits it back to the branch. Then `git pull`.
 
