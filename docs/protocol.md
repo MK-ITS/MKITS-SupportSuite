@@ -68,7 +68,7 @@ peer                                   server
 | 2 | `INPUT` | viewer → agent | `PointerEvent{monitor_id, x, y (0..65535), buttons, wheel}`, `KeyEvent{code, key, down, modifiers}`, `SpecialKey{CTRL_ALT_DEL, WIN, …}` |
 | 3 | `DISPLAY` | both | `MonitorList`, `SelectMonitor`, `QualitySettings`, `FrameAck` (flow control) |
 | 4 | `CLIPBOARD` | both | `ClipboardText` (UTF-8, ≤ 1 MiB); files via channel 5 |
-| 5 | `FILE` | both | `FileOffer`, `FileAccept`/`FileReject`, `FileChunk` (64 KiB), `FileComplete{sha256}`, `FileCancel` |
+| 5 | `FILE` | both | `FileOffer`, `FileDecision{accepted}`, `FileChunk` (64 KiB), `FileComplete{sha256}`, `FileCancel` |
 | 6 | `CHAT` | both | `ChatMessage{author, text, timestamp}` |
 | 7 | `SHELL` | both | `ShellOpen{type, cols, rows, elevated}`, `ShellData`, `ShellResize`, `ShellExit{code}` |
 
