@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Product_Tagline" xml:space="preserve"><value>Fernwartung und Fernsupport</value></data>
+  <data name="Error_Generic" xml:space="preserve"><value>Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.</value></data>
+  <data name="Error_IpBlocked" xml:space="preserve"><value>Der Zugriff von Ihrer Netzwerkadresse ist gesperrt.</value></data>
+  <data name="Footer_SourceCode" xml:space="preserve"><value>Quellcode (AGPL-3.0)</value></data>
+</root>

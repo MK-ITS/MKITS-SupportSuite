@@ -24,3 +24,6 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0014](0014-consent.md) | Consent policy | Accepted |
 | [ADR-0015](0015-security-features.md) | Planned security features | Accepted |
 | [ADR-0016](0016-repository.md) | Public GitHub repository with GitHub Actions | Accepted |
+| [ADR-0017](0017-protocol-serialization.md) | Protocol Buffers for the wire protocol | Accepted |
+| [ADR-0018](0018-e2e-and-recording.md) | End-to-end encryption and session recording | Accepted |
+| [ADR-0019](0019-ad-hoc-client-configuration.md) | Ad-hoc client receives server address and code via file name | Accepted |

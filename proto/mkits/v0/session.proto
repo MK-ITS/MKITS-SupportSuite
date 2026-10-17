@@ -1,0 +1,181 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) MK-ITSolutions and contributors
+//
+// MKITS-SupportSuite wire protocol, version 0.x – session plane (end-to-end encrypted payloads).
+// The server never sees these messages in plaintext (except for recorded sessions, see ADR-0018).
+
+syntax = "proto3";
+
+package mkits.v0;
+
+option csharp_namespace = "MKITS.SupportSuite.Common.Protocol.V0";
+
+enum Channel {
+  CHANNEL_UNSPECIFIED = 0;
+  CHANNEL_VIDEO = 1;
+  CHANNEL_INPUT = 2;
+  CHANNEL_DISPLAY = 3;
+  CHANNEL_CLIPBOARD = 4;
+  CHANNEL_FILE = 5;
+  CHANNEL_CHAT = 6;
+  CHANNEL_SHELL = 7;
+}
+
+// Plaintext inside SessionData.ciphertext.
+message SessionPayload {
+  oneof body {
+    VideoFrame video_frame = 1;
+    PointerEvent pointer_event = 2;
+    KeyEvent key_event = 3;
+    SpecialKey special_key = 4;
+    MonitorList monitor_list = 5;
+    SelectMonitor select_monitor = 6;
+    QualitySettings quality_settings = 7;
+    FrameAck frame_ack = 8;
+    ClipboardText clipboard_text = 9;
+    FileOffer file_offer = 10;
+    FileDecision file_decision = 11;
+    FileChunk file_chunk = 12;
+    FileComplete file_complete = 13;
+    FileCancel file_cancel = 14;
+    ChatMessage chat_message = 15;
+    ShellOpen shell_open = 16;
+    ShellData shell_data = 17;
+    ShellResize shell_resize = 18;
+    ShellExit shell_exit = 19;
+  }
+}
+
+// ---- video / display ----
+
+enum VideoCodec {
+  VIDEO_CODEC_UNSPECIFIED = 0;
+  VIDEO_CODEC_H264 = 1;           // Annex B NAL units
+  VIDEO_CODEC_JPEG = 2;           // full frame or tile, fallback
+}
+
+message VideoFrame {
+  uint32 monitor_id = 1;
+  VideoCodec codec = 2;
+  bool keyframe = 3;
+  uint64 timestamp_us = 4;
+  uint32 width = 5;
+  uint32 height = 6;
+  bytes data = 7;
+  uint64 frame_sequence = 8;
+}
+
+message Monitor {
+  uint32 id = 1;
+  string name = 2;
+  uint32 width = 3;
+  uint32 height = 4;
+  bool primary = 5;
+}
+
+message MonitorList { repeated Monitor monitors = 1; }
+message SelectMonitor { uint32 monitor_id = 1; }
+
+message QualitySettings {
+  uint32 max_fps = 1;
+  uint32 max_bitrate_kbps = 2;
+  bool prefer_quality = 3;        // false = prefer speed
+}
+
+message FrameAck { uint64 frame_sequence = 1; }
+
+// ---- input ----
+
+message PointerEvent {
+  uint32 monitor_id = 1;
+  uint32 x = 2;                   // 0..65535, normalized to the monitor width
+  uint32 y = 3;                   // 0..65535, normalized to the monitor height
+  uint32 buttons = 4;             // bit 0 left, 1 right, 2 middle, 3 back, 4 forward
+  int32 wheel_x = 5;
+  int32 wheel_y = 6;
+}
+
+message KeyEvent {
+  string code = 1;                // W3C KeyboardEvent.code, e.g. "KeyA"
+  string key = 2;                 // produced character(s), e.g. "a"
+  bool down = 3;
+  uint32 modifiers = 4;           // bit 0 shift, 1 ctrl, 2 alt, 3 meta
+  bool text_mode = 5;             // inject `key` as unicode text instead of `code`
+}
+
+enum SpecialKeyKind {
+  SPECIAL_KEY_UNSPECIFIED = 0;
+  SPECIAL_KEY_CTRL_ALT_DEL = 1;
+  SPECIAL_KEY_WIN = 2;
+  SPECIAL_KEY_ALT_TAB = 3;
+  SPECIAL_KEY_PRINT_SCREEN = 4;
+}
+
+message SpecialKey { SpecialKeyKind kind = 1; }
+
+// ---- clipboard ----
+
+message ClipboardText { string text = 1; }
+
+// ---- file transfer ----
+
+message FileOffer {
+  string transfer_id = 1;
+  string name = 2;                // file name only, no path – receiver sanitizes
+  uint64 size = 3;
+}
+
+message FileDecision {
+  string transfer_id = 1;
+  bool accepted = 2;
+}
+
+message FileChunk {
+  string transfer_id = 1;
+  uint64 offset = 2;
+  bytes data = 3;                 // ≤ 64 KiB
+}
+
+message FileComplete {
+  string transfer_id = 1;
+  bytes sha256 = 2;
+}
+
+message FileCancel {
+  string transfer_id = 1;
+  string reason = 2;
+}
+
+// ---- chat ----
+
+message ChatMessage {
+  string author = 1;
+  string text = 2;
+  uint64 timestamp_ms = 3;
+}
+
+// ---- shell ----
+
+message ShellOpen {
+  string shell_id = 1;
+  string type = 2;                // "powershell", "cmd", "bash", "sh"
+  uint32 cols = 3;
+  uint32 rows = 4;
+  bool elevated = 5;
+}
+
+message ShellData {
+  string shell_id = 1;
+  bytes data = 2;
+}
+
+message ShellResize {
+  string shell_id = 1;
+  uint32 cols = 2;
+  uint32 rows = 3;
+}
+
+message ShellExit {
+  string shell_id = 1;
+  int32 exit_code = 2;
+}

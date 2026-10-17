@@ -3,14 +3,13 @@
 
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using MKITS.SupportSuite.Common;
 using MKITS.SupportSuite.Server.Endpoints;
 
 namespace MKITS.SupportSuite.Server.Tests;
 
-public sealed class SystemEndpointsTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class SystemEndpointsTests(MkitsWebApplicationFactory factory)
+    : IClassFixture<MkitsWebApplicationFactory>
 {
     [Fact]
     public async Task Health_ReturnsOk()
@@ -20,6 +19,19 @@ public sealed class SystemEndpointsTests(WebApplicationFactory<Program> factory)
         using var response = await client.GetAsync(new Uri("/health", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Health_CreatesDataDirectoryLayout()
+    {
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(new Uri("/health", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(Directory.Exists(Path.Combine(factory.DataDirectory, "keys")));
+        Assert.True(Directory.Exists(Path.Combine(factory.DataDirectory, "recordings")));
+        Assert.True(Directory.Exists(Path.Combine(factory.DataDirectory, "agents")));
     }
 
     [Fact]
