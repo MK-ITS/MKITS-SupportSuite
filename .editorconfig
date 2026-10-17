@@ -80,3 +80,8 @@ dotnet_naming_rule.interfaces_i.severity = warning
 dotnet_naming_symbols.interfaces.applicable_kinds = interface
 dotnet_naming_style.i_prefix.required_prefix = I
 dotnet_naming_style.i_prefix.capitalization = pascal_case
+
+# ---- Generated code: EF Core migrations are produced by "dotnet ef" (workflow ef-migration.yml) ----
+[src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.IDE0073.severity = none

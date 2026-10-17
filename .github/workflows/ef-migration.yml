@@ -1,0 +1,64 @@
+name: EF migration
+
+# Generates an EF Core migration and commits it back to the branch.
+# Trigger: push to a non-main branch whose head commit message contains  [ef-migration:<Name>]
+# (e.g. "feat(server): add devices [ef-migration:AddDevices]").
+# Needed because the migration tooling must restore NuGet packages, which is not always possible locally
+# (e.g. in restricted sandboxes). See docs/development.md.
+
+on:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ef-migration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: contains(github.event.head_commit.message, '[ef-migration:')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Read migration name
+        id: name
+        env:
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          name=$(printf '%s' "$MESSAGE" | grep -oE '\[ef-migration:[A-Za-z][A-Za-z0-9]*\]' | head -1 | sed -E 's/\[ef-migration:(.*)\]/\1/')
+          if [ -z "$name" ]; then echo "::error::Marker must look like [ef-migration:PascalCaseName]"; exit 1; fi
+          echo "value=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version "10.*"
+
+      - name: Generate migration
+        run: |
+          dotnet ef migrations add "${{ steps.name.outputs.value }}" \
+            --project src/Server/MKITS.SupportSuite.Server \
+            --output-dir Infrastructure/Data/Migrations \
+            --namespace MKITS.SupportSuite.Server.Infrastructure.Data.Migrations
+          # Prepend the license header to new files (generated code is exempt from style rules, see .editorconfig).
+          for f in src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations/*.cs; do
+            if ! head -1 "$f" | grep -q "SPDX-License-Identifier"; then
+              printf '%s\n%s\n\n' "// SPDX-License-Identifier: AGPL-3.0-only" "// Copyright (C) MK-ITSolutions and contributors" | cat - "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+            fi
+          done
+
+      - name: Commit migration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/Server/MKITS.SupportSuite.Server/Infrastructure/Data/Migrations
+          git commit -m "chore(server): generate EF migration ${{ steps.name.outputs.value }}"
+          git push

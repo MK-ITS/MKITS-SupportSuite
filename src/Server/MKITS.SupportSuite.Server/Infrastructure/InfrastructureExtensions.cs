@@ -61,15 +61,29 @@ public static class InfrastructureExtensions
         return builder;
     }
 
-    public static WebApplication UseMkitsInfrastructure(this WebApplication app)
+    /// <summary>Creates the data directory tree. Must run before the database or Data Protection is used.</summary>
+    public static WebApplication PrepareDataDirectory(this WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        app.Services.GetRequiredService<DataDirectory>().EnsureCreated();
+        return app;
+    }
+
+    /// <summary>
+    /// Must be the first middleware: every later component (IP bans, audit, rate limits) needs the real client IP and scheme.
+    /// </summary>
+    public static WebApplication UseMkitsForwardedHeaders(this WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        app.UseForwardedHeaders();
+        return app;
+    }
+
+    /// <summary>Security headers, error handling and request localization.</summary>
+    public static WebApplication UseMkitsWebBasics(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        // Create the data directory tree before anything touches it.
-        app.Services.GetRequiredService<DataDirectory>().EnsureCreated();
-
-        // Order matters: forwarded headers first, so every later component sees the real client IP and scheme.
-        app.UseForwardedHeaders();
         app.UseMiddleware<SecurityHeadersMiddleware>();
         app.UseExceptionHandler();
         app.UseStatusCodePages();
