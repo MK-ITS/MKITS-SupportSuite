@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/TestResults/
+.git/
+.github/
+.vs/
+.idea/
+android/
+docs/
+tests/
+*.md
+!README.md

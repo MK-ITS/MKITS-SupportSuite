@@ -1,0 +1,60 @@
+# ---- .NET ----
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+*.userprefs
+*.rsuser
+.vs/
+TestResults/
+*.trx
+coverage*.xml
+*.binlog
+
+# ---- IDEs ----
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ---- Node / web viewer ----
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+
+# ---- Android ----
+.gradle/
+local.properties
+android/**/build/
+*.keystore
+*.jks
+captures/
+
+# ---- Runtime data (never commit) ----
+*.db
+*.db-shm
+*.db-wal
+/data/
+/recordings/
+/logs/
+*.log
+
+# ---- Secrets (never commit) ----
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+*.pfx
+*.p12
+*.pem
+*.key
+secrets/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini

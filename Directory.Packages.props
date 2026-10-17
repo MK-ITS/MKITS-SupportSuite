@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    Central package management: every NuGet package version is defined here, exactly once.
+    Project files reference packages WITHOUT a Version attribute.
+    Before adding a package: check its license is compatible with AGPL-3.0 and add it to THIRD-PARTY-NOTICES.md.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+  </ItemGroup>
+</Project>

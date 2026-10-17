@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Windows agent (Windows 10 x64+ / Server 2016+): screen capture (DXGI), input (SendInput),
+    Windows service + per-session helper for secure desktop / UAC, ConPTY shell.
+    Builds on Linux too (EnableWindowsTargeting) so CI can compile it anywhere.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- The runtime identifier (win-x64) is set at publish time: dotnet publish -r win-x64 -->
+    <RootNamespace>MKITS.SupportSuite.Agent.Windows</RootNamespace>
+    <AssemblyName>MKITS.SupportSuite.Agent</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MKITS.SupportSuite.Agent.Core\MKITS.SupportSuite.Agent.Core.csproj" />
+  </ItemGroup>
+</Project>

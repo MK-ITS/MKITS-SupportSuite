@@ -1,0 +1,273 @@
+# MKITS-SupportSuite – Work Plan
+
+> Living work file. Source of truth for scope, decisions, open questions and the task roadmap.
+> Written in English (project rule: everything internal is English). UI languages: German + English.
+> Audience: the project owner **and future AI agents** that continue development.
+> License: **AGPL-3.0**.
+
+- **Created:** 2026-10-17 · **Last update:** 2026-10-17
+- **Status:** Phase 1 – Repository foundation done; next: Phase 2 (architecture & protocol specification)
+- **Requirements source:** `_system_prompt.md`
+
+---
+
+## 1. Goal (summary of requirements)
+
+Self-hosted remote support / remote maintenance suite (comparable to ConnectWise ScreenConnect, RustDesk).
+
+| Area | Requirement |
+|---|---|
+| Client platforms | Windows 10 x64+ / Server 2016+, Linux (Debian, Ubuntu), Android 10+ |
+| Session types | Graphical remote control of the **physical console session** (incl. login screen / UAC) **and** remote shell |
+| Ad-hoc support | Supporter creates a session code → end user enters it on the web portal, downloads the client, session starts |
+| Unattended access | Permanent connections to managed devices (set up by Admins), organized in device groups |
+| Server | Ubuntu Linux 26.04+, delivered as Docker / Compose, web UI for administration and client join |
+| Network | Behind reverse proxy (nginx) for HTTPS; **everything over 443** (relay only) |
+| Roles | `Guest` (unauthenticated, customer view), `User` (customer view + act as supporter), `Admin` (User + permanent connections + administration) |
+| Brute-force protection | fail2ban-like: after N failed logins (default 5) block source IP for 1 week; whitelist + blacklist configurable; e-mail notification |
+| OS security | Respect UAC / secure desktop on Windows and equivalents on other OSes |
+| Code quality | Modular, maintainable, human-readable |
+| Docs | English, structured so AI agents can maintain/extend the project |
+| Repository | Public GitHub repository (open source from day one), GitHub Actions CI |
+
+---
+
+## 2. Architecture
+
+```
+                         Internet (TCP 443 only)
+                                  │
+                           ┌──────▼──────┐
+                           │   nginx     │  TLS termination, WebSocket upgrade,
+                           │ (rev.proxy) │  X-Forwarded-For
+                           └──────┬──────┘
+                                  │ http://mkits-server:8080 (Docker network)
+ ┌────────────────────────────────▼───────────────────────────────────┐
+ │           MKITS Server – ASP.NET Core (.NET 10), Docker            │
+ │  ┌────────────┐ ┌─────────────┐ ┌──────────────┐ ┌───────────────┐ │
+ │  │ Web UI     │ │ REST API    │ │ Session      │ │ Relay         │ │
+ │  │ Admin /    │ │ (auth, mgmt)│ │ Broker       │ │ (WSS streams, │ │
+ │  │ Supporter /│ │             │ │ (codes,      │ │ E2E-encrypted │ │
+ │  │ Portal     │ │             │ │ lifecycle)   │ │ payload)      │ │
+ │  └────────────┘ └─────────────┘ └──────────────┘ └───────────────┘ │
+ │  ┌────────────┐ ┌─────────────┐ ┌──────────────┐ ┌───────────────┐ │
+ │  │ Identity   │ │ IP Ban      │ │ Device       │ │ Audit Log,    │ │
+ │  │ Roles, TOTP│ │ Service     │ │ Registry,    │ │ Recordings,   │ │
+ │  │            │ │ + SMTP      │ │ Groups,Update│ │ Mail          │ │
+ │  └────────────┘ └─────────────┘ └──────────────┘ └───────────────┘ │
+ │               SQLite (EF Core, WAL) on Docker volume               │
+ └────────────────────────────────────────────────────────────────────┘
+        ▲ WSS                                         ▲ WSS
+        │                                             │
+ ┌──────┴─────────────────────┐            ┌──────────┴────────────────┐
+ │ Agents (end devices)       │            │ Viewers (supporter)       │
+ │ - Windows: C#, service +   │            │ - Browser (primary, M1)   │
+ │   per-session helper       │            │ - Native app (C#,         │
+ │ - Linux: C#, systemd,      │            │   Avalonia, later)        │
+ │   X11 + Wayland            │            └───────────────────────────┘
+ │ - Android: Kotlin app      │
+ └────────────────────────────┘
+```
+
+Key design points:
+- **Single public port 443, relay only.** Agents and viewers connect outbound via WebSocket Secure through nginx. No inbound ports on end devices, no UDP/STUN/TURN.
+- **Tech stack:** .NET 10 LTS / C# for server, Windows/Linux agents and native viewer. **Exception: Android agent in Kotlin** (direct access to MediaProjection, AccessibilityService). Shared protocol definition (e.g. Protobuf) so C#, Kotlin and TypeScript (browser) stay in sync.
+- **Generic signed client binary.** Session code passed via file name (e.g. `MKITS-Support_123456.exe`) or typed in; the binary never needs per-session re-signing.
+- **Windows privileged model:** service as `LocalSystem` launches a helper into the active console session (`WTSGetActiveConsoleSessionId` + `CreateProcessAsUser`) → secure desktop (UAC, login screen) capture/control and Ctrl+Alt+Del (`SendSAS`). Ad-hoc client runs unelevated by default and offers "restart elevated".
+- **End-to-end encryption:** agent and viewer agree on a session key (ECDH, X25519/P-256 via WebCrypto in browser) and encrypt the payload (AES-GCM); the server only routes. Fingerprint shown to both sides.
+- **Session recording vs. E2E (design conflict):** with E2E the server cannot record. Recording is therefore done **by the viewer/agent** and uploaded encrypted, or recording is a group policy that requires it explicitly. → To be specified in ADR (task 2.4).
+- **Reverse proxy awareness:** trusted-proxy list; real client IP from `X-Forwarded-For` only from trusted proxies (required for IP bans).
+- **IP Ban Service** covers login, TOTP, session-code entry (anti code guessing), agent enrollment.
+- **SQLite** keeps the deployment simple; data access via EF Core behind repository interfaces so PostgreSQL can be added later if scale requires it.
+
+---
+
+## 3. Open questions
+
+Answered questions are moved to section 4. Remaining questions use the **proposed default** until confirmed.
+
+| ID | Question | Proposed default |
+|---|---|---|
+| Q18 | Expected scale: concurrent sessions, number of permanent devices? (relevant for SQLite and relay bandwidth) | ≤ 50 concurrent sessions, ≤ 1000 devices on one server |
+| Q20 | Branding: logo, colors, domain for test/production (e.g. `support.mk-itsolutions.tech`)? | Placeholder branding, configurable in admin UI |
+| Q21 | IP ban details: count window? ban duration configurable? | 5 failures within 10 min → 7 days ban, all values configurable |
+| Q22 | Native viewer platforms (Windows only, or also Linux/macOS)? | Windows + Linux (Avalonia), after M1 |
+| Q23 | Recording storage and retention (how long, who may watch)? Legal basis (GDPR / works council)? | Stored on server volume, 30 days retention, Admins only |
+
+---
+
+## 4. Decisions (ADR log)
+
+Decisions are recorded here and as individual files under [`docs/adr/`](docs/adr/README.md).
+
+| ADR | Q | Decision |
+|---|---|---|
+| ADR-0000 | – | License AGPL-3.0; English for code/docs; UI German + English (per-user UI culture) |
+| ADR-0001 | Q1 | Both: graphical remote control of the physical console session **and** remote shell |
+| ADR-0002 | Q2 | .NET 10 / C# for server, Windows/Linux agents, native viewer; Android agent native Kotlin (Q12) |
+| ADR-0003 | Q3 | Viewer: browser (primary, part of M1) **and** native viewer app (later) |
+| ADR-0004 | Q4 | Ad-hoc: supporter creates the session code, customer enters it on the portal |
+| ADR-0005 | Q5 | Transport: relay-only via WSS over port 443, no P2P |
+| ADR-0006 | Q6 | Database: SQLite (EF Core, WAL mode) |
+| ADR-0007 | Q7 | MVP includes: screen view/control, chat, file transfer, clipboard, remote shell |
+| ADR-0008 | Q8 | Authentication: local accounts + TOTP 2FA (no OIDC/LDAP for now) |
+| ADR-0009 | Q9 | No code-signing certificate yet; develop unsigned, obtain one (e.g. Azure Trusted Signing) before production |
+| ADR-0010 | Q10 | Server deployment: Docker / Compose |
+| ADR-0011 | Q11 | Linux GUI: X11 **and** Wayland in the first Linux release |
+| ADR-0012 | Q12 | Android: accept OS limitations (consent per session, Accessibility Service), native Kotlin app, APK download from own server |
+| ADR-0013 | Q13 | Permanent devices organized in groups; Users get access per group, Admins see everything |
+| ADR-0014 | Q14 | Consent: ad-hoc always requires approval + visible banner; permanent devices configurable per group (ask / notify / silent) |
+| ADR-0015 | Q15–Q16, Q19, Q21 | Planned features: session recording, end-to-end encryption, agent auto-update (signed), e-mail notification on IP bans |
+| ADR-0016 | Q17 | Public GitHub repository + GitHub Actions |
+
+---
+
+## 5. Roadmap / task list
+
+Legend: `[ ]` open · `[~]` in progress · `[x]` done.
+Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = permanent connections · **M3** = Linux · **M4** = Android · **M5** = native viewer, recording, hardening.
+
+### Phase 0 – Clarification & decisions
+- [x] 0.1 Read `_system_prompt.md`, derive requirements
+- [x] 0.2 Create this work file
+- [x] 0.3 Answers to Q1–Q17
+- [ ] 0.4 Confirm Q18, Q20–Q23 (defaults apply meanwhile)
+- [x] 0.5 Write ADR files under `docs/adr/`
+
+### Phase 1 – Repository foundation
+- [x] 1.1 Public GitHub repo, branch strategy (main + feature branches, PRs), `.gitignore`, `.editorconfig`
+- [x] 1.2 `LICENSE` (AGPL-3.0), license headers, `THIRD-PARTY-NOTICES.md`
+- [x] 1.3 `README.md`, `AGENTS.md` + `CLAUDE.md` (AI agent instructions), `CONTRIBUTING.md`, `SECURITY.md` (vulnerability disclosure – important for a public remote-access tool)
+- [x] 1.4 .NET solution + folder structure: `src/Common`, `src/Server`, `src/Agent/{Core,Windows,Linux}`, `src/Viewer/{web,desktop}`, `android/`, `docs/`, `deploy/`, `tests/`
+- [x] 1.5 Coding conventions, analyzers, `dotnet format`, `Directory.Build.props`, central package management
+- [x] 1.6 GitHub Actions: build + test (Ubuntu, Windows), format check, CodeQL, Dependabot, Docker image build
+- [ ] 1.7 Repository settings on GitHub (owner): branch protection for `main`, private vulnerability reporting, secret scanning + push protection
+
+### Phase 2 – Architecture & protocol specification
+- [ ] 2.1 `docs/architecture.md` (components, responsibilities, data flow)
+- [ ] 2.2 Wire protocol spec: framing over WSS, channels (video, input, clipboard, file, chat, shell, control), versioning, Protobuf schema
+- [ ] 2.3 Session lifecycle spec: code generation/expiry, join, consent, banner, end
+- [ ] 2.4 Security concept: threat model, tokens, agent identity/enrollment, E2E key exchange, recording vs. E2E, update signing
+- [ ] 2.5 Data model: users, roles, TOTP, sessions, devices, groups, permissions, bans, audit, recordings
+
+### Phase 3 – Server core
+- [ ] 3.1 ASP.NET Core host, configuration (appsettings + env), structured logging (Serilog), health endpoint
+- [ ] 3.2 EF Core + SQLite (WAL), migrations, repository interfaces
+- [ ] 3.3 Forwarded headers / trusted proxies, configurable ports
+- [ ] 3.4 Localization de/en (resource files, per-user UI culture, browser fallback)
+- [ ] 3.5 `Dockerfile`, `docker-compose.yml` (server + optional nginx), volumes, sample nginx config (TLS, WebSocket upgrade, timeouts)
+
+### Phase 4 – Identity & security
+- [ ] 4.1 User management, roles Guest/User/Admin, ASP.NET Core Identity, password policy
+- [ ] 4.2 Login/logout, cookie security, CSRF, TOTP 2FA (enrollment, recovery codes)
+- [ ] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR whitelist/blacklist, admin UI, manual unban, SMTP notification
+- [ ] 4.4 Rate limiting: code entry, API, enrollment
+- [ ] 4.5 Audit log (logins, sessions, admin actions, file transfers)
+
+### Phase 5 – Session broker & relay
+- [ ] 5.1 Session codes (supporter-created, expiry, single use)
+- [ ] 5.2 WebSocket endpoints for agents and viewers, authentication
+- [ ] 5.3 Relay routing per channel, backpressure, reconnect
+- [ ] 5.4 Consent flow + session banner
+- [ ] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display
+
+### Phase 6 – Web UI
+- [ ] 6.1 Customer portal: code entry → client download (OS detection), Guest session start
+- [ ] 6.2 Supporter area: create ad-hoc session, session list, join
+- [ ] 6.3 Admin area: users, roles, settings, SMTP, IP bans, audit log
+- [ ] 6.4 i18n de/en for all texts, AGPL source link in footer
+
+### Phase 7 – Agent core (C#, shared Windows/Linux)
+- [ ] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto
+- [ ] 7.2 Configuration, logging, ad-hoc vs. permanent mode
+- [ ] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY)
+- [ ] 7.4 Chat, file transfer, clipboard, remote shell implementations
+
+### Phase 8 – Windows agent
+- [ ] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback)
+- [ ] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback
+- [ ] 8.3 Input injection (SendInput, keyboard layouts, special keys)
+- [ ] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching
+- [ ] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated
+- [ ] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated")
+
+### Phase 9 – Browser viewer
+- [ ] 9.1 Canvas + WebCodecs H.264 decoder, fallback
+- [ ] 9.2 Mouse/keyboard mapping, special key toolbar
+- [ ] 9.3 Multi-monitor, scaling, quality settings
+- [ ] 9.4 Chat, file transfer, clipboard, terminal (xterm.js)
+- [ ] 9.5 E2E crypto via WebCrypto
+
+**→ M1: Windows ad-hoc remote support end-to-end (portal → download → consent → control + chat/file/clipboard/shell)**
+
+### Phase 10 – Permanent connections (Admin)
+- [ ] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata
+- [ ] 10.2 Deployment package per group (MSI with enrollment token, WiX)
+- [ ] 10.3 Unattended access incl. reboot/reconnect, consent policy per group (ask / notify / silent)
+- [ ] 10.4 Signed agent auto-update
+
+**→ M2: permanent Windows devices**
+
+### Phase 11 – Linux agent (Debian/Ubuntu)
+- [ ] 11.1 X11 capture/input (XShm/XDamage, XTest)
+- [ ] 11.2 Wayland via xdg-desktop-portal (ScreenCast + RemoteDesktop, PipeWire); GNOME and KDE; unattended via portal restore tokens / gnome-remote-desktop – limits documented
+- [ ] 11.3 Login screen (GDM/LightDM/SDDM) access where possible
+- [ ] 11.4 Remote shell (PTY), privilege handling (polkit/sudo)
+- [ ] 11.5 systemd unit, `.deb` packages (amd64, arm64)
+
+**→ M3: Linux**
+
+### Phase 12 – Android agent (Kotlin, 10+)
+- [ ] 12.1 App skeleton, foreground service, server connection, shared protocol
+- [ ] 12.2 MediaProjection + MediaCodec H.264
+- [ ] 12.3 Input via AccessibilityService
+- [ ] 12.4 Consent UI, permission onboarding, chat/file/clipboard
+- [ ] 12.5 Signed APK, download from own server
+
+**→ M4: Android**
+
+### Phase 13 – Native viewer & extended features
+- [ ] 13.1 Native viewer (C#, Avalonia), same protocol as browser viewer
+- [ ] 13.2 Session recording (per ADR from 2.4), retention, playback in web UI
+- [ ] 13.3 Further hardening based on security review
+
+**→ M5**
+
+### Phase 14 – Deployment & operations
+- [ ] 14.1 Published Docker image (GHCR), versioned tags
+- [ ] 14.2 Installation guide (Ubuntu 26.04 + Docker + nginx + Let's Encrypt), backup/restore of SQLite + recordings, upgrade procedure
+- [ ] 14.3 Monitoring/metrics, log rotation
+
+### Phase 15 – Quality & security assurance
+- [ ] 15.1 Unit + integration tests per module
+- [ ] 15.2 End-to-end tests (Playwright for web UI, agent ↔ server)
+- [ ] 15.3 Security review (OWASP ASVS, dependency audit, pen test portal/relay/E2E)
+- [ ] 15.4 Test matrix: Windows 10/11, Server 2016–2025, Debian 12/13, Ubuntu LTS (X11 + Wayland), Android 10–16
+
+### Phase 16 – Documentation & release
+- [ ] 16.1 User docs (de/en): customer, supporter, admin
+- [ ] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend
+- [ ] 16.3 Release process (SemVer), changelog, signed release artifacts
+
+---
+
+## 6. Known risks & constraints
+
+- **Android unattended access** is restricted by the OS (consent per session, Accessibility Service). Accepted (ADR-0012).
+- **Wayland** capture depends on desktop environment and portal; fully unattended access is not guaranteed on all distributions. X11 + Wayland in one release increases the Linux effort significantly (ADR-0011).
+- **E2E encryption vs. server-side recording** conflict – needs a dedicated design decision (task 2.4).
+- **SmartScreen / antivirus** flag unsigned remote tools; a code-signing certificate is mandatory before production (ADR-0009).
+- **Public repository** of a remote-access tool: no secrets in the repo, `SECURITY.md`, careful handling of reported vulnerabilities; scammers abuse remote tools → strong consent UI and visible banners.
+- **Relay-only** costs server bandwidth (~1–5 Mbit/s per active session).
+- **SQLite** is fine for the expected scale (Q18); revisit if load grows.
+- **AGPL-3.0**: all dependencies must be compatible (e.g. OpenH264 BSD, Avalonia MIT, xterm.js MIT).
+
+---
+
+## 7. Change log of this file
+
+| Date | Change |
+|---|---|
+| 2026-10-17 | Initial version: requirements, draft architecture, open questions Q1–Q21, roadmap |
+| 2026-10-17 | Answers Q1–Q17 recorded as ADR-0001…0016; architecture and roadmap updated (SQLite, Docker, both viewers, Wayland in v1, E2E, recording, public GitHub); new questions Q22–Q23 |
+| 2026-10-17 | Phase 1 done: solution skeleton (Common, Server, Agent.Core/Windows/Linux, tests), build rules, CI, docs, ADR files. Replaced the repository's initial GPL-3.0 `LICENSE` with AGPL-3.0. Project `Shared` named `Common` (CA1716: `Shared` is a VB keyword). |

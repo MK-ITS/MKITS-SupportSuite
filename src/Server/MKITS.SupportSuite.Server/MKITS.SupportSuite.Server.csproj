@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!--
+    The MKITS server: web UI (admin, supporter, customer portal), REST API, session broker and relay.
+    Runs on Ubuntu 26.04+ inside Docker behind an nginx reverse proxy (see deploy/).
+  -->
+  <PropertyGroup>
+    <RootNamespace>MKITS.SupportSuite.Server</RootNamespace>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\MKITS.SupportSuite.Common\MKITS.SupportSuite.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MKITS.SupportSuite.Server.Tests" />
+  </ItemGroup>
+</Project>

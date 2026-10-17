@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Linux agent (Debian, Ubuntu): X11 and Wayland (xdg-desktop-portal / PipeWire) capture and input,
+    PTY shell, systemd unit and .deb packaging.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MKITS.SupportSuite.Agent.Linux</RootNamespace>
+    <AssemblyName>mkits-agent</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MKITS.SupportSuite.Agent.Core\MKITS.SupportSuite.Agent.Core.csproj" />
+  </ItemGroup>
+</Project>

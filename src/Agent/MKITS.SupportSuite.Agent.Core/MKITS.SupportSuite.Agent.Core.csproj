@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Platform-independent agent logic: server connection, protocol, session handling, and the abstractions
+    (screen capture, input, clipboard, file system, shell) that platform projects implement.
+    Must not contain Windows- or Linux-specific code.
+  -->
+  <PropertyGroup>
+    <RootNamespace>MKITS.SupportSuite.Agent.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\MKITS.SupportSuite.Common\MKITS.SupportSuite.Common.csproj" />
+  </ItemGroup>
+</Project>

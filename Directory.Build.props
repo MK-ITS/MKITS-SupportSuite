@@ -1,0 +1,48 @@
+<Project>
+  <!--
+    Shared MSBuild settings for every project in this repository.
+    Keep project files minimal: put common settings here, package versions in Directory.Packages.props.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Quality gates: warnings are errors, code style is enforced during build. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- Needed so IDE* rules (e.g. IDE0005 unused usings) run during build. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: missing XML comment for public member. Documentation is encouraged but not enforced. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- NU1900: vulnerability data could not be fetched (offline/NuGet outage) must not break the build. Real findings (NU1901-NU1904) still fail it. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
+
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Product metadata -->
+    <Product>MKITS-SupportSuite</Product>
+    <Company>MK-ITSolutions</Company>
+    <Authors>MK-ITSolutions and contributors</Authors>
+    <Copyright>Copyright (C) MK-ITSolutions and contributors</Copyright>
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/MK-ITS/MKITS-SupportSuite</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- Single version for the whole suite (SemVer). Bump here only. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
+  </PropertyGroup>
+
+  <!-- Test projects are recognized by name suffix. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- CA1707: underscores in test method names (Method_State_Expected) are allowed. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+</Project>

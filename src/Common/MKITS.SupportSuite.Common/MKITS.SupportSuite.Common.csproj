@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Code shared by server, agents and native viewer: product metadata, protocol definitions, common contracts.
+    Must not depend on ASP.NET Core or any platform-specific API.
+  -->
+  <PropertyGroup>
+    <RootNamespace>MKITS.SupportSuite.Common</RootNamespace>
+  </PropertyGroup>
+</Project>

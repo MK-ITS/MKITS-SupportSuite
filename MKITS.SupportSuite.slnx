@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Agent/MKITS.SupportSuite.Agent.Core/MKITS.SupportSuite.Agent.Core.csproj" />
+    <Project Path="src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj" />
+    <Project Path="src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj" />
+    <Project Path="src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj" />
+    <Project Path="src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MKITS.SupportSuite.Server.Tests/MKITS.SupportSuite.Server.Tests.csproj" />
+    <Project Path="tests/MKITS.SupportSuite.Common.Tests/MKITS.SupportSuite.Common.Tests.csproj" />
+  </Folder>
+</Solution>
