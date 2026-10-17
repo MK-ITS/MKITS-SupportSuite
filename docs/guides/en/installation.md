@@ -3,7 +3,7 @@
 > 🇩🇪 German version: [../de/installation.md](../de/installation.md)
 
 This guide installs the MKITS-SupportSuite **server** on Ubuntu Server with Docker, behind nginx with a Let's Encrypt certificate.
-Agents are installed on end devices later (see the [administration guide](administration.md#5-devices-and-permanent-access)).
+Agents are installed on end devices later (see the [administration guide](administration.md), section 5).
 
 > **Project status:** the product is in early development (0.1.0-dev). The installation steps below already work and give you a running server with health and version endpoints. Login, sessions and agents follow in the next development phases – sections that describe planned behavior are marked *(planned)*.
 

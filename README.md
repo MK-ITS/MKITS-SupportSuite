@@ -56,8 +56,13 @@ Docker image:
 
 ```bash
 docker build -f deploy/docker/Dockerfile -t mkits-server .
-docker run --rm -p 8080:8080 -v mkits-data:/data mkits-server
+docker run --rm -p 8080:8080 -e Mkits__PublicBaseUrl=http://localhost:8080 -v mkits-data:/data mkits-server
 ```
+
+## Installation and administration
+
+- Installation: [English](docs/guides/en/installation.md) · [Deutsch](docs/guides/de/installation.md)
+- Administration: [English](docs/guides/en/administration.md) · [Deutsch](docs/guides/de/administration.md)
 
 ## Contributing
 
