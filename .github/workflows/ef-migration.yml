@@ -39,6 +39,9 @@ jobs:
           if [ -z "$name" ]; then echo "::error::Marker must look like [ef-migration:PascalCaseName]"; exit 1; fi
           echo "value=$name" >> "$GITHUB_OUTPUT"
 
+      - name: Restore
+        run: dotnet restore src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj
+
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef --version "10.*"
 
