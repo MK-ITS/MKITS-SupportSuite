@@ -61,7 +61,7 @@
             </table>
 
             <h2>@L["Users_Create"]</h2>
-            <EditForm Model="_newUser" OnSubmit="CreateAsync" class="form grid">
+            <EditForm Model="_newUser" OnSubmit="CreateAsync" class="form grid" Context="editContext">
                 <label for="new-username">@L["Field_UserName"]</label>
                 <InputText id="new-username" @bind-Value="_newUser.UserName" required />
 
