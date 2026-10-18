@@ -1,0 +1,21 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@* Root document. No inline scripts or styles (strict CSP, ADR-0020). Interactivity is enabled per page. *@
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="@Assets["css/app.css"]" />
+    <HeadOutlet />
+</head>
+<body>
+    <Routes />
+    @* Used by blazor.web.js instead of its default reconnect dialog (which would need inline styles). *@
+    <div id="components-reconnect-modal" class="reconnect-modal" aria-live="polite">
+        <p class="reconnect-text">@L["Reconnect_Text"]</p>
+        <p class="reconnect-failed-text">@L["Reconnect_Failed"]</p>
+    </div>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+</html>

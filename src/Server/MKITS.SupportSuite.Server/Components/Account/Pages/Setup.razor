@@ -1,0 +1,147 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@* First-run setup (docs/security-concept.md §4): only available while no active Admin exists. *@
+@page "/setup"
+@inject SetupTokenService Setup
+@inject UserManager<MkitsUser> UserManager
+@inject LoginCompletion Completion
+@inject IAuditLog AuditLog
+@inject TimeProvider TimeProvider
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Setup_Title"]</PageTitle>
+
+<section class="card narrow">
+    <h1>@L["Setup_Title"]</h1>
+    @if (!_available)
+    {
+        <p>@L["Setup_NotAvailable"]</p>
+    }
+    else
+    {
+        <p>@L["Setup_Intro"]</p>
+        <p class="hint"><code>@L["Setup_LogHint"]</code></p>
+        <StatusMessage Kind="error" Text="@_error" Errors="@_errors" />
+
+        <EditForm Model="Input" method="post" OnSubmit="CreateAdminAsync" FormName="setup" class="form">
+            <label for="token">@L["Field_SetupToken"]</label>
+            <InputText id="token" @bind-Value="Input.Token" autocomplete="off" required />
+
+            <label for="username">@L["Field_UserName"]</label>
+            <InputText id="username" @bind-Value="Input.UserName" autocomplete="username" required />
+
+            <label for="email">@L["Field_Email"]</label>
+            <InputText id="email" type="email" @bind-Value="Input.Email" autocomplete="email" required />
+
+            <label for="displayname">@L["Field_DisplayName"]</label>
+            <InputText id="displayname" @bind-Value="Input.DisplayName" autocomplete="name" required />
+
+            <label for="password">@L["Field_Password"]</label>
+            <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="new-password" required />
+
+            <label for="confirm">@L["Field_ConfirmPassword"]</label>
+            <InputText id="confirm" type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" required />
+
+            <button type="submit">@L["Setup_Submit"]</button>
+        </EditForm>
+    }
+</section>
+
+@code {
+    private bool _available;
+    private string? _error;
+    private IReadOnlyList<string>? _errors;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private SetupInput Input { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+        _available = Setup.IsSetupRequired;
+        if (!_available)
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+        }
+    }
+
+    private async Task CreateAdminAsync()
+    {
+        if (!_available)
+        {
+            return;
+        }
+
+        if (new[] { Input.Token, Input.UserName, Input.Email, Input.DisplayName, Input.Password }.Any(string.IsNullOrWhiteSpace))
+        {
+            _error = L["Setup_Error_Required"];
+            return;
+        }
+
+        if (!string.Equals(Input.Password, Input.ConfirmPassword, StringComparison.Ordinal))
+        {
+            _error = L["Setup_Error_PasswordMismatch"];
+            return;
+        }
+
+        IdentityResult? identityResult = null;
+        var admin = new MkitsUser
+        {
+            Id = Guid.CreateVersion7(),
+            UserName = Input.UserName!.Trim(),
+            Email = Input.Email!.Trim(),
+            DisplayName = Input.DisplayName!.Trim(),
+            UiCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
+            CreatedAt = TimeProvider.GetUtcNow(),
+        };
+
+        var outcome = await Setup.RunSetupAsync(Input.Token, async () =>
+        {
+            identityResult = await UserManager.CreateAsync(admin, Input.Password!);
+            if (!identityResult.Succeeded)
+            {
+                return false;
+            }
+
+            identityResult = await UserManager.AddToRoleAsync(admin, Roles.Admin);
+            return identityResult.Succeeded;
+        });
+
+        if (outcome is null)
+        {
+            await Completion.FailedAsync(HttpContext, FailureKinds.SetupToken, Input.UserName, "wrong_setup_token");
+            _error = L["Setup_Error_Token"];
+            return;
+        }
+
+        if (outcome == false)
+        {
+            _errors = identityResult?.Errors.Select(e => e.Description).ToList();
+            return;
+        }
+
+        await AuditLog.WriteAsync(new AuditEntry(
+            AuditEventTypes.UserCreated, AuditActorType.System, Ip: HttpContext.Connection.RemoteIpAddress?.ToString(),
+            TargetType: "user", TargetId: admin.Id.ToString(),
+            Details: new Dictionary<string, string?> { ["role"] = Roles.Admin, ["via"] = "setup" }));
+
+        Navigation.NavigateTo("/account/login?setup=done");
+    }
+
+    private sealed class SetupInput
+    {
+        public string? Token { get; set; }
+
+        public string? UserName { get; set; }
+
+        public string? Email { get; set; }
+
+        public string? DisplayName { get; set; }
+
+        public string? Password { get; set; }
+
+        public string? ConfirmPassword { get; set; }
+    }
+}

@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 2–3 done; Phase 4A (database, audit log, IP bans) in PR #8; next: Phase 4B (setup, login, TOTP, admin UI)
+- **Status:** Phases 2–3 done; Phase 4A in PR #8, Phase 4B (Blazor UI: setup, login, TOTP, users) in PR #9; next: admin UI for IP bans + audit log, e-mail notifications
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -119,6 +119,8 @@ Decisions are recorded here and as individual files under [`docs/adr/`](docs/adr
 | ADR-0014 | Q14 | Consent: ad-hoc always requires approval + visible banner; permanent devices configurable per group (ask / notify / silent) |
 | ADR-0015 | Q15–Q16, Q19, Q21 | Planned features: session recording, end-to-end encryption, agent auto-update (signed), e-mail notification on IP bans |
 | ADR-0016 | Q17 | Public GitHub repository + GitHub Actions |
+| ADR-0017–0019 | – | Protobuf; E2E + recording; ad-hoc client config via file name |
+| ADR-0020 | – | Blazor Web App (static SSR + Interactive Server) for the UI; Visual Studio 2026 compatible |
 
 ---
 
@@ -160,9 +162,9 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 4 – Identity & security
 - [x] 4.0 EF Core + SQLite (WAL), first migration, automatic migration at startup (migrations via `ef-migration.yml`, see docs/development.md)
-- [ ] 4.0a First-run setup token + `/setup` page (docs/security-concept.md §4)
-- [~] 4.1 User management: Identity model, roles, password policy, lockout ✅ – admin UI open (4B)
-- [ ] 4.2 Login/logout, cookie security, CSRF, TOTP 2FA (enrollment, recovery codes)
+- [x] 4.0a First-run setup token + `/setup` page (docs/security-concept.md §4)
+- [x] 4.1 User management: Identity model, roles, password policy, lockout, admin UI (`/admin/users`, self-/last-admin protection)
+- [x] 4.2 Login/logout, cookie security (`__Host-`, SameSite=Strict), CSRF, TOTP 2FA (QR, recovery codes, mandatory for Admins), profile + language
 - [~] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR allow/deny lists (config + DB), middleware, manual ban/unban API ✅ – admin UI and SMTP notification open (4B)
 - [ ] 4.4 Rate limiting: code entry, API, enrollment
 - [~] 4.5 Audit log: hash-chained store + verification ✅ – events are added by each feature; admin UI open (4B)
@@ -276,3 +278,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-17 | Phase 1 done: solution skeleton (Common, Server, Agent.Core/Windows/Linux, tests), build rules, CI, docs, ADR files. Replaced the repository's initial GPL-3.0 `LICENSE` with AGPL-3.0. Project `Shared` named `Common` (CA1716: `Shared` is a VB keyword). |
 | 2026-10-17 | Phase 2 done (architecture, protocol + proto schema, session lifecycle, security concept, data model, ADR-0017…0019). Phase 3 infrastructure (options, trusted proxies, data directory, Data Protection, security headers, localization). Compose/nginx templates, GHCR publish workflow, installation + administration guides EN/DE. |
 | 2026-10-18 | Phase 4A: SQLite/EF Core with Identity, hash-chained audit log, IP ban service + middleware, EF migration workflow, docs/development.md. CI now also runs for stacked PRs. |
+| 2026-10-18 | Phase 4B: Blazor UI (ADR-0020) with setup token, login, TOTP, recovery codes, profile/language, user administration; nginx header inheritance bug fixed (X-Forwarded-For was lost in locations); .vsconfig for Visual Studio 2026. |

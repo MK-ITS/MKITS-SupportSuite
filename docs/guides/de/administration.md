@@ -12,8 +12,9 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 |---|---|
 | Server-Container, nginx-Einrichtung, Health-/Versions-Endpunkt, Konfigurationsprüfung | ✅ verfügbar |
 | Sicherheits-Header, vertrauenswürdige Reverse Proxys, Datenverzeichnis, Lokalisierung (DE/EN) | ✅ verfügbar |
-| Ersteinrichtung, Benutzer, Rollen, Zwei-Faktor (TOTP) | 🔜 Phase 4 |
-| IP-Sperren, Allow-/Deny-Listen, E-Mail-Benachrichtigungen, Audit-Log | 🔜 Phase 4 |
+| Ersteinrichtung, Anmeldung, Benutzer, Rollen, Zwei-Faktor (TOTP), Profil/Sprache | ✅ verfügbar |
+| IP-Sperren, Allow-/Deny-Listen (Konfiguration), Audit-Log (Aufzeichnung) | ✅ verfügbar |
+| Admin-Oberfläche für IP-Sperren und Audit-Log, E-Mail-Benachrichtigungen | 🔜 Phase 4 (als Nächstes) |
 | Adhoc-Sitzungen, Kundenportal, Zustimmung, Relay | 🔜 Phasen 5–6 |
 | Windows-Agent, Browser-Viewer (Chat, Dateien, Zwischenablage, Shell) | 🔜 Phasen 7–9 (Meilenstein M1) |
 | Gerätegruppen, dauerhafter Zugriff, Installer, Auto-Update | 🔜 Phase 10 (M2) |
@@ -40,20 +41,24 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 
 **Sicherheitsmodell in einem Satz:** Der gesamte Verkehr läuft über HTTPS/WSS 443 durch Ihren Server, die Sitzungsinhalte sind zwischen Agent und Viewer Ende-zu-Ende-verschlüsselt, sodass der Server sie nicht lesen kann – außer bei Sitzungen, die Sie ausdrücklich aufzeichnen (allen Beteiligten angekündigt).
 
-## 3. Erste Anmeldung und Zwei-Faktor-Anmeldung *(geplant)*
+## 3. Erste Anmeldung und Zwei-Faktor-Anmeldung
 
 1. Ersten Admin mit dem Setup-Token anlegen (Installationsanleitung, Abschnitt 7).
 2. QR-Code mit einer Authenticator-App scannen (z. B. Microsoft Authenticator, Aegis, 2FAS) und die **Wiederherstellungscodes** sicher aufbewahren.
 3. Oberflächensprache (Deutsch/Englisch) im Profil wählen. Ohne Profileinstellung gilt die Browsersprache.
 
-## 4. Benutzer *(geplant)*
+## 4. Benutzer
 
 *Administration → Benutzer*
 
-- **Benutzer anlegen:** Benutzername, E-Mail, Anzeigename (wird Kunden im Zustimmungsdialog angezeigt), Rolle, Sprache.
-- **Passwort / 2FA zurücksetzen:** erzwingt eine Neueinrichtung bei der nächsten Anmeldung; alle bestehenden Anmeldungen des Benutzers werden beendet.
+- **Benutzer anlegen:** Benutzername, E-Mail, Anzeigename (wird Kunden im Zustimmungsdialog angezeigt), Rolle, Sprache. Der Server erzeugt ein Startpasswort, das **einmalig** angezeigt wird – sicher weitergeben; der Benutzer ändert es unter *Mein Konto*.
+- **Passwort zurücksetzen:** erzeugt ein neues Passwort (einmalig angezeigt) und entsperrt das Konto.
+- **2FA zurücksetzen:** entfernt den Authenticator; Admins müssen ihn bei der nächsten Anmeldung neu einrichten. Alle bestehenden Anmeldungen des Benutzers werden innerhalb einer Minute beendet.
+- **Zum Admin / zum User machen:** ändert die Rolle.
+- Das eigene Konto kann nicht deaktiviert oder herabgestuft werden, und der letzte aktive Admin ist geschützt.
 - **Benutzer deaktivieren:** sperrt die Anmeldung sofort und beendet seine aktiven Sitzungen. Die Audit-Historie bleibt erhalten.
-- **2FA-Richtlinie:** Pflicht für Admins; kann auch für User verpflichtend gemacht werden (`Mkits__Security__RequireTwoFactorForUsers=true`).
+- **2FA-Richtlinie:** Pflicht für Admins (Admin-Seiten sind ohne sie nicht erreichbar); User können sie unter *Mein Konto* aktivieren. Eine Pflicht auch für User ist geplant (`Mkits__Security__RequireTwoFactorForUsers`).
+- **Passwörter:** mindestens 12 Zeichen, keine Zeichenklassen-Vorgaben (lange Passphrasen sind besser). Nach 10 Fehlversuchen wird ein Konto für 15 Minuten gesperrt (zusätzlich zu IP-Sperren).
 
 ## 5. Geräte und dauerhafter Zugriff *(geplant)*
 

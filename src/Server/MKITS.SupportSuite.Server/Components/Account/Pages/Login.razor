@@ -1,0 +1,115 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/account/login"
+@inject SignInManager<MkitsUser> SignInManager
+@inject UserManager<MkitsUser> UserManager
+@inject LoginCompletion Completion
+@inject SetupTokenService Setup
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Login_Title"]</PageTitle>
+
+<section class="card narrow">
+    <h1>@L["Login_Title"]</h1>
+    @if (SetupParam == "done")
+    {
+        <StatusMessage Kind="success" Text="@L["Login_SetupDone"]" />
+    }
+    <StatusMessage Kind="error" Text="@_error" />
+
+    <EditForm Model="Input" method="post" OnSubmit="LoginAsync" FormName="login" class="form">
+        <label for="username">@L["Field_UserName"]</label>
+        <InputText id="username" @bind-Value="Input.UserName" autocomplete="username" required />
+
+        <label for="password">@L["Field_Password"]</label>
+        <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="current-password" required />
+
+        <label class="checkbox">
+            <InputCheckbox @bind-Value="Input.RememberMe" />
+            @L["Login_RememberMe"]
+        </label>
+
+        <button type="submit">@L["Login_Submit"]</button>
+    </EditForm>
+</section>
+
+@code {
+    private string? _error;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private LoginInput Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "setup")]
+    private string? SetupParam { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        if (Setup.IsSetupRequired)
+        {
+            Navigation.NavigateTo("/setup");
+            return;
+        }
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear a possibly half-finished external/2FA sign-in.
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        var user = string.IsNullOrWhiteSpace(Input.UserName) ? null : await UserManager.FindByNameAsync(Input.UserName.Trim());
+        if (user is null)
+        {
+            await FailAsync("unknown_user");
+            return;
+        }
+
+        var result = await SignInManager.PasswordSignInAsync(user, Input.Password ?? string.Empty, Input.RememberMe, lockoutOnFailure: true);
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo(await Completion.SucceededAsync(user, HttpContext, ReturnUrl, "password"));
+            return;
+        }
+
+        if (result.RequiresTwoFactor)
+        {
+            var returnUrl = Uri.EscapeDataString(LocalUrl.Sanitize(ReturnUrl));
+            Navigation.NavigateTo($"/account/login-2fa?rememberMe={Input.RememberMe}&returnUrl={returnUrl}");
+            return;
+        }
+
+        if (result.IsLockedOut)
+        {
+            await Completion.FailedAsync(HttpContext, FailureKinds.Login, Input.UserName, "locked_out");
+            _error = L["Login_Error_LockedOut"];
+            return;
+        }
+
+        // Disabled users get the same message as wrong passwords: no account information is revealed.
+        await FailAsync(result.IsNotAllowed ? "not_allowed" : "wrong_password");
+    }
+
+    private async Task FailAsync(string reason)
+    {
+        await Completion.FailedAsync(HttpContext, FailureKinds.Login, Input.UserName, reason);
+        _error = L["Login_Error_Invalid"];
+    }
+
+    private sealed class LoginInput
+    {
+        public string? UserName { get; set; }
+
+        public string? Password { get; set; }
+
+        public bool RememberMe { get; set; }
+    }
+}

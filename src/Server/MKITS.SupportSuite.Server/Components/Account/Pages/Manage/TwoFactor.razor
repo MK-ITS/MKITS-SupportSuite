@@ -1,0 +1,171 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/account/manage/two-factor"
+@attribute [Authorize]
+@using Microsoft.Extensions.Options
+@using MKITS.SupportSuite.Server.Infrastructure.Configuration
+@inject UserManager<MkitsUser> UserManager
+@inject SignInManager<MkitsUser> SignInManager
+@inject IAuditLog AuditLog
+@inject IOptions<MkitsOptions> MkitsOptions
+
+<PageTitle>@L["TwoFactor_Title"]</PageTitle>
+
+<section class="card">
+    <h1>@L["TwoFactor_Title"]</h1>
+
+    @if (Required == "true" && !_enabled)
+    {
+        <StatusMessage Kind="info" Text="@L["TwoFactor_Required"]" />
+    }
+    <StatusMessage Kind="error" Text="@_error" />
+
+    @if (_recoveryCodes is { Count: > 0 })
+    {
+        <h2>@L["TwoFactor_RecoveryCodes_Title"]</h2>
+        <p>@L["TwoFactor_RecoveryCodes_Intro"]</p>
+        <ul class="recovery-codes">
+            @foreach (var code in _recoveryCodes)
+            {
+                <li><code>@code</code></li>
+            }
+        </ul>
+    }
+
+    @if (_enabled)
+    {
+        <StatusMessage Kind="success" Text="@L["TwoFactor_Enabled"]" />
+        <p>@L["TwoFactor_RecoveryCodesLeft", _recoveryCodesLeft]</p>
+        <EditForm Model="Regenerate" method="post" OnSubmit="RegenerateCodesAsync" FormName="regenerate" class="form">
+            <button type="submit" class="secondary">@L["TwoFactor_RegenerateCodes"]</button>
+        </EditForm>
+    }
+    else if (_sharedKey is not null)
+    {
+        <p>@L["TwoFactor_Step1"]</p>
+        <img class="qr" src="@_qrDataUri" alt="@L["TwoFactor_QrAlt"]" width="200" height="200" />
+        <p><code class="shared-key">@_sharedKey</code></p>
+
+        <p>@L["TwoFactor_Step2"]</p>
+        <EditForm Model="Verify" method="post" OnSubmit="EnableAsync" FormName="verify" class="form">
+            <label for="code">@L["Field_Code"]</label>
+            <InputText id="code" @bind-Value="Verify.Code" autocomplete="one-time-code" inputmode="numeric" required />
+            <button type="submit">@L["TwoFactor_Verify"]</button>
+        </EditForm>
+    }
+</section>
+
+@code {
+    private const int RecoveryCodeCount = 10;
+
+    private MkitsUser? _user;
+    private bool _enabled;
+    private int _recoveryCodesLeft;
+    private string? _sharedKey;
+    private string? _qrDataUri;
+    private string? _error;
+    private IReadOnlyList<string>? _recoveryCodes;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? Required { get; set; }
+
+    [SupplyParameterFromForm(FormName = "verify")]
+    private VerifyInput Verify { get; set; } = new();
+
+    [SupplyParameterFromForm(FormName = "regenerate")]
+    private RegenerateInput Regenerate { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Verify ??= new();
+        Regenerate ??= new();
+
+        _user = await UserManager.GetUserAsync(HttpContext.User);
+        if (_user is null)
+        {
+            return;
+        }
+
+        _enabled = await UserManager.GetTwoFactorEnabledAsync(_user);
+        if (_enabled)
+        {
+            _recoveryCodesLeft = await UserManager.CountRecoveryCodesAsync(_user);
+        }
+        else
+        {
+            await LoadSharedKeyAsync(_user);
+        }
+    }
+
+    private async Task EnableAsync()
+    {
+        if (_user is null || _enabled)
+        {
+            return;
+        }
+
+        var code = new string((Verify.Code ?? string.Empty).Where(char.IsDigit).ToArray());
+        var valid = await UserManager.VerifyTwoFactorTokenAsync(_user, UserManager.Options.Tokens.AuthenticatorTokenProvider, code);
+        if (!valid)
+        {
+            _error = L["TwoFactor_Error_Invalid"];
+            return;
+        }
+
+        await UserManager.SetTwoFactorEnabledAsync(_user, true);
+        _recoveryCodes = (await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(_user, RecoveryCodeCount))?.ToList();
+        _recoveryCodesLeft = _recoveryCodes?.Count ?? 0;
+        _enabled = true;
+
+        await SignInManager.RefreshSignInAsync(_user);
+        await AuditAsync("enabled");
+    }
+
+    private async Task RegenerateCodesAsync()
+    {
+        if (_user is null || !_enabled)
+        {
+            return;
+        }
+
+        _recoveryCodes = (await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(_user, RecoveryCodeCount))?.ToList();
+        _recoveryCodesLeft = _recoveryCodes?.Count ?? 0;
+        await AuditAsync("recovery_codes_regenerated");
+    }
+
+    private async Task LoadSharedKeyAsync(MkitsUser user)
+    {
+        var key = await UserManager.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrEmpty(key))
+        {
+            await UserManager.ResetAuthenticatorKeyAsync(user);
+            key = await UserManager.GetAuthenticatorKeyAsync(user);
+        }
+
+        if (string.IsNullOrEmpty(key))
+        {
+            return;
+        }
+
+        _sharedKey = TotpQrCode.FormatKey(key);
+        var issuer = TotpQrCode.IssuerFor(MkitsOptions.Value.PublicBaseUrl);
+        _qrDataUri = TotpQrCode.CreateSvgDataUri(TotpQrCode.BuildUri(issuer, user.UserName ?? user.Email ?? "user", key));
+    }
+
+    private Task AuditAsync(string change) =>
+        AuditLog.WriteAsync(new AuditEntry(
+            AuditEventTypes.UserChanged, AuditActorType.User, ActorId: _user!.Id.ToString(), Ip: HttpContext.Connection.RemoteIpAddress?.ToString(),
+            TargetType: "user", TargetId: _user.Id.ToString(), Details: new Dictionary<string, string?> { ["twoFactor"] = change }));
+
+    private sealed class VerifyInput
+    {
+        public string? Code { get; set; }
+    }
+
+    private sealed class RegenerateInput
+    {
+        public bool Confirm { get; set; } = true;
+    }
+}

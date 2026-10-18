@@ -13,6 +13,16 @@ dotnet format  MKITS.SupportSuite.slnx --verify-no-changes
 
 Run the server locally: `dotnet run --project src/Server/MKITS.SupportSuite.Server` → http://localhost:5080. Data (SQLite database, keys) goes to `src/Server/MKITS.SupportSuite.Server/data/` in development – delete the folder to start fresh.
 
+## IDE
+
+- **Visual Studio 2026**: open `MKITS.SupportSuite.slnx`. The `.vsconfig` file prompts for the required workload (*ASP.NET and web development*). Start profile *Server* (http://localhost:5080). Hot Reload works for Blazor components.
+- Rider / VS Code (C# Dev Kit) work as well; `dotnet watch --project src/Server/MKITS.SupportSuite.Server` gives hot reload on the command line.
+- Keep the project IDE-neutral: no `.sln`/`.suo`/user files in the repository, settings belong in `.editorconfig` and `Directory.Build.props`.
+
+## First login in development
+
+Start the server, then look for the line `Open /setup and enter this one-time setup token: XXXXX-…` in the console output and open http://localhost:5080/setup. Delete `src/Server/MKITS.SupportSuite.Server/data/` to start from scratch.
+
 ## Branches and pull requests
 
 - `main` is protected: changes only via pull request, CI checks must pass, review threads must be resolved.

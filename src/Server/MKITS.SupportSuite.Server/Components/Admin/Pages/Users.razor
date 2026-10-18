@@ -1,0 +1,183 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/admin/users"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@inject UserAdministration Administration
+
+<PageTitle>@L["Users_Title"]</PageTitle>
+
+<AuthorizeView Policy="@Policies.Admin">
+    <Authorized>
+        <section class="card wide">
+            <h1>@L["Users_Title"]</h1>
+            <StatusMessage Kind="success" Text="@_message" />
+            <StatusMessage Kind="error" Errors="@_errors" />
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>@L["Field_UserName"]</th>
+                        <th>@L["Field_DisplayName"]</th>
+                        <th>@L["Field_Email"]</th>
+                        <th>@L["Field_Role"]</th>
+                        <th>@L["Users_Column_TwoFactor"]</th>
+                        <th>@L["Users_Column_Status"]</th>
+                        <th>@L["Users_Column_LastLogin"]</th>
+                        <th>@L["Common_Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in _users)
+                    {
+                        var isSelf = user.Id == _actorId;
+                        <tr>
+                            <td>@user.UserName</td>
+                            <td>@user.DisplayName</td>
+                            <td>@user.Email</td>
+                            <td>@L["Role_" + user.Role]</td>
+                            <td>@(user.TwoFactorEnabled ? L["Common_Yes"] : L["Common_No"])</td>
+                            <td>@StatusText(user)</td>
+                            <td>@(user.LastLoginAt?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? L["Common_Never"])</td>
+                            <td class="actions">
+                                @if (!isSelf)
+                                {
+                                    <button type="button" class="secondary" @onclick="() => RunAsync(id => Administration.SetDisabledAsync(_actorId, id, !user.IsDisabled), user.Id)">
+                                        @(user.IsDisabled ? L["Users_Action_Enable"] : L["Users_Action_Disable"])
+                                    </button>
+                                    <button type="button" class="secondary" @onclick="() => RunAsync(id => Administration.SetRoleAsync(_actorId, id, user.Role == Roles.Admin ? Roles.User : Roles.Admin), user.Id)">
+                                        @(user.Role == Roles.Admin ? L["Users_Action_MakeUser"] : L["Users_Action_MakeAdmin"])
+                                    </button>
+                                    <button type="button" class="secondary" @onclick="() => RunAsync(id => Administration.ResetTwoFactorAsync(_actorId, id), user.Id)">
+                                        @L["Users_Action_ResetTwoFactor"]
+                                    </button>
+                                    <button type="button" class="secondary" @onclick="() => ResetPasswordAsync(user)">
+                                        @L["Users_Action_ResetPassword"]
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <h2>@L["Users_Create"]</h2>
+            <EditForm Model="_newUser" OnSubmit="CreateAsync" class="form grid">
+                <label for="new-username">@L["Field_UserName"]</label>
+                <InputText id="new-username" @bind-Value="_newUser.UserName" required />
+
+                <label for="new-email">@L["Field_Email"]</label>
+                <InputText id="new-email" type="email" @bind-Value="_newUser.Email" required />
+
+                <label for="new-displayname">@L["Field_DisplayName"]</label>
+                <InputText id="new-displayname" @bind-Value="_newUser.DisplayName" />
+
+                <label for="new-role">@L["Field_Role"]</label>
+                <InputSelect id="new-role" @bind-Value="_newUser.Role">
+                    <option value="@Roles.User">@L["Role_User"]</option>
+                    <option value="@Roles.Admin">@L["Role_Admin"]</option>
+                </InputSelect>
+
+                <label for="new-language">@L["Field_Language"]</label>
+                <InputSelect id="new-language" @bind-Value="_newUser.UiCulture">
+                    <option value="">@L["Language_Browser"]</option>
+                    <option value="de">@L["Language_de"]</option>
+                    <option value="en">@L["Language_en"]</option>
+                </InputSelect>
+
+                <button type="submit">@L["Users_CreateSubmit"]</button>
+            </EditForm>
+        </section>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private IReadOnlyList<UserSummary> _users = [];
+    private Guid _actorId;
+    private string? _message;
+    private IReadOnlyList<string>? _errors;
+    private NewUserInput _newUser = new();
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationState;
+        _ = Guid.TryParse(state.User.FindFirstValue(ClaimTypes.NameIdentifier), out _actorId);
+        await ReloadAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newUser.UserName) || string.IsNullOrWhiteSpace(_newUser.Email))
+        {
+            ShowErrors(["Setup_Error_Required"]);
+            return;
+        }
+
+        var result = await Administration.CreateAsync(_actorId, _newUser.UserName, _newUser.Email, _newUser.DisplayName ?? string.Empty, _newUser.Role, _newUser.UiCulture);
+        if (!result.Succeeded)
+        {
+            ShowErrors(result.Errors);
+            return;
+        }
+
+        _message = L["Users_Created", result.Secret ?? string.Empty];
+        _errors = null;
+        _newUser = new();
+        await ReloadAsync();
+    }
+
+    private async Task ResetPasswordAsync(UserSummary user)
+    {
+        var result = await Administration.ResetPasswordAsync(_actorId, user.Id);
+        if (!result.Succeeded)
+        {
+            ShowErrors(result.Errors);
+            return;
+        }
+
+        _message = L["Users_PasswordReset", user.UserName, result.Secret ?? string.Empty];
+        _errors = null;
+        await ReloadAsync();
+    }
+
+    private async Task RunAsync(Func<Guid, Task<AdminActionResult>> action, Guid userId)
+    {
+        var result = await action(userId);
+        if (!result.Succeeded)
+        {
+            ShowErrors(result.Errors);
+            return;
+        }
+
+        _message = L["Users_Done"];
+        _errors = null;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() => _users = await Administration.ListAsync();
+
+    /// <summary>Error values are resource keys (Admin_Error_*, Setup_Error_*) or already localized Identity texts.</summary>
+    private void ShowErrors(IEnumerable<string> errors)
+    {
+        _message = null;
+        _errors = errors.Select(e => e.Contains("_Error_", StringComparison.Ordinal) ? L[e].Value : e).ToList();
+    }
+
+    private string StatusText(UserSummary user) =>
+        user.IsDisabled ? L["Users_Status_Disabled"] : user.IsLockedOut ? L["Users_Status_LockedOut"] : L["Users_Status_Active"];
+
+    private sealed class NewUserInput
+    {
+        public string? UserName { get; set; }
+
+        public string? Email { get; set; }
+
+        public string? DisplayName { get; set; }
+
+        public string Role { get; set; } = Roles.User;
+
+        public string? UiCulture { get; set; }
+    }
+}

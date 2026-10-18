@@ -1,0 +1,67 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/account/login-recovery"
+@inject SignInManager<MkitsUser> SignInManager
+@inject LoginCompletion Completion
+@inject NavigationManager Navigation
+
+<PageTitle>@L["RecoveryLogin_Title"]</PageTitle>
+
+<section class="card narrow">
+    <h1>@L["RecoveryLogin_Title"]</h1>
+    <p>@L["RecoveryLogin_Intro"]</p>
+    <StatusMessage Kind="error" Text="@_error" />
+
+    <EditForm Model="Input" method="post" OnSubmit="VerifyAsync" FormName="login-recovery" class="form">
+        <label for="recovery-code">@L["Field_RecoveryCode"]</label>
+        <InputText id="recovery-code" @bind-Value="Input.Code" autocomplete="off" required />
+        <button type="submit">@L["TwoFactorLogin_Submit"]</button>
+    </EditForm>
+</section>
+
+@code {
+    private string? _error;
+    private MkitsUser? _user;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private CodeInput Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+        _user = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (_user is null)
+        {
+            Navigation.NavigateTo("/account/login");
+        }
+    }
+
+    private async Task VerifyAsync()
+    {
+        if (_user is null)
+        {
+            return;
+        }
+
+        var code = (Input.Code ?? string.Empty).Replace(" ", string.Empty, StringComparison.Ordinal);
+        var result = await SignInManager.TwoFactorRecoveryCodeSignInAsync(code);
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo(await Completion.SucceededAsync(_user, HttpContext, ReturnUrl, "recovery_code"));
+            return;
+        }
+
+        await Completion.FailedAsync(HttpContext, FailureKinds.TwoFactor, _user.UserName, result.IsLockedOut ? "locked_out" : "wrong_recovery_code");
+        _error = result.IsLockedOut ? L["Login_Error_LockedOut"] : L["RecoveryLogin_Error_Invalid"];
+    }
+
+    private sealed class CodeInput
+    {
+        public string? Code { get; set; }
+    }
+}

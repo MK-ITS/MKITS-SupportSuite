@@ -1,0 +1,44 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<header class="topbar">
+    <a class="brand" href="/">MKITS<span>SupportSuite</span></a>
+    <nav aria-label="Main">
+        <AuthorizeView>
+            <Authorized>
+                <AuthorizeView Policy="@Policies.Admin" Context="adminContext">
+                    <Authorized>
+                        <a href="/admin/users">@L["Nav_Users"]</a>
+                    </Authorized>
+                </AuthorizeView>
+                <a href="/account/manage">@L["Nav_Profile"]</a>
+                <form action="/account/logout" method="post" class="inline-form">
+                    <AntiforgeryToken />
+                    <button type="submit" class="link-button">@L["Nav_Logout"]</button>
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <a href="/account/login">@L["Nav_Login"]</a>
+            </NotAuthorized>
+        </AuthorizeView>
+        <span class="language" aria-label="@L["Nav_Language"]">
+            <a href="@CultureLink("de")" data-enhance-nav="false" lang="de">DE</a>
+            <a href="@CultureLink("en")" data-enhance-nav="false" lang="en">EN</a>
+        </span>
+    </nav>
+</header>
+
+<main id="main">
+    @Body
+</main>
+
+<footer class="footer">
+    <a href="@ProductInfo.SourceCodeUrl" rel="noopener noreferrer">@L["Footer_SourceCode"]</a>
+    <span>@ProductInfo.Name @ProductInfo.Version</span>
+</footer>
+
+@code {
+    private string CultureLink(string culture) =>
+        $"/culture/set?culture={culture}&returnUrl={Uri.EscapeDataString("/" + Navigation.ToBaseRelativePath(Navigation.Uri))}";
+}

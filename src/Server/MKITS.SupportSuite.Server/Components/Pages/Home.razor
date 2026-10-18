@@ -1,0 +1,18 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/"
+
+<PageTitle>MKITS-SupportSuite</PageTitle>
+
+<section class="card">
+    <h1>@L["Home_Title"]</h1>
+    <p class="lead">@L["Product_Tagline"]</p>
+    <p>@L["Home_PortalComingSoon"]</p>
+    <AuthorizeView>
+        <Authorized>
+            <p>@L["Home_SignedInAs", context.User.Identity?.Name ?? string.Empty]</p>
+        </Authorized>
+        <NotAuthorized>
+            <p><a class="button" href="/account/login">@L["Nav_Login"]</a></p>
+        </NotAuthorized>
+    </AuthorizeView>
+</section>

@@ -1,0 +1,141 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/account/manage"
+@attribute [Authorize]
+@inject UserManager<MkitsUser> UserManager
+@inject SignInManager<MkitsUser> SignInManager
+@inject IAuditLog AuditLog
+
+<PageTitle>@L["Manage_Title"]</PageTitle>
+
+<section class="card">
+    <h1>@L["Manage_Title"]</h1>
+    <StatusMessage Kind="success" Text="@_message" />
+    <StatusMessage Kind="error" Errors="@_errors" />
+
+    <h2>@L["Manage_Profile"]</h2>
+    <EditForm Model="Profile" method="post" OnSubmit="SaveProfileAsync" FormName="profile" class="form">
+        <label for="displayname">@L["Field_DisplayName"]</label>
+        <InputText id="displayname" @bind-Value="Profile.DisplayName" autocomplete="name" required />
+
+        <label for="language">@L["Field_Language"]</label>
+        <InputSelect id="language" @bind-Value="Profile.UiCulture">
+            <option value="">@L["Language_Browser"]</option>
+            <option value="de">@L["Language_de"]</option>
+            <option value="en">@L["Language_en"]</option>
+        </InputSelect>
+
+        <button type="submit">@L["Common_Save"]</button>
+    </EditForm>
+
+    <h2>@L["Manage_ChangePassword"]</h2>
+    <EditForm Model="Password" method="post" OnSubmit="ChangePasswordAsync" FormName="password" class="form">
+        <label for="current">@L["Field_CurrentPassword"]</label>
+        <InputText id="current" type="password" @bind-Value="Password.Current" autocomplete="current-password" required />
+
+        <label for="new">@L["Field_NewPassword"]</label>
+        <InputText id="new" type="password" @bind-Value="Password.New" autocomplete="new-password" required />
+
+        <label for="confirm">@L["Field_ConfirmPassword"]</label>
+        <InputText id="confirm" type="password" @bind-Value="Password.Confirm" autocomplete="new-password" required />
+
+        <button type="submit">@L["Manage_ChangePassword"]</button>
+    </EditForm>
+
+    <h2>@L["TwoFactor_Title"]</h2>
+    <p><a href="@LoginCompletion.TwoFactorSetupPath">@L["Manage_TwoFactorLink"]</a></p>
+</section>
+
+@code {
+    private MkitsUser? _user;
+    private string? _message;
+    private IReadOnlyList<string>? _errors;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "profile")]
+    private ProfileInput Profile { get; set; } = new();
+
+    [SupplyParameterFromForm(FormName = "password")]
+    private PasswordInput Password { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Password ??= new();
+        _user = await UserManager.GetUserAsync(HttpContext.User);
+
+        if (Profile is null || HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            Profile = new ProfileInput { DisplayName = _user?.DisplayName, UiCulture = _user?.UiCulture ?? string.Empty };
+        }
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (_user is null || string.IsNullOrWhiteSpace(Profile.DisplayName))
+        {
+            return;
+        }
+
+        _user.DisplayName = Profile.DisplayName.Trim();
+        _user.UiCulture = CultureCookie.IsSupported(Profile.UiCulture) ? Profile.UiCulture : null;
+        var result = await UserManager.UpdateAsync(_user);
+        if (!result.Succeeded)
+        {
+            _errors = result.Errors.Select(e => e.Description).ToList();
+            return;
+        }
+
+        if (_user.UiCulture is not null)
+        {
+            CultureCookie.Append(HttpContext, _user.UiCulture);
+        }
+
+        _message = L["Manage_Saved"];
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (_user is null)
+        {
+            return;
+        }
+
+        if (!string.Equals(Password.New, Password.Confirm, StringComparison.Ordinal))
+        {
+            _errors = [L["Setup_Error_PasswordMismatch"]];
+            return;
+        }
+
+        var result = await UserManager.ChangePasswordAsync(_user, Password.Current ?? string.Empty, Password.New ?? string.Empty);
+        if (!result.Succeeded)
+        {
+            _errors = result.Errors.Select(e => e.Description).ToList();
+            return;
+        }
+
+        // The security stamp changed: renew this browser's cookie, all other sessions are signed out.
+        await SignInManager.RefreshSignInAsync(_user);
+        await AuditLog.WriteAsync(new AuditEntry(
+            AuditEventTypes.UserChanged, AuditActorType.User, ActorId: _user.Id.ToString(), Ip: HttpContext.Connection.RemoteIpAddress?.ToString(),
+            TargetType: "user", TargetId: _user.Id.ToString(), Details: new Dictionary<string, string?> { ["password"] = "changed" }));
+        Password = new();
+        _message = L["Manage_PasswordChanged"];
+    }
+
+    private sealed class ProfileInput
+    {
+        public string? DisplayName { get; set; }
+
+        public string? UiCulture { get; set; }
+    }
+
+    private sealed class PasswordInput
+    {
+        public string? Current { get; set; }
+
+        public string? New { get; set; }
+
+        public string? Confirm { get; set; }
+    }
+}
