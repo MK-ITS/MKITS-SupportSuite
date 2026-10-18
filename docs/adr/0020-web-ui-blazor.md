@@ -17,7 +17,8 @@ The server needs a web UI for the customer portal, supporters and administrators
 
 **Blazor Web App (.NET 10)** in the server project (`src/Server/.../Components`):
 
-- **Static server-side rendering (SSR)** for everything that touches authentication cookies or must work without a live connection: login, two-factor login, setup, logout, profile, customer portal. These pages carry `[ExcludeFromInteractiveRouting]`.
+- **Per-page interactivity:** `<Routes />` in `App.razor` has no global render mode, so every page is rendered statically on the server (SSR) unless it declares `@rendermode InteractiveServer`.
+- **Static SSR** for everything that touches authentication cookies or must work without a live connection: login, two-factor login, setup, logout, profile, customer portal. These pages simply declare no render mode – they must never get one, because they need `HttpContext`.
 - **Interactive Server** render mode for supporter and admin pages (live lists, dialogs). No WebAssembly for now.
 - No inline scripts or styles: only `blazor.web.js` and static CSS from the same origin, so the existing CSP stays strict. The reconnect UI is a custom element styled in `app.css`.
 - nginx must forward WebSocket upgrades for `/_blazor` (interactive circuits) in addition to `/ws/`.
