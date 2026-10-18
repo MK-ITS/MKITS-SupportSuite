@@ -40,7 +40,18 @@ jobs:
         run: dotnet format MKITS.SupportSuite.slnx --verify-no-changes --no-restore
 
       - name: Build
-        run: dotnet build MKITS.SupportSuite.slnx -c Release --no-restore
+        run: dotnet build MKITS.SupportSuite.slnx -c Release --no-restore "-flp:ErrorsOnly;LogFile=build-errors.log"
+
+      - name: Report build errors as annotations
+        if: failure()
+        shell: python
+        run: |
+          # Full error texts (incl. multi-line messages and errors without a file) for environments without log access.
+          import os
+          if os.path.exists("build-errors.log"):
+              for line in sorted(set(open("build-errors.log", encoding="utf-8", errors="replace").read().splitlines())):
+                  if line.strip():
+                      print("::error title=Build error::" + line.strip()[:1500].replace("%", "%25"))
 
       - name: Test
         run: dotnet test MKITS.SupportSuite.slnx -c Release --no-build --logger trx --results-directory TestResults
