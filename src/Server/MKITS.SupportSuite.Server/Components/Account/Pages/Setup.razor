@@ -1,7 +1,7 @@
 @* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
 @* First-run setup (docs/security-concept.md §4): only available while no active Admin exists. *@
 @page "/setup"
-@inject SetupTokenService Setup
+@inject SetupTokenService SetupTokens
 @inject UserManager<MkitsUser> UserManager
 @inject LoginCompletion Completion
 @inject IAuditLog AuditLog
@@ -60,7 +60,7 @@
     protected override void OnInitialized()
     {
         Input ??= new();
-        _available = Setup.IsSetupRequired;
+        _available = SetupTokens.IsSetupRequired;
         if (!_available)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -97,7 +97,7 @@
             CreatedAt = TimeProvider.GetUtcNow(),
         };
 
-        var outcome = await Setup.RunSetupAsync(Input.Token, async () =>
+        var outcome = await SetupTokens.RunSetupAsync(Input.Token, async () =>
         {
             identityResult = await UserManager.CreateAsync(admin, Input.Password!);
             if (!identityResult.Succeeded)

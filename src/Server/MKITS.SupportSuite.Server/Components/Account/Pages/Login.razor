@@ -3,7 +3,7 @@
 @inject SignInManager<MkitsUser> SignInManager
 @inject UserManager<MkitsUser> UserManager
 @inject LoginCompletion Completion
-@inject SetupTokenService Setup
+@inject SetupTokenService SetupTokens
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Login_Title"]</PageTitle>
@@ -51,7 +51,7 @@
     {
         Input ??= new();
 
-        if (Setup.IsSetupRequired)
+        if (SetupTokens.IsSetupRequired)
         {
             Navigation.NavigateTo("/setup");
             return;

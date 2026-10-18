@@ -24,9 +24,9 @@
         <h2>@L["TwoFactor_RecoveryCodes_Title"]</h2>
         <p>@L["TwoFactor_RecoveryCodes_Intro"]</p>
         <ul class="recovery-codes">
-            @foreach (var code in _recoveryCodes)
+            @foreach (var recoveryCode in _recoveryCodes)
             {
-                <li><code>@code</code></li>
+                <li><code>@recoveryCode</code></li>
             }
         </ul>
     }
