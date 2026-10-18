@@ -55,7 +55,7 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private SetupInput Input { get; set; } = new();
+    private SetupInput Input { get; set; } = default!;
 
     protected override void OnInitialized()
     {

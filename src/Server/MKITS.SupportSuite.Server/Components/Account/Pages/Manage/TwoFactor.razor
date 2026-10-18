@@ -72,10 +72,10 @@
     private string? Required { get; set; }
 
     [SupplyParameterFromForm(FormName = "verify")]
-    private VerifyInput Verify { get; set; } = new();
+    private VerifyInput Verify { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "regenerate")]
-    private RegenerateInput Regenerate { get; set; } = new();
+    private RegenerateInput Regenerate { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {

@@ -54,10 +54,10 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "profile")]
-    private ProfileInput Profile { get; set; } = new();
+    private ProfileInput Profile { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "password")]
-    private PasswordInput Password { get; set; } = new();
+    private PasswordInput Password { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
