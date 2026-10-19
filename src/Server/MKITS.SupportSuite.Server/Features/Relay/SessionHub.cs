@@ -211,7 +211,7 @@ public sealed partial class SessionHub : IDisposable
                     cancellationToken).ConfigureAwait(false);
                 break;
             default:
-                LogIgnoredFrame(_logger, frame.BodyCase.ToString(), from.Role.ToString());
+                LogIgnoredFrame(_logger, frame.BodyCase, from.Role);
                 break;
         }
     }
@@ -315,7 +315,7 @@ public sealed partial class SessionHub : IDisposable
             {
                 if (now - peer.LastReceived > HeartbeatTimeout)
                 {
-                    LogHeartbeatTimeout(_logger, peer.Role.ToString(), live.Id);
+                    LogHeartbeatTimeout(_logger, peer.Role, live.Id);
                     peer.Abort();
                 }
                 else if (now - peer.LastPingSent >= HeartbeatInterval)
@@ -486,7 +486,7 @@ public sealed partial class SessionHub : IDisposable
         }
     }
 
-    private void RouteSessionData(LiveSession live, PeerConnection from, SessionData data)
+    private static void RouteSessionData(LiveSession live, PeerConnection from, SessionData data)
     {
         if (data.SessionId != live.WireId)
         {
@@ -666,8 +666,8 @@ public sealed partial class SessionHub : IDisposable
     private static byte[] HashToken(string token) => SHA256.HashData(Encoding.UTF8.GetBytes(token));
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Ignored {Frame} frame from {Role}")]
-    private static partial void LogIgnoredFrame(ILogger logger, string frame, string role);
+    private static partial void LogIgnoredFrame(ILogger logger, Frame.BodyOneofCase frame, PeerRole role);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{Role} of session {SessionId} timed out (no heartbeat)")]
-    private static partial void LogHeartbeatTimeout(ILogger logger, string role, Guid sessionId);
+    private static partial void LogHeartbeatTimeout(ILogger logger, PeerRole role, Guid sessionId);
 }

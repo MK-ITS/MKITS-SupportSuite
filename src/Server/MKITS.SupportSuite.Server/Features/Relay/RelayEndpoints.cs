@@ -184,7 +184,7 @@ public sealed partial class RelayConnectionHandler(
                     Fail(peer, ErrorCodes.MessageTooLarge, $"limit is {FrameCodec.MaxMessageSize} bytes");
                     return;
                 case ReceiveStatus.Malformed:
-                    LogMalformed(logger, peer.Role.ToString());
+                    LogMalformed(logger, peer.Role);
                     Fail(peer, ErrorCodes.ProtocolMismatch, "malformed frame");
                     return;
                 default:
@@ -217,7 +217,7 @@ public sealed partial class RelayConnectionHandler(
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Closing {Role} connection: malformed frame")]
-    private static partial void LogMalformed(ILogger logger, string role);
+    private static partial void LogMalformed(ILogger logger, PeerRole role);
 }
 
 /// <summary>Drives heartbeats and session timeouts.</summary>
