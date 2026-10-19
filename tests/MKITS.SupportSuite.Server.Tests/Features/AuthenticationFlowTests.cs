@@ -136,6 +136,11 @@ public sealed class AuthenticationFlowTests
         using var users2 = await client.GetAsync(new Uri("/admin/users", UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, users2.StatusCode);
         Assert.Contains(AdminUser, await users2.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+
+        // 5. The supporter page is accessible as well.
+        using var sessions = await client.GetAsync(new Uri("/sessions", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, sessions.StatusCode);
+        Assert.Contains("Support sessions", await sessions.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -143,7 +148,8 @@ public sealed class AuthenticationFlowTests
     [InlineData("/admin/ip-bans")]
     [InlineData("/admin/audit")]
     [InlineData("/admin/settings")]
-    public async Task AdminPage_Anonymous_RedirectsToLogin(string path)
+    [InlineData("/sessions")]
+    public async Task ProtectedPage_Anonymous_RedirectsToLogin(string path)
     {
         using var factory = new MkitsWebApplicationFactory();
         using var client = CreateClient(factory);

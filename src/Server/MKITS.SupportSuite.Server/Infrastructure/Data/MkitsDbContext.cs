@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
+using MKITS.SupportSuite.Server.Features.Sessions;
 
 namespace MKITS.SupportSuite.Server.Infrastructure.Data;
 
@@ -22,6 +23,8 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
     public DbSet<IpBan> IpBans => Set<IpBan>();
 
     public DbSet<IpListEntry> IpListEntries => Set<IpListEntry>();
+
+    public DbSet<SupportSession> Sessions => Set<SupportSession>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -75,6 +78,21 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
             entry.Property(e => e.Network).HasMaxLength(64).IsRequired();
             entry.Property(e => e.Comment).HasMaxLength(200);
             entry.HasIndex(e => new { e.ListType, e.Network }).IsUnique();
+        });
+
+        builder.Entity<SupportSession>(session =>
+        {
+            session.ToTable("Sessions");
+            session.Property(s => s.CodeHash).HasMaxLength(32);
+            session.Property(s => s.CustomerLabel).HasMaxLength(200);
+            session.Property(s => s.AgentMachineName).HasMaxLength(100);
+            session.Property(s => s.AgentIp).HasMaxLength(64);
+            session.Property(s => s.EndReason).HasMaxLength(50);
+            session.HasOne<MkitsUser>().WithMany().HasForeignKey(s => s.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
+            session.HasIndex(s => s.CodeHash);
+            session.HasIndex(s => new { s.Status, s.CodeExpiresAt });
+            session.HasIndex(s => new { s.OwnerUserId, s.CreatedAt });
+            session.Ignore(s => s.IsEnded);
         });
     }
 }

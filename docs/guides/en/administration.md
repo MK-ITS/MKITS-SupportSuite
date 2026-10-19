@@ -14,7 +14,8 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Security headers, trusted reverse proxies, data directory, localization (EN/DE) | ✅ available |
 | First-run setup, login, users, roles, TOTP 2FA, profile/language | ✅ available |
 | IP bans, allow/deny lists, audit log with integrity check, e-mail notifications (admin UI) | ✅ available |
-| Ad-hoc sessions, customer portal, consent, relay | 🔜 Phases 5–6 |
+| Ad-hoc session codes (create, list, revoke, expiry) | ✅ available |
+| Customer portal, consent, relay | 🔜 Phases 5–6 |
 | Windows agent, browser viewer (chat, files, clipboard, shell) | 🔜 Phases 7–9 (milestone M1) |
 | Device groups, permanent access, installers, auto-update | 🔜 Phase 10 (M2) |
 | Linux agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
@@ -87,9 +88,11 @@ Tokens are shown once, stored only as hashes and can be revoked. Revoke tokens a
 
 The device list shows online status, OS, agent version, last seen and last IP. Actions: rename, move to another group, disable (blocks connections), remove (the agent must be re-enrolled). Agents update themselves automatically from the server (signed updates).
 
-## 6. Ad-hoc support workflow *(planned)*
+## 6. Ad-hoc support workflow *(partly available)*
 
-1. *Sessions → New ad-hoc session*, optionally enter a reference (ticket number). The code is valid for 10 minutes.
+Step 1 is available (menu *Sessions*); the remaining steps follow with the portal, client and viewer.
+
+1. *Sessions → New ad-hoc session*, optionally enter a note (e.g. ticket number) and click *Create session code*. The code is valid for 10 minutes, can be used once and is shown only once. You can revoke codes you no longer need.
 2. Tell the customer to open `https://support.example.com` and enter the code.
 3. The customer downloads and runs the client; it shows your server address and your display name and asks for consent.
 4. Open the session in your browser. Compare the 6-digit **security code** with the customer on the phone if the case is sensitive – it proves that nobody (not even a compromised server) sits in between.
@@ -157,11 +160,13 @@ Environment variables (`Section__Key`) override settings from the admin UI. ✅ 
 | `Mkits__IpBan__BanDuration` | `7.00:00:00` | ✅ | ban length (d.hh:mm:ss) |
 | `Mkits__IpBan__IPv6PrefixLength` | `64` | ✅ | IPv6 aggregation |
 | `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | ✅ | CIDR lists (in addition to the admin UI) |
-| `Mkits__Sessions__CodeLength` | `8` | 🔜 | digits of ad-hoc codes (6–12) |
-| `Mkits__Sessions__CodeLifetime` | `00:10:00` | 🔜 | validity of unused codes |
+| `Mkits__Sessions__CodeLength` | `8` | ✅ | digits of ad-hoc codes (6–12) |
+| `Mkits__Sessions__CodeLifetime` | `00:10:00` | ✅ | validity of unused codes |
+| `Mkits__Sessions__MaxActiveCodes` | `50` | ✅ | server-wide limit of open codes (with 8 digits at most 1000) |
+| `Mkits__Sessions__MaxActiveCodesPerUser` | `10` | ✅ | open codes per supporter |
 | `Mkits__Sessions__ConsentTimeout` | `00:02:00` | 🔜 | time for the end user to approve |
 | `Mkits__Sessions__SuspendGracePeriod` | `00:01:00` | 🔜 | reconnect window after connection loss |
-| `Mkits__Sessions__MaxDuration` | `08:00:00` | 🔜 | maximum session length |
+| `Mkits__Sessions__MaxDuration` | `08:00:00` | ✅ | maximum session length |
 | `Mkits__Security__RequireTwoFactorForUsers` | `false` | 🔜 | 2FA also for Users |
 | `Mkits__Smtp__Host`, `__Port` (587), `__Security` (StartTls), `__UserName`, `__Password`, `__From` | – | ✅ | e-mail (section 8); empty Host = disabled |
 | `Mkits__Smtp__MaxNotificationsPerHour` | `20` | ✅ | flood protection |

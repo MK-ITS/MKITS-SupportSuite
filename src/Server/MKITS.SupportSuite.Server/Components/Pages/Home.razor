@@ -10,6 +10,7 @@
     <AuthorizeView>
         <Authorized>
             <p>@L["Home_SignedInAs", context.User.Identity?.Name ?? string.Empty]</p>
+            <p><a class="button" href="/sessions">@L["Home_StartSupport"]</a></p>
         </Authorized>
         <NotAuthorized>
             <p><a class="button" href="/account/login">@L["Nav_Login"]</a></p>

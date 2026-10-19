@@ -6,4 +6,15 @@
   <PropertyGroup>
     <RootNamespace>MKITS.SupportSuite.Common</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <!-- Build-time code generator only (protoc); not shipped. -->
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The schema in /proto is the single source of truth (ADR-0017). Messages only, no gRPC services. -->
+    <Protobuf Include="..\..\..\proto\mkits\v0\*.proto" ProtoRoot="..\..\..\proto" GrpcServices="None" Access="Public" />
+  </ItemGroup>
 </Project>

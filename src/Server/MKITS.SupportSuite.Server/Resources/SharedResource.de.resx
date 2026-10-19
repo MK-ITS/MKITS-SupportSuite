@@ -174,4 +174,45 @@ Grund: {1}
 Gesperrt bis (UTC): {2}
 
 Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></data>
+  <data name="Nav_Sessions" xml:space="preserve"><value>Sitzungen</value></data>
+  <data name="Home_StartSupport" xml:space="preserve"><value>Support-Sitzung starten</value></data>
+  <data name="Sessions_Title" xml:space="preserve"><value>Support-Sitzungen</value></data>
+  <data name="Sessions_Intro" xml:space="preserve"><value>Erstellen Sie einen Sitzungscode und geben Sie ihn Ihrem Kunden, z. B. am Telefon. Der Kunde gibt ihn auf der Startseite dieses Servers ein und lädt den Support-Client herunter.</value></data>
+  <data name="Sessions_Create" xml:space="preserve"><value>Neue Ad-hoc-Sitzung</value></data>
+  <data name="Sessions_Field_Label" xml:space="preserve"><value>Notiz</value></data>
+  <data name="Sessions_Field_LabelHint" xml:space="preserve"><value>z. B. Ticketnummer oder Kundenname (nur für Supporter sichtbar)</value></data>
+  <data name="Sessions_CreateSubmit" xml:space="preserve"><value>Sitzungscode erstellen</value></data>
+  <data name="Sessions_CodeIntro" xml:space="preserve"><value>Sitzungscode für Ihren Kunden:</value></data>
+  <data name="Sessions_CodeInstructions" xml:space="preserve"><value>Der Kunde öffnet {0} und gibt diesen Code ein.</value></data>
+  <data name="Sessions_CodeValidUntil" xml:space="preserve"><value>Gültig bis {0}, einmalig verwendbar.</value></data>
+  <data name="Sessions_CodeShownOnce" xml:space="preserve"><value>Der Code wird nur jetzt angezeigt – er wird nicht lesbar gespeichert.</value></data>
+  <data name="Sessions_List" xml:space="preserve"><value>Sitzungen</value></data>
+  <data name="Sessions_ShowEnded" xml:space="preserve"><value>Beendete Sitzungen anzeigen (letzte 7 Tage)</value></data>
+  <data name="Sessions_ShowAll" xml:space="preserve"><value>Sitzungen aller Supporter anzeigen</value></data>
+  <data name="Sessions_Refresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="Sessions_None" xml:space="preserve"><value>Keine Sitzungen.</value></data>
+  <data name="Sessions_Column_Created" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Sessions_Column_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Sessions_Column_Machine" xml:space="preserve"><value>Computer</value></data>
+  <data name="Sessions_Column_Owner" xml:space="preserve"><value>Supporter</value></data>
+  <data name="Sessions_Action_Revoke" xml:space="preserve"><value>Code widerrufen</value></data>
+  <data name="Sessions_Action_End" xml:space="preserve"><value>Sitzung beenden</value></data>
+  <data name="Sessions_Error_TooManyCodes" xml:space="preserve"><value>Sie haben zu viele offene Sitzungscodes. Widerrufen Sie zuerst nicht benötigte Codes.</value></data>
+  <data name="Sessions_Error_ServerBusy" xml:space="preserve"><value>Die serverweite Grenze offener Sitzungscodes ist erreicht. Bitte versuchen Sie es in einigen Minuten erneut.</value></data>
+  <data name="Sessions_Status_WaitingForAgent" xml:space="preserve"><value>Wartet auf Kunden</value></data>
+  <data name="Sessions_Status_WaitingForViewer" xml:space="preserve"><value>Kunde verbunden</value></data>
+  <data name="Sessions_Status_AwaitingConsent" xml:space="preserve"><value>Wartet auf Zustimmung</value></data>
+  <data name="Sessions_Status_Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Sessions_Status_Suspended" xml:space="preserve"><value>Verbindung unterbrochen</value></data>
+  <data name="Sessions_Status_Ended" xml:space="preserve"><value>Beendet</value></data>
+  <data name="Sessions_EndReason_code_expired" xml:space="preserve"><value>Code abgelaufen</value></data>
+  <data name="Sessions_EndReason_revoked" xml:space="preserve"><value>Code widerrufen</value></data>
+  <data name="Sessions_EndReason_ended_by_supporter" xml:space="preserve"><value>vom Supporter beendet</value></data>
+  <data name="Sessions_EndReason_ended_by_customer" xml:space="preserve"><value>vom Kunden beendet</value></data>
+  <data name="Sessions_EndReason_consent_denied" xml:space="preserve"><value>Zustimmung verweigert</value></data>
+  <data name="Sessions_EndReason_consent_timeout" xml:space="preserve"><value>keine Antwort auf Zustimmungsanfrage</value></data>
+  <data name="Sessions_EndReason_no_viewer" xml:space="preserve"><value>kein Supporter beigetreten</value></data>
+  <data name="Sessions_EndReason_connection_lost" xml:space="preserve"><value>Verbindung verloren</value></data>
+  <data name="Sessions_EndReason_max_duration" xml:space="preserve"><value>Höchstdauer erreicht</value></data>
+  <data name="Sessions_EndReason_server_restart" xml:space="preserve"><value>Server neu gestartet</value></data>
 </root>

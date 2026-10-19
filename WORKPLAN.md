@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; next: Phase 5 (session broker & relay)
+- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) in progress
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -170,7 +170,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [x] 4.5 Audit log: hash-chained store + verification, admin UI (`/admin/audit`, filter, paging, integrity check); events are added by each feature. CSV export open
 
 ### Phase 5 – Session broker & relay
-- [ ] 5.1 Session codes (supporter-created, expiry, single use)
+- [x] 5.1 Session codes (supporter-created, expiry, single use) – `Features/Sessions`, page `/sessions`, protobuf code generation in Common
 - [ ] 5.2 WebSocket endpoints for agents and viewers, authentication
 - [ ] 5.3 Relay routing per channel, backpressure, reconnect
 - [ ] 5.4 Consent flow + session banner
@@ -178,7 +178,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 6 – Web UI
 - [ ] 6.1 Customer portal: code entry → client download (OS detection), Guest session start
-- [ ] 6.2 Supporter area: create ad-hoc session, session list, join
+- [~] 6.2 Supporter area: create ad-hoc session, session list, join – create/list/revoke done (`/sessions`), join follows with the viewer
 - [ ] 6.3 Admin area: users, roles, settings, SMTP, IP bans, audit log
 - [ ] 6.4 i18n de/en for all texts, AGPL source link in footer
 
@@ -280,3 +280,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-18 | Phase 4A: SQLite/EF Core with Identity, hash-chained audit log, IP ban service + middleware, EF migration workflow, docs/development.md. CI now also runs for stacked PRs. |
 | 2026-10-18 | Phase 4B: Blazor UI (ADR-0020) with setup token, login, TOTP, recovery codes, profile/language, user administration; nginx header inheritance bug fixed (X-Forwarded-For was lost in locations); .vsconfig for Visual Studio 2026. |
 | 2026-10-19 | PRs #7–#9 merged. Phase 4C: admin pages for IP bans/lists, audit log viewer with integrity check, settings page with SMTP test mail, throttled localized admin notifications (MailKit). |
+| 2026-10-19 | PR #10 merged (MailKit 4.16.0, patched System.Security.Cryptography.Pkcs pinned transitively). Phase 5A: C# code generation from `proto/` (Google.Protobuf), `FrameCodec`, session codes (hashed, single use, limits, expiry), viewer tickets, supporter page `/sessions`. |

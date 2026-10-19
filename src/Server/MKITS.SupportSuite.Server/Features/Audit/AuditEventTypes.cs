@@ -21,4 +21,14 @@ public static class AuditEventTypes
     public const string UserCreated = "user.created";
     public const string UserChanged = "user.changed";
     public const string UserDisabled = "user.disabled";
+
+    public const string SessionCreated = "session.created";
+    public const string SessionAgentConnected = "session.agent_connected";
+    public const string SessionViewerJoined = "session.viewer_joined";
+    public const string SessionViewerLeft = "session.viewer_left";
+    public const string SessionConsent = "session.consent";
+    public const string SessionStarted = "session.started";
+    public const string SessionSuspended = "session.suspended";
+    public const string SessionResumed = "session.resumed";
+    public const string SessionEnded = "session.ended";
 }

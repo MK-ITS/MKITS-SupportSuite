@@ -194,3 +194,22 @@ ul.alert { padding-left: 2rem; }
 dl.settings { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; }
 dl.settings dt { font-weight: 600; color: var(--muted); }
 dl.settings dd { margin: 0; }
+
+/* ---- sessions ---- */
+.code-box {
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.session-code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  margin: 0.5rem 0;
+  user-select: all;
+}
