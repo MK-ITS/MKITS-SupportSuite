@@ -27,3 +27,4 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0017](0017-protocol-serialization.md) | Protocol Buffers for the wire protocol | Accepted |
 | [ADR-0018](0018-e2e-and-recording.md) | End-to-end encryption and session recording | Accepted |
 | [ADR-0019](0019-ad-hoc-client-configuration.md) | Ad-hoc client receives server address and code via file name | Accepted |
+| [ADR-0020](0020-web-ui-blazor.md) | Blazor Web App for the server UI | Accepted |

@@ -10,6 +10,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | .NET 10 runtime / ASP.NET Core | all .NET components | MIT | https://github.com/dotnet/runtime, https://github.com/dotnet/aspnetcore |
 | ASP.NET Core Identity (EF Core stores) | server | MIT | https://github.com/dotnet/aspnetcore |
 | Entity Framework Core + SQLite provider | server | MIT | https://github.com/dotnet/efcore |
+| QRCoder | server (TOTP QR codes) | MIT | https://github.com/codebude/QRCoder |
 | SQLite (via SQLitePCLRaw bundle) | server | Public Domain (SQLite), Apache-2.0 (SQLitePCLRaw) | https://sqlite.org, https://github.com/ericsink/SQLitePCL.raw |
 
 ## Development and test dependencies (not distributed)

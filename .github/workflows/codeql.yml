@@ -29,7 +29,17 @@ jobs:
           queries: security-extended
 
       - name: Build
-        run: dotnet build MKITS.SupportSuite.slnx -c Release
+        run: dotnet build MKITS.SupportSuite.slnx -c Release "-flp:ErrorsOnly;LogFile=build-errors.log"
+
+      - name: Report build errors as annotations
+        if: failure()
+        shell: python
+        run: |
+          import os
+          if os.path.exists("build-errors.log"):
+              for line in sorted(set(open("build-errors.log", encoding="utf-8", errors="replace").read().splitlines())):
+                  if line.strip():
+                      print("::error title=Build error::" + line.strip()[:1500].replace("%", "%25"))
 
       - uses: github/codeql-action/analyze@v4
         with:

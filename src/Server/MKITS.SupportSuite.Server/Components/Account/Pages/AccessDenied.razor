@@ -1,0 +1,12 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/account/access-denied"
+
+<PageTitle>@L["AccessDenied_Title"]</PageTitle>
+
+<section class="card narrow">
+    <h1>@L["AccessDenied_Title"]</h1>
+    <p>@L["AccessDenied_Text"]</p>
+    <AuthorizeView Roles="@Roles.Admin">
+        <p>@L["AccessDenied_TwoFactorHint"] <a href="@LoginCompletion.TwoFactorSetupPath">@L["Manage_TwoFactorLink"]</a></p>
+    </AuthorizeView>
+</section>

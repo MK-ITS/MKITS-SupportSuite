@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) MK-ITSolutions and contributors
 
+using MKITS.SupportSuite.Server.Components;
 using MKITS.SupportSuite.Server.Endpoints;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Identity;
@@ -16,13 +17,17 @@ builder.Services
     .AddMkitsDatabase()
     .AddMkitsAudit()
     .AddMkitsIpBans(builder.Configuration)
-    .AddMkitsIdentity();
+    .AddMkitsIdentity(builder.Environment);
+
+// Web UI (ADR-0020): static SSR by default, interactive server rendering per page.
+builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 var app = builder.Build();
 
 // ---- startup tasks ----
 app.PrepareDataDirectory();
 await app.InitializeDatabaseAsync().ConfigureAwait(false);
+await app.InitializeIdentityAsync().ConfigureAwait(false);
 await app.Services.GetRequiredService<IpBanService>().ReloadAsync().ConfigureAwait(false);
 await app.Services.GetRequiredService<IAuditLog>()
     .WriteAsync(new AuditEntry(AuditEventTypes.ServerStarted, AuditActorType.System))
@@ -32,10 +37,16 @@ await app.Services.GetRequiredService<IAuditLog>()
 app.UseMkitsForwardedHeaders();       // 1. real client IP from trusted proxies
 app.UseMiddleware<IpBanMiddleware>(); // 2. reject banned networks before anything else runs
 app.UseMkitsWebBasics();              // 3. security headers, error handling, localization
+app.UseAuthentication();              // 4. who is it
+app.UseAuthorization();               // 5. may they
+app.UseAntiforgery();                 // 6. CSRF protection for forms
 
 // ---- endpoints ----
 app.MapHealthChecks("/health");
 app.MapSystemEndpoints();
+app.MapAccountEndpoints();
+app.MapStaticAssets();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 await app.RunAsync().ConfigureAwait(false);
 

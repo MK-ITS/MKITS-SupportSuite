@@ -48,7 +48,9 @@ Server
 │   ├── Devices/            groups, permissions, enrollment, device registry        (Phase 10)
 │   ├── Downloads/          agent binaries, ad-hoc file naming, updates             (Phase 6/10)
 │   └── Recordings/         storage, retention, playback                            (Phase 13)
+├── Components/             Blazor UI (ADR-0020): App, Routes, Layout, Pages, Account (static SSR), Admin (interactive)
 ├── Endpoints/              system endpoints (health, version)
+├── wwwroot/                static assets (css)
 └── Resources/              localized UI strings (en, de)
 ```
 

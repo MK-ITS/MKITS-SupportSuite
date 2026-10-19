@@ -12,8 +12,9 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 |---|---|
 | Server container, nginx setup, health/version endpoints, configuration validation | ✅ available |
 | Security headers, trusted reverse proxies, data directory, localization (EN/DE) | ✅ available |
-| First-run setup, users, roles, TOTP 2FA | 🔜 Phase 4 |
-| IP bans, allow/deny lists, e-mail notifications, audit log | 🔜 Phase 4 |
+| First-run setup, login, users, roles, TOTP 2FA, profile/language | ✅ available |
+| IP bans, allow/deny lists (configuration), audit log (recording) | ✅ available |
+| Admin UI for IP bans and audit log, e-mail notifications | 🔜 Phase 4 (next) |
 | Ad-hoc sessions, customer portal, consent, relay | 🔜 Phases 5–6 |
 | Windows agent, browser viewer (chat, files, clipboard, shell) | 🔜 Phases 7–9 (milestone M1) |
 | Device groups, permanent access, installers, auto-update | 🔜 Phase 10 (M2) |
@@ -40,20 +41,24 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 
 **Security model in one sentence:** all traffic runs over HTTPS/WSS 443 through your server, session content is end-to-end encrypted between agent and viewer, so the server cannot read it – except for sessions you explicitly record (announced to all participants).
 
-## 3. First login and two-factor authentication *(planned)*
+## 3. First login and two-factor authentication
 
 1. Create the first Admin with the setup token (installation guide, section 7).
 2. Scan the QR code with an authenticator app (e.g. Microsoft Authenticator, Aegis, 2FAS) and store the **recovery codes** safely.
 3. Choose your interface language (English/German) in the profile. Without a profile setting, the browser language is used.
 
-## 4. Users *(planned)*
+## 4. Users
 
 *Administration → Users*
 
-- **Create user:** user name, e-mail, display name (shown to customers in the consent dialog), role, language.
-- **Reset password / reset 2FA:** forces a new setup at next login; all existing logins of that user are signed out.
+- **Create user:** user name, e-mail, display name (shown to customers in the consent dialog), role, language. The server generates an initial password, which is shown **once** – pass it on securely; the user changes it under *My account*.
+- **Reset password:** generates a new password (shown once) and unlocks the account.
+- **Reset 2FA:** removes the authenticator; Admins are forced to set it up again at the next login. All existing logins of that user are signed out within a minute.
+- **Make admin / make user:** changes the role.
+- You cannot disable or demote yourself, and the last active Admin is protected.
 - **Disable user:** blocks login immediately and ends the user's active sessions. Disabled users keep their audit history.
-- **2FA policy:** mandatory for Admins; can be made mandatory for Users (`Mkits__Security__RequireTwoFactorForUsers=true`).
+- **2FA policy:** mandatory for Admins (admin pages are not accessible without it); Users can enable it under *My account*. Making it mandatory for Users is planned (`Mkits__Security__RequireTwoFactorForUsers`).
+- **Passwords:** at least 12 characters, no composition rules (long passphrases are better). After 10 wrong attempts an account is locked for 15 minutes (in addition to IP bans).
 
 ## 5. Devices and permanent access *(planned)*
 

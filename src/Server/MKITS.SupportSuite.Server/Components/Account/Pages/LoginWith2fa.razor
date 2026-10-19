@@ -1,0 +1,74 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/account/login-2fa"
+@inject SignInManager<MkitsUser> SignInManager
+@inject LoginCompletion Completion
+@inject NavigationManager Navigation
+
+<PageTitle>@L["TwoFactorLogin_Title"]</PageTitle>
+
+<section class="card narrow">
+    <h1>@L["TwoFactorLogin_Title"]</h1>
+    <p>@L["TwoFactorLogin_Intro"]</p>
+    <StatusMessage Kind="error" Text="@_error" />
+
+    <EditForm Model="Input" method="post" OnSubmit="VerifyAsync" FormName="login-2fa" class="form">
+        <label for="code">@L["Field_Code"]</label>
+        <InputText id="code" @bind-Value="Input.Code" autocomplete="one-time-code" inputmode="numeric" required />
+        <button type="submit">@L["TwoFactorLogin_Submit"]</button>
+    </EditForm>
+
+    <p><a href="@($"/account/login-recovery?returnUrl={Uri.EscapeDataString(LocalUrl.Sanitize(ReturnUrl))}")">@L["TwoFactorLogin_UseRecoveryCode"]</a></p>
+</section>
+
+@code {
+    private string? _error;
+    private MkitsUser? _user;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private CodeInput Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private bool RememberMe { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        // Set by the password step; absent or expired → start over.
+        _user = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (_user is null)
+        {
+            Navigation.NavigateTo("/account/login");
+        }
+    }
+
+    private async Task VerifyAsync()
+    {
+        if (_user is null)
+        {
+            return;
+        }
+
+        var code = new string((Input.Code ?? string.Empty).Where(char.IsDigit).ToArray());
+        var result = await SignInManager.TwoFactorAuthenticatorSignInAsync(code, RememberMe, rememberClient: false);
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo(await Completion.SucceededAsync(_user, HttpContext, ReturnUrl, "totp"));
+            return;
+        }
+
+        await Completion.FailedAsync(HttpContext, FailureKinds.TwoFactor, _user.UserName, result.IsLockedOut ? "locked_out" : "wrong_code");
+        _error = result.IsLockedOut ? L["Login_Error_LockedOut"] : L["TwoFactorLogin_Error_Invalid"];
+    }
+
+    private sealed class CodeInput
+    {
+        public string? Code { get; set; }
+    }
+}

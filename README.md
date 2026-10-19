@@ -39,6 +39,7 @@ The server relays end-to-end encrypted streams between agents and viewers. Detai
 ## Building
 
 Requirements: [.NET SDK 10](https://dotnet.microsoft.com/download) (version pinned in `global.json`).
+IDE: **Visual Studio 2026** (workload *ASP.NET and web development*; `.vsconfig` suggests it on opening `MKITS.SupportSuite.slnx`), JetBrains Rider or VS Code with C# Dev Kit.
 
 ```bash
 dotnet build MKITS.SupportSuite.slnx -c Release

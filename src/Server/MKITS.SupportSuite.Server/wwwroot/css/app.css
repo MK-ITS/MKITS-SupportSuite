@@ -1,0 +1,184 @@
+/* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors */
+/* MKITS-SupportSuite – base styles. No inline styles anywhere (strict CSP). Light and dark theme via prefers-color-scheme. */
+
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --text: #1c2430;
+  --muted: #5b6676;
+  --border: #d9dee6;
+  --primary: #0b5cad;
+  --primary-text: #ffffff;
+  --danger-bg: #fdecec;
+  --danger-text: #8a1c1c;
+  --success-bg: #e8f6ec;
+  --success-text: #1b5e2b;
+  --info-bg: #e8f1fb;
+  --info-text: #0b3d73;
+  --radius: 8px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161c;
+    --surface: #1b2129;
+    --text: #e6eaf0;
+    --muted: #9aa5b4;
+    --border: #2e3744;
+    --primary: #4c9be8;
+    --primary-text: #0b1420;
+    --danger-bg: #3a1c1f;
+    --danger-text: #f3b3b3;
+    --success-bg: #17301f;
+    --success-text: #a6e3b4;
+    --info-bg: #162a40;
+    --info-text: #a9cdf2;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+a { color: var(--primary); }
+
+h1:focus { outline: none; }
+
+/* ---- header / footer ---- */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { font-weight: 700; text-decoration: none; color: var(--text); font-size: 1.1rem; }
+.brand span { font-weight: 400; color: var(--muted); margin-left: 0.25rem; }
+
+.topbar nav { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.language a { margin-left: 0.25rem; }
+
+main { flex: 1; padding: 2rem 1rem; }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- cards ---- */
+.card {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card.narrow { max-width: 28rem; }
+.card.wide { max-width: 80rem; }
+
+.lead { font-size: 1.15rem; color: var(--muted); }
+.hint code { font-size: 0.85rem; }
+
+/* ---- forms ---- */
+.form { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.5rem; }
+.form label { font-weight: 600; margin-top: 0.5rem; }
+.form label.checkbox { font-weight: 400; display: flex; gap: 0.5rem; align-items: center; }
+.form.grid { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; align-items: center; }
+.form.grid label { margin: 0; }
+.form.grid button { grid-column: 2; justify-self: start; }
+
+input, select {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button, .button {
+  display: inline-block;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--primary-text);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button.secondary { background: transparent; color: var(--primary); margin: 0.1rem; padding: 0.25rem 0.6rem; font-weight: 500; }
+
+.inline-form { display: inline; margin: 0; }
+.link-button { background: none; border: none; padding: 0; margin: 0; color: var(--primary); font-weight: 400; text-decoration: underline; }
+
+/* ---- messages ---- */
+.alert { padding: 0.75rem 1rem; border-radius: 6px; margin: 0.75rem 0; }
+ul.alert { padding-left: 2rem; }
+.alert-error { background: var(--danger-bg); color: var(--danger-text); }
+.alert-success { background: var(--success-bg); color: var(--success-text); }
+.alert-info { background: var(--info-bg); color: var(--info-text); }
+
+/* ---- tables ---- */
+.table { width: 100%; border-collapse: collapse; margin: 1rem 0 2rem; font-size: 0.95rem; }
+.table th, .table td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table th { color: var(--muted); font-weight: 600; }
+.table td.actions { white-space: nowrap; }
+
+/* ---- two-factor ---- */
+.qr { display: block; background: #ffffff; padding: 0.5rem; border-radius: 6px; }
+.shared-key { font-size: 1.1rem; letter-spacing: 0.05em; }
+.recovery-codes { columns: 2; font-size: 1.05rem; }
+
+/* ---- reconnect modal (driven by blazor.web.js via CSS classes) ---- */
+.reconnect-modal { display: none; }
+.reconnect-modal.components-reconnect-show,
+.reconnect-modal.components-reconnect-failed,
+.reconnect-modal.components-reconnect-rejected {
+  display: block;
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 20%);
+  z-index: 1000;
+}
+.reconnect-modal p { margin: 0; }
+.reconnect-modal .reconnect-failed-text { display: none; }
+.reconnect-modal.components-reconnect-failed .reconnect-text,
+.reconnect-modal.components-reconnect-rejected .reconnect-text { display: none; }
+.reconnect-modal.components-reconnect-failed .reconnect-failed-text,
+.reconnect-modal.components-reconnect-rejected .reconnect-failed-text { display: block; }

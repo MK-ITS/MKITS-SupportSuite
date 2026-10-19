@@ -117,7 +117,7 @@ curl -fsS https://support.example.com/api/system/version
 
 Expected: `Healthy` and a JSON document with product, version and license.
 
-## 7. First administrator *(planned, Phase 4)*
+## 7. First administrator
 
 On first start without any administrator, the server writes a one-time **setup token** to its log:
 

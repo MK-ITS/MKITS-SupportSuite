@@ -1,0 +1,27 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@* Success/info/error box. Renders nothing when Text and Errors are empty. *@
+@if (!string.IsNullOrEmpty(Text))
+{
+    <p class="alert alert-@Kind" role="@(Kind == "error" ? "alert" : "status")">@Text</p>
+}
+@if (Errors is { Count: > 0 })
+{
+    <ul class="alert alert-error" role="alert">
+        @foreach (var error in Errors)
+        {
+            <li>@error</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+
+    /// <summary>"info", "success" or "error".</summary>
+    [Parameter]
+    public string Kind { get; set; } = "info";
+
+    [Parameter]
+    public IReadOnlyList<string>? Errors { get; set; }
+}
