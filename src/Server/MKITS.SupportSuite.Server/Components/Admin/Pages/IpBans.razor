@@ -3,7 +3,7 @@
 @rendermode InteractiveServer
 @using System.Security.Claims
 @using MKITS.SupportSuite.Server.Features.IpBans
-@inject IpBanService IpBans
+@inject IpBanService BanService
 
 <PageTitle>@L["IpBans_Title"]</PageTitle>
 
@@ -142,20 +142,20 @@
 
         var duration = _newBan.Days is > 0 ? TimeSpan.FromDays(_newBan.Days.Value) : (TimeSpan?)null;
         var reason = string.IsNullOrWhiteSpace(_newBan.Reason) ? "manual" : _newBan.Reason.Trim();
-        await IpBans.CreateBanAsync(_newBan.Network!.Trim(), reason, duration, _actorId);
+        await BanService.CreateBanAsync(_newBan.Network!.Trim(), reason, duration, _actorId);
         _newBan = new();
         await DoneAsync();
     }
 
     private async Task LiftAsync(Guid banId)
     {
-        await IpBans.LiftBanAsync(banId, _actorId);
+        await BanService.LiftBanAsync(banId, _actorId);
         await DoneAsync();
     }
 
     private async Task AddEntryAsync()
     {
-        var error = await IpBans.AddListEntryAsync(_newEntry.Network ?? string.Empty, _newEntry.ListType, _newEntry.Comment, _actorId);
+        var error = await BanService.AddListEntryAsync(_newEntry.Network ?? string.Empty, _newEntry.ListType, _newEntry.Comment, _actorId);
         if (error is not null)
         {
             ShowError(error);
@@ -168,7 +168,7 @@
 
     private async Task RemoveEntryAsync(Guid entryId)
     {
-        await IpBans.RemoveListEntryAsync(entryId, _actorId);
+        await BanService.RemoveListEntryAsync(entryId, _actorId);
         await DoneAsync();
     }
 
@@ -187,9 +187,9 @@
 
     private async Task ReloadAsync()
     {
-        _bans = await IpBans.GetActiveBansAsync();
-        _entries = await IpBans.GetListEntriesAsync();
-        _configured = IpBans.GetConfiguredLists();
+        _bans = await BanService.GetActiveBansAsync();
+        _entries = await BanService.GetListEntriesAsync();
+        _configured = BanService.GetConfiguredLists();
     }
 
     private static string Format(DateTimeOffset value) => value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
