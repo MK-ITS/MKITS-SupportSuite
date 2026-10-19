@@ -565,15 +565,16 @@ public sealed partial class SessionHub : IDisposable
                 return;
             }
 
+            // Persist first (raises SessionEnded; its handler waits for the gate and then finds the session closed),
+            // then tell the peers.
+            live.Status = SessionStatus.Ended;
+            await _sessionService.EndBySystemAsync(live.Id, reason, live.BytesRelayed, actorType, actorId, cancellationToken).ConfigureAwait(false);
             CloseLocked(live, reason);
         }
         finally
         {
             live.Gate.Release();
         }
-
-        // Raises SessionEnded, which finds the live session already closed.
-        await _sessionService.EndBySystemAsync(live.Id, reason, live.BytesRelayed, actorType, actorId, cancellationToken).ConfigureAwait(false);
     }
 
     private void CloseLocked(LiveSession live, string reason)
@@ -634,13 +635,15 @@ public sealed partial class SessionHub : IDisposable
 
         live.Status = status;
         live.StatusSince = _timeProvider.GetUtcNow();
+
+        // Persist first, then notify: whoever reacts to the notification sees the stored state.
+        await _sessionService.UpdateStatusAsync(live.Id, status, cancellationToken).ConfigureAwait(false);
+
         var frame = StateFrame(live);
         foreach (var peer in live.Peers())
         {
             peer.Send(frame);
         }
-
-        await _sessionService.UpdateStatusAsync(live.Id, status, cancellationToken).ConfigureAwait(false);
     }
 
     private Task AuditAsync(LiveSession live, string eventType, AuditActorType actorType, string? actorId, PeerConnection peer, CancellationToken cancellationToken) =>

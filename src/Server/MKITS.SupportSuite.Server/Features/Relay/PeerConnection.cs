@@ -33,6 +33,8 @@ public sealed class PeerConnection : IDisposable
 
     private const int InitialReceiveBuffer = 16 * 1024;
 
+    private static readonly TimeSpan CloseHandshakeTimeout = TimeSpan.FromSeconds(5);
+
     private readonly WebSocket _socket;
     private readonly TimeProvider _timeProvider;
     private readonly Channel<byte[]> _outbound = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
@@ -137,13 +139,51 @@ public sealed class PeerConnection : IDisposable
 
             if (_socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
             {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5), _timeProvider);
-                await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, timeout.Token).ConfigureAwait(false);
+                await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, _abort.Token).ConfigureAwait(false);
+            }
+
+            // Closing handshake: give the peer a moment to answer, then drop the connection.
+            if (Volatile.Read(ref _aborted) == 0)
+            {
+                _abort.CancelAfter(CloseHandshakeTimeout);
             }
         }
         catch (OperationCanceledException)
         {
-            // aborted
+            Abort();
+        }
+        catch (WebSocketException)
+        {
+            Abort(); // peer went away
+        }
+    }
+
+    /// <summary>
+    /// After our close frame was sent and nobody reads the socket any more, waits for the peer's close frame
+    /// (bounded by <see cref="CloseHandshakeTimeout"/>), so that queued frames are delivered before the connection ends.
+    /// </summary>
+    public async Task WaitForCloseAsync()
+    {
+        if (_socket.State != WebSocketState.CloseSent || Volatile.Read(ref _aborted) != 0)
+        {
+            return;
+        }
+
+        var buffer = ArrayPool<byte>.Shared.Rent(1024);
+        try
+        {
+            while (_socket.State == WebSocketState.CloseSent)
+            {
+                var result = await _socket.ReceiveAsync(buffer.AsMemory(), _abort.Token).ConfigureAwait(false);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // timeout
         }
         catch (WebSocketException)
         {
@@ -151,7 +191,7 @@ public sealed class PeerConnection : IDisposable
         }
         finally
         {
-            Abort();
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 

@@ -93,6 +93,7 @@ public sealed partial class RelayConnectionHandler(
             peer.Complete();
             await hub.DetachAsync(peer).ConfigureAwait(false);
             await sender.ConfigureAwait(false);
+            await peer.WaitForCloseAsync().ConfigureAwait(false);
         }
     }
 

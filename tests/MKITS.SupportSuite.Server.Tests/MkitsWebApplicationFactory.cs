@@ -48,8 +48,20 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
         if (disposing && Directory.Exists(DataDirectory))
         {
             // Pooled SQLite connections keep the file open (blocks deletion on Windows).
-            SqliteConnection.ClearAllPools();
-            Directory.Delete(DataDirectory, recursive: true);
+            // Background work of the stopped host may release its last connection a moment later (Windows file locks).
+            for (var attempt = 1; ; attempt++)
+            {
+                SqliteConnection.ClearAllPools();
+                try
+                {
+                    Directory.Delete(DataDirectory, recursive: true);
+                    break;
+                }
+                catch (IOException) when (attempt < 10)
+                {
+                    Thread.Sleep(200);
+                }
+            }
         }
     }
 

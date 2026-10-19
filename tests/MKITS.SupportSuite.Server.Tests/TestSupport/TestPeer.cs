@@ -85,7 +85,7 @@ public sealed class TestPeer : IAsyncDisposable
                 {
                     result = await _socket.ReceiveAsync(buffer.AsMemory(length), timeout.Token);
                 }
-                catch (WebSocketException)
+                catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
                 {
                     return null; // connection dropped without a close handshake
                 }
@@ -146,13 +146,13 @@ public sealed class TestPeer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_socket.State == WebSocketState.Open)
+        if (_socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
         {
             try
             {
                 await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
             }
-            catch (WebSocketException)
+            catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
             {
                 // already gone
             }
