@@ -25,9 +25,9 @@ public sealed class MailKitEmailSender(IOptionsMonitor<SmtpOptions> options) : I
         ArgumentNullException.ThrowIfNull(message);
 
         var settings = options.CurrentValue;
-        if (!settings.IsConfigured)
+        if (string.IsNullOrWhiteSpace(settings.Host) || string.IsNullOrWhiteSpace(settings.From))
         {
-            throw new InvalidOperationException("E-mail is not configured (Mkits:Smtp:Host is empty).");
+            throw new InvalidOperationException("E-mail is not configured (Mkits:Smtp:Host or Mkits:Smtp:From is empty).");
         }
 
         using var mime = new MimeMessage();

@@ -19,7 +19,7 @@ public sealed class FakeEmailSender : IEmailSender
 }
 
 /// <summary>Collects notifications instead of delivering them.</summary>
-public sealed class RecordingNotificationQueue : IAdminNotificationQueue
+public sealed class RecordingNotificationOutbox : IAdminNotificationOutbox
 {
     public ConcurrentQueue<AdminNotification> Items { get; } = new();
 

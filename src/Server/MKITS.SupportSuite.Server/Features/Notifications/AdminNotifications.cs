@@ -23,13 +23,13 @@ public sealed record AdminNotification(string SubjectKey, string BodyKey, IReadO
 }
 
 /// <summary>Non-blocking hand-over of notifications; delivery happens in the background.</summary>
-public interface IAdminNotificationQueue
+public interface IAdminNotificationOutbox
 {
     void Enqueue(AdminNotification notification);
 }
 
 /// <summary>Bounded in-memory queue. When full, the oldest notifications are dropped (never blocks callers).</summary>
-public sealed class AdminNotificationQueue : IAdminNotificationQueue
+public sealed class AdminNotificationOutbox : IAdminNotificationOutbox
 {
     private readonly Channel<AdminNotification> _channel = Channel.CreateBounded<AdminNotification>(
         new BoundedChannelOptions(500) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
@@ -45,7 +45,7 @@ public sealed class AdminNotificationQueue : IAdminNotificationQueue
 /// Does nothing (but drains the queue) while e-mail is not configured.
 /// </summary>
 public sealed partial class AdminNotificationDispatcher(
-    AdminNotificationQueue queue,
+    AdminNotificationOutbox queue,
     IServiceScopeFactory scopeFactory,
     IEmailSender emailSender,
     IStringLocalizer<SharedResource> localizer,

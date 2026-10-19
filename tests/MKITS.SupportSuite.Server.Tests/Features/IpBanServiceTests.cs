@@ -19,7 +19,7 @@ public sealed class IpBanServiceTests : IDisposable
     private readonly ManualTimeProvider _time = new();
     private readonly IpBanOptions _options = new();
     private readonly AuditLog _auditLog;
-    private readonly RecordingNotificationQueue _notifications = new();
+    private readonly RecordingNotificationOutbox _notifications = new();
     private readonly IpBanService _service;
 
     public IpBanServiceTests()

@@ -16,8 +16,8 @@ public static class NotificationSetup
         services.AddSingleton<IValidateOptions<SmtpOptions>, SmtpOptionsValidator>();
 
         services.AddSingleton<IEmailSender, MailKitEmailSender>();
-        services.AddSingleton<AdminNotificationQueue>();
-        services.AddSingleton<IAdminNotificationQueue>(provider => provider.GetRequiredService<AdminNotificationQueue>());
+        services.AddSingleton<AdminNotificationOutbox>();
+        services.AddSingleton<IAdminNotificationOutbox>(provider => provider.GetRequiredService<AdminNotificationOutbox>());
         services.AddSingleton<AdminNotificationDispatcher>();
         services.AddHostedService(provider => provider.GetRequiredService<AdminNotificationDispatcher>());
 

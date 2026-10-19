@@ -36,7 +36,7 @@ public sealed partial class IpBanService(
     IAuditLog auditLog,
     TimeProvider timeProvider,
     ILogger<IpBanService> logger,
-    IAdminNotificationQueue? notifications = null)
+    IAdminNotificationOutbox? notifications = null)
 {
     private volatile Snapshot _snapshot = Snapshot.Empty;
     private volatile ConfiguredLists? _configuredLists;
