@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phase 2 done, Phase 3 mostly done (database moves to Phase 4); installation/administration guides available; next: Phase 4 (identity & security)
+- **Status:** Phases 2–3 done; Phase 4A (database, audit log, IP bans) in PR #8; next: Phase 4B (setup, login, TOTP, admin UI)
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -153,19 +153,19 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 ### Phase 3 – Server core
 - [x] 3.6 Security headers (CSP, frame/sniff/referrer policies), no `Server` header
 - [x] 3.1 ASP.NET Core host, validated configuration (appsettings + env), health endpoint incl. data directory check (logging: built-in console logging for now; Serilog not needed yet)
-- [ ] 3.2 EF Core + SQLite (WAL), migrations, repository interfaces → moved to Phase 4 (first schema = Identity)
+- [x] 3.2 EF Core + SQLite → done in 4.0
 - [x] 3.3 Forwarded headers / trusted proxies, configurable ports
 - [x] 3.4 Localization de/en (resource files, per-user UI culture, browser fallback)
 - [x] 3.5 `Dockerfile`, `docker-compose.yml` (server + optional nginx), volumes, sample nginx config (TLS, WebSocket upgrade, timeouts)
 
 ### Phase 4 – Identity & security
-- [ ] 4.0 EF Core + SQLite (WAL), first migration, automatic migration at startup, backup-friendly (from 3.2)
+- [x] 4.0 EF Core + SQLite (WAL), first migration, automatic migration at startup (migrations via `ef-migration.yml`, see docs/development.md)
 - [ ] 4.0a First-run setup token + `/setup` page (docs/security-concept.md §4)
-- [ ] 4.1 User management, roles Guest/User/Admin, ASP.NET Core Identity, password policy
+- [~] 4.1 User management: Identity model, roles, password policy, lockout ✅ – admin UI open (4B)
 - [ ] 4.2 Login/logout, cookie security, CSRF, TOTP 2FA (enrollment, recovery codes)
-- [ ] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR whitelist/blacklist, admin UI, manual unban, SMTP notification
+- [~] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR allow/deny lists (config + DB), middleware, manual ban/unban API ✅ – admin UI and SMTP notification open (4B)
 - [ ] 4.4 Rate limiting: code entry, API, enrollment
-- [ ] 4.5 Audit log (logins, sessions, admin actions, file transfers)
+- [~] 4.5 Audit log: hash-chained store + verification ✅ – events are added by each feature; admin UI open (4B)
 
 ### Phase 5 – Session broker & relay
 - [ ] 5.1 Session codes (supporter-created, expiry, single use)
@@ -275,3 +275,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-17 | Answers Q1–Q17 recorded as ADR-0001…0016; architecture and roadmap updated (SQLite, Docker, both viewers, Wayland in v1, E2E, recording, public GitHub); new questions Q22–Q23 |
 | 2026-10-17 | Phase 1 done: solution skeleton (Common, Server, Agent.Core/Windows/Linux, tests), build rules, CI, docs, ADR files. Replaced the repository's initial GPL-3.0 `LICENSE` with AGPL-3.0. Project `Shared` named `Common` (CA1716: `Shared` is a VB keyword). |
 | 2026-10-17 | Phase 2 done (architecture, protocol + proto schema, session lifecycle, security concept, data model, ADR-0017…0019). Phase 3 infrastructure (options, trusted proxies, data directory, Data Protection, security headers, localization). Compose/nginx templates, GHCR publish workflow, installation + administration guides EN/DE. |
+| 2026-10-18 | Phase 4A: SQLite/EF Core with Identity, hash-chained audit log, IP ban service + middleware, EF migration workflow, docs/development.md. CI now also runs for stacked PRs. |
