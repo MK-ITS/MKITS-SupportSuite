@@ -35,8 +35,9 @@ public sealed class RelayTests : IAsyncLifetime, IDisposable
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<MkitsUser>>();
-        var supporter = new MkitsUser { Id = Guid.NewGuid(), UserName = "supporter", DisplayName = "Sam Supporter" };
-        Assert.True((await users.CreateAsync(supporter, "a long test passphrase")).Succeeded);
+        var supporter = new MkitsUser { Id = Guid.NewGuid(), UserName = "supporter", Email = "supporter@example.test", DisplayName = "Sam Supporter" };
+        var created = await users.CreateAsync(supporter, "a long test passphrase");
+        Assert.True(created.Succeeded, string.Join("; ", created.Errors.Select(e => e.Code)));
         Assert.True((await users.AddToRoleAsync(supporter, Roles.User)).Succeeded);
         _supporterId = supporter.Id;
     }
