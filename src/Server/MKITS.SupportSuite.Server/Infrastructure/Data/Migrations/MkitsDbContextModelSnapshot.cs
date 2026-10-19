@@ -231,6 +231,73 @@ namespace MKITS.SupportSuite.Server.Infrastructure.Data.Migrations
                     b.ToTable("IpListEntries", (string)null);
                 });
 
+            modelBuilder.Entity("MKITS.SupportSuite.Server.Features.Sessions.SupportSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AgentIp")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AgentMachineName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("BytesRelayed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("CodeExpiresAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("CodeHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("BLOB");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CustomerLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("DeviceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("EndedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Recorded")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("StartedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CodeHash");
+
+                    b.HasIndex("OwnerUserId", "CreatedAt");
+
+                    b.HasIndex("Status", "CodeExpiresAt");
+
+                    b.ToTable("Sessions", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -355,6 +422,15 @@ namespace MKITS.SupportSuite.Server.Infrastructure.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("MKITS.SupportSuite.Server.Features.Sessions.SupportSession", b =>
+                {
+                    b.HasOne("MKITS.SupportSuite.Server.Features.Identity.MkitsUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
