@@ -27,6 +27,9 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
     /// <summary>Optional service overrides (e.g. a manual <see cref="TimeProvider"/>), applied after the app's registrations.</summary>
     public Action<IServiceCollection>? ConfigureServices { get; init; }
 
+    /// <summary>Optional configuration values (e.g. <c>Mkits:Sessions:ConsentTimeout</c>).</summary>
+    public IReadOnlyDictionary<string, string>? Settings { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -34,6 +37,10 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("Mkits:DataDirectory", DataDirectory);
         builder.UseSetting("Mkits:PublicBaseUrl", "https://support.example.test");
+        foreach (var (key, value) in Settings ?? new Dictionary<string, string>())
+        {
+            builder.UseSetting(key, value);
+        }
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IStartupFilter, TestRemoteIpStartupFilter>();

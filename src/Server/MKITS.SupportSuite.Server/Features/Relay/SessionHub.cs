@@ -385,6 +385,12 @@ public sealed partial class SessionHub : IDisposable
     {
         viewer.Consent = ViewerConsent.Requested;
         viewer.ConsentRequestedAt = _timeProvider.GetUtcNow();
+
+        if (live.Status != SessionStatus.Active)
+        {
+            await SetStatusLockedAsync(live, SessionStatus.AwaitingConsent, cancellationToken).ConfigureAwait(false);
+        }
+
         live.Agent?.Send(new Frame
         {
             ConsentRequest = new ConsentRequest
@@ -395,11 +401,6 @@ public sealed partial class SessionHub : IDisposable
                 RequestedPermissions = { RequestedPermissions },
             },
         });
-
-        if (live.Status != SessionStatus.Active)
-        {
-            await SetStatusLockedAsync(live, SessionStatus.AwaitingConsent, cancellationToken).ConfigureAwait(false);
-        }
     }
 
     private async Task HandleConsentResponseAsync(LiveSession live, ConsentResponse response, CancellationToken cancellationToken)

@@ -30,7 +30,13 @@ public sealed class RelayTests : IAsyncLifetime, IDisposable
 
     public async Task InitializeAsync()
     {
-        _factory = new MkitsWebApplicationFactory { ConfigureServices = services => services.AddSingleton<TimeProvider>(_time) };
+        _factory = new MkitsWebApplicationFactory
+        {
+            ConfigureServices = services => services.AddSingleton<TimeProvider>(_time),
+
+            // Shorter than the heartbeat timeout, so advancing the clock does not also disconnect the peers.
+            Settings = new Dictionary<string, string> { ["Mkits:Sessions:ConsentTimeout"] = "00:00:10" },
+        };
         _ = _factory.Server; // start the host
 
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -181,7 +187,7 @@ public sealed class RelayTests : IAsyncLifetime, IDisposable
         await using var viewerHandle = viewer;
         await agent.ExpectEventuallyAsync(Frame.BodyOneofCase.ConsentRequest);
 
-        _time.Advance(TimeSpan.FromMinutes(2));
+        _time.Advance(TimeSpan.FromSeconds(11));
         await Hub.TickAsync(CancellationToken.None);
 
         await viewer.ExpectErrorAndCloseAsync(ErrorCodes.ConsentDenied);
