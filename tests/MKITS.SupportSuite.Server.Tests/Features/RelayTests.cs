@@ -18,7 +18,7 @@ using WireStatus = MKITS.SupportSuite.Common.Protocol.V0.SessionStatus;
 namespace MKITS.SupportSuite.Server.Tests.Features;
 
 /// <summary>End-to-end tests of the WebSocket relay: real sockets against the test server.</summary>
-public sealed class RelayTests : IAsyncLifetime
+public sealed class RelayTests : IAsyncLifetime, IDisposable
 {
     private readonly ManualTimeProvider _time = new(DateTimeOffset.UtcNow);
     private MkitsWebApplicationFactory _factory = default!;
@@ -41,11 +41,9 @@ public sealed class RelayTests : IAsyncLifetime
         _supporterId = supporter.Id;
     }
 
-    public Task DisposeAsync()
-    {
-        _factory.Dispose();
-        return Task.CompletedTask;
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    public void Dispose() => _factory?.Dispose();
 
     [Fact]
     public async Task Agent_ValidCode_IsAssigned_WithOperatorName_AndResumeToken()
