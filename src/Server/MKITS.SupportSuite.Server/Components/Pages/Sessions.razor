@@ -1,0 +1,162 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/sessions"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Policies.Supporter)]
+@using System.Security.Claims
+@using Microsoft.Extensions.Options
+@using MKITS.SupportSuite.Common.Sessions
+@using MKITS.SupportSuite.Server.Features.Sessions
+@using MKITS.SupportSuite.Server.Infrastructure.Configuration
+@inject SessionService SessionService
+@inject IAuthorizationService AuthorizationService
+@inject IOptions<MkitsOptions> MkitsOptions
+
+<PageTitle>@L["Sessions_Title"]</PageTitle>
+
+<section class="card wide">
+    <h1>@L["Sessions_Title"]</h1>
+    <p>@L["Sessions_Intro"]</p>
+    <StatusMessage Kind="error" Text="@_error" />
+
+    <h2>@L["Sessions_Create"]</h2>
+    <EditForm Model="_input" OnSubmit="CreateAsync" class="form grid">
+        <label for="session-label">@L["Sessions_Field_Label"]</label>
+        <InputText id="session-label" @bind-Value="_input.Label" maxlength="200" placeholder="@L["Sessions_Field_LabelHint"]" />
+        <button type="submit">@L["Sessions_CreateSubmit"]</button>
+    </EditForm>
+
+    @if (_created is not null)
+    {
+        <div class="code-box" role="status">
+            <p>@L["Sessions_CodeIntro"]</p>
+            <p class="session-code" data-testid="session-code">@SessionCodeFormat.Format(_created.Code)</p>
+            <p>@L["Sessions_CodeInstructions", PortalUrl]</p>
+            <p class="hint">@L["Sessions_CodeValidUntil", Format(_created.ExpiresAt)] @L["Sessions_CodeShownOnce"]</p>
+        </div>
+    }
+
+    <h2>@L["Sessions_List"]</h2>
+    <div class="toolbar">
+        <label><input type="checkbox" @bind="_includeEnded" @bind:after="ReloadAsync" /> @L["Sessions_ShowEnded"]</label>
+        @if (_isAdmin)
+        {
+            <label><input type="checkbox" @bind="_showAll" @bind:after="ReloadAsync" /> @L["Sessions_ShowAll"]</label>
+        }
+        <button type="button" class="secondary" @onclick="ReloadAsync">@L["Sessions_Refresh"]</button>
+    </div>
+
+    @if (_sessions.Count == 0)
+    {
+        <p class="hint">@L["Sessions_None"]</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>@L["Sessions_Column_Created"]</th>
+                    <th>@L["Sessions_Field_Label"]</th>
+                    <th>@L["Sessions_Column_Status"]</th>
+                    <th>@L["Sessions_Column_Machine"]</th>
+                    @if (_showAll)
+                    {
+                        <th>@L["Sessions_Column_Owner"]</th>
+                    }
+                    <th>@L["Common_Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var session in _sessions)
+                {
+                    <tr>
+                        <td>@Format(session.CreatedAt)</td>
+                        <td>@session.CustomerLabel</td>
+                        <td>
+                            @L["Sessions_Status_" + session.Status]
+                            @if (session.EndReason is { } reason)
+                            {
+                                <span class="hint"> (@L["Sessions_EndReason_" + reason])</span>
+                            }
+                        </td>
+                        <td>@session.AgentMachineName</td>
+                        @if (_showAll)
+                        {
+                            <td>@session.OwnerDisplayName</td>
+                        }
+                        <td>
+                            @if (session.Status != SessionStatus.Ended && (session.OwnerUserId == _userId || _isAdmin))
+                            {
+                                <button type="button" class="secondary" @onclick="() => EndAsync(session.Id)">
+                                    @(session.Status == SessionStatus.WaitingForAgent ? L["Sessions_Action_Revoke"] : L["Sessions_Action_End"])
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<SessionSummary> _sessions = [];
+    private CreatedSession? _created;
+    private Guid _userId;
+    private bool _isAdmin;
+    private bool _includeEnded;
+    private bool _showAll;
+    private string? _error;
+    private CreateInput _input = new();
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    private string PortalUrl => MkitsOptions.Value.PublicBaseUrl.TrimEnd('/');
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthenticationState).User;
+        _ = Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out _userId);
+        _isAdmin = (await AuthorizationService.AuthorizeAsync(user, Policies.Admin)).Succeeded;
+        await ReloadAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        var result = await SessionService.CreateAdHocAsync(_userId, _input.Label);
+        if (result.Session is null)
+        {
+            _created = null;
+            _error = L[result.ErrorKey ?? "Error_Generic"];
+            return;
+        }
+
+        _error = null;
+        _created = result.Session;
+        _input = new();
+        await ReloadAsync();
+    }
+
+    private async Task EndAsync(Guid sessionId)
+    {
+        await SessionService.EndAsync(sessionId, _userId, _isAdmin);
+        if (_created?.SessionId == sessionId)
+        {
+            _created = null;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _sessions = await SessionService.ListAsync(_isAdmin && _showAll ? null : _userId, _includeEnded);
+    }
+
+    private static string Format(DateTimeOffset value) => value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+
+    private sealed class CreateInput
+    {
+        public string? Label { get; set; }
+    }
+}

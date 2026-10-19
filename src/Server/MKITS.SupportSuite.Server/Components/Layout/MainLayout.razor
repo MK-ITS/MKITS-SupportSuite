@@ -7,6 +7,7 @@
     <nav aria-label="Main">
         <AuthorizeView>
             <Authorized>
+                <a href="/sessions">@L["Nav_Sessions"]</a>
                 <AuthorizeView Policy="@Policies.Admin" Context="adminContext">
                     <Authorized>
                         <a href="/admin/users">@L["Nav_Users"]</a>

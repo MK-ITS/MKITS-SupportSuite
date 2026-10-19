@@ -79,7 +79,7 @@ Online/offline is **not** stored – it is derived from the live connection regi
 | CreatedByUserId | Guid | |
 | RevokedAt | DateTimeOffset? | |
 
-### SupportSession
+### SupportSession *(table `Sessions`, implemented in Phase 5A)*
 
 | Field | Type | Notes |
 |---|---|---|

@@ -14,7 +14,8 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Sicherheits-Header, vertrauenswürdige Reverse Proxys, Datenverzeichnis, Lokalisierung (DE/EN) | ✅ verfügbar |
 | Ersteinrichtung, Anmeldung, Benutzer, Rollen, Zwei-Faktor (TOTP), Profil/Sprache | ✅ verfügbar |
 | IP-Sperren, Allow-/Deny-Listen, Audit-Log mit Integritätsprüfung, E-Mail-Benachrichtigungen (Admin-Oberfläche) | ✅ verfügbar |
-| Adhoc-Sitzungen, Kundenportal, Zustimmung, Relay | 🔜 Phasen 5–6 |
+| Adhoc-Sitzungscodes (anlegen, auflisten, widerrufen, Ablauf) | ✅ verfügbar |
+| Kundenportal, Zustimmung, Relay | 🔜 Phasen 5–6 |
 | Windows-Agent, Browser-Viewer (Chat, Dateien, Zwischenablage, Shell) | 🔜 Phasen 7–9 (Meilenstein M1) |
 | Gerätegruppen, dauerhafter Zugriff, Installer, Auto-Update | 🔜 Phase 10 (M2) |
 | Linux-Agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
@@ -87,9 +88,11 @@ Tokens werden nur einmal angezeigt, nur als Hash gespeichert und können widerru
 
 Die Geräteliste zeigt Online-Status, Betriebssystem, Agent-Version, zuletzt gesehen und letzte IP. Aktionen: umbenennen, in andere Gruppe verschieben, deaktivieren (blockiert Verbindungen), entfernen (Agent muss neu registriert werden). Agents aktualisieren sich automatisch vom Server (signierte Updates).
 
-## 6. Ablauf Adhoc-Support *(geplant)*
+## 6. Ablauf Adhoc-Support *(teilweise verfügbar)*
 
-1. *Sitzungen → Neue Adhoc-Sitzung*, optional eine Referenz (Ticketnummer) eingeben. Der Code ist 10 Minuten gültig.
+Schritt 1 ist verfügbar (Menü *Sitzungen*); die übrigen Schritte folgen mit Portal, Client und Viewer.
+
+1. *Sitzungen → Neue Ad-hoc-Sitzung*, optional eine Notiz (z. B. Ticketnummer) eingeben und *Sitzungscode erstellen* klicken. Der Code ist 10 Minuten gültig, einmalig verwendbar und wird nur einmal angezeigt. Nicht benötigte Codes können Sie widerrufen.
 2. Den Kunden bitten, `https://support.example.com` zu öffnen und den Code einzugeben.
 3. Der Kunde lädt den Client herunter und startet ihn; dieser zeigt Ihre Serveradresse und Ihren Anzeigenamen und fragt nach der Zustimmung.
 4. Sitzung im Browser öffnen. In sensiblen Fällen den 6-stelligen **Sicherheitscode** am Telefon mit dem Kunden vergleichen – er beweist, dass niemand (auch kein kompromittierter Server) dazwischensitzt.
@@ -157,11 +160,13 @@ Umgebungsvariablen (`Abschnitt__Schlüssel`) haben Vorrang vor Einstellungen aus
 | `Mkits__IpBan__BanDuration` | `7.00:00:00` | ✅ | Sperrdauer (t.hh:mm:ss) |
 | `Mkits__IpBan__IPv6PrefixLength` | `64` | ✅ | IPv6-Zusammenfassung |
 | `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | ✅ | CIDR-Listen (zusätzlich zur Admin-Oberfläche) |
-| `Mkits__Sessions__CodeLength` | `8` | 🔜 | Stellen des Adhoc-Codes (6–12) |
-| `Mkits__Sessions__CodeLifetime` | `00:10:00` | 🔜 | Gültigkeit unbenutzter Codes |
+| `Mkits__Sessions__CodeLength` | `8` | ✅ | Stellen des Adhoc-Codes (6–12) |
+| `Mkits__Sessions__CodeLifetime` | `00:10:00` | ✅ | Gültigkeit unbenutzter Codes |
+| `Mkits__Sessions__MaxActiveCodes` | `50` | ✅ | serverweite Grenze offener Codes (bei 8 Stellen höchstens 1000) |
+| `Mkits__Sessions__MaxActiveCodesPerUser` | `10` | ✅ | offene Codes je Supporter |
 | `Mkits__Sessions__ConsentTimeout` | `00:02:00` | 🔜 | Zeit für die Zustimmung am Gerät |
 | `Mkits__Sessions__SuspendGracePeriod` | `00:01:00` | 🔜 | Wiederverbindungsfenster nach Verbindungsabbruch |
-| `Mkits__Sessions__MaxDuration` | `08:00:00` | 🔜 | maximale Sitzungsdauer |
+| `Mkits__Sessions__MaxDuration` | `08:00:00` | ✅ | maximale Sitzungsdauer |
 | `Mkits__Security__RequireTwoFactorForUsers` | `false` | 🔜 | 2FA auch für User |
 | `Mkits__Smtp__Host`, `__Port` (587), `__Security` (StartTls), `__UserName`, `__Password`, `__From` | – | ✅ | E-Mail (Abschnitt 8); leerer Host = deaktiviert |
 | `Mkits__Smtp__MaxNotificationsPerHour` | `20` | ✅ | Schutz vor Mail-Fluten |

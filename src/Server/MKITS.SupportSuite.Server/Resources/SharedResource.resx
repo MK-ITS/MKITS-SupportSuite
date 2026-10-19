@@ -174,4 +174,45 @@ Reason: {1}
 Banned until (UTC): {2}
 
 You can lift the ban under Administration → IP bans.</value></data>
+  <data name="Nav_Sessions" xml:space="preserve"><value>Sessions</value></data>
+  <data name="Home_StartSupport" xml:space="preserve"><value>Start a support session</value></data>
+  <data name="Sessions_Title" xml:space="preserve"><value>Support sessions</value></data>
+  <data name="Sessions_Intro" xml:space="preserve"><value>Create a session code and give it to your customer, e.g. by phone. The customer enters it on the start page of this server and downloads the support client.</value></data>
+  <data name="Sessions_Create" xml:space="preserve"><value>New ad-hoc session</value></data>
+  <data name="Sessions_Field_Label" xml:space="preserve"><value>Note</value></data>
+  <data name="Sessions_Field_LabelHint" xml:space="preserve"><value>e.g. ticket number or customer name (only visible to supporters)</value></data>
+  <data name="Sessions_CreateSubmit" xml:space="preserve"><value>Create session code</value></data>
+  <data name="Sessions_CodeIntro" xml:space="preserve"><value>Session code for your customer:</value></data>
+  <data name="Sessions_CodeInstructions" xml:space="preserve"><value>The customer opens {0} and enters this code.</value></data>
+  <data name="Sessions_CodeValidUntil" xml:space="preserve"><value>Valid until {0}, single use.</value></data>
+  <data name="Sessions_CodeShownOnce" xml:space="preserve"><value>The code is only shown now – it is not stored in readable form.</value></data>
+  <data name="Sessions_List" xml:space="preserve"><value>Sessions</value></data>
+  <data name="Sessions_ShowEnded" xml:space="preserve"><value>Show ended sessions (last 7 days)</value></data>
+  <data name="Sessions_ShowAll" xml:space="preserve"><value>Show sessions of all supporters</value></data>
+  <data name="Sessions_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Sessions_None" xml:space="preserve"><value>No sessions.</value></data>
+  <data name="Sessions_Column_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Sessions_Column_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Sessions_Column_Machine" xml:space="preserve"><value>Computer</value></data>
+  <data name="Sessions_Column_Owner" xml:space="preserve"><value>Supporter</value></data>
+  <data name="Sessions_Action_Revoke" xml:space="preserve"><value>Revoke code</value></data>
+  <data name="Sessions_Action_End" xml:space="preserve"><value>End session</value></data>
+  <data name="Sessions_Error_TooManyCodes" xml:space="preserve"><value>You have too many open session codes. Revoke unused codes first.</value></data>
+  <data name="Sessions_Error_ServerBusy" xml:space="preserve"><value>The server-wide limit of open session codes is reached. Please try again in a few minutes.</value></data>
+  <data name="Sessions_Status_WaitingForAgent" xml:space="preserve"><value>Waiting for customer</value></data>
+  <data name="Sessions_Status_WaitingForViewer" xml:space="preserve"><value>Customer connected</value></data>
+  <data name="Sessions_Status_AwaitingConsent" xml:space="preserve"><value>Waiting for consent</value></data>
+  <data name="Sessions_Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Sessions_Status_Suspended" xml:space="preserve"><value>Connection interrupted</value></data>
+  <data name="Sessions_Status_Ended" xml:space="preserve"><value>Ended</value></data>
+  <data name="Sessions_EndReason_code_expired" xml:space="preserve"><value>code expired</value></data>
+  <data name="Sessions_EndReason_revoked" xml:space="preserve"><value>code revoked</value></data>
+  <data name="Sessions_EndReason_ended_by_supporter" xml:space="preserve"><value>ended by supporter</value></data>
+  <data name="Sessions_EndReason_ended_by_customer" xml:space="preserve"><value>ended by customer</value></data>
+  <data name="Sessions_EndReason_consent_denied" xml:space="preserve"><value>consent denied</value></data>
+  <data name="Sessions_EndReason_consent_timeout" xml:space="preserve"><value>no answer to consent request</value></data>
+  <data name="Sessions_EndReason_no_viewer" xml:space="preserve"><value>no supporter joined</value></data>
+  <data name="Sessions_EndReason_connection_lost" xml:space="preserve"><value>connection lost</value></data>
+  <data name="Sessions_EndReason_max_duration" xml:space="preserve"><value>maximum duration reached</value></data>
+  <data name="Sessions_EndReason_server_restart" xml:space="preserve"><value>server restarted</value></data>
 </root>

@@ -7,6 +7,7 @@ using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Notifications;
+using MKITS.SupportSuite.Server.Features.Sessions;
 using MKITS.SupportSuite.Server.Infrastructure;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
 
@@ -19,6 +20,7 @@ builder.Services
     .AddMkitsAudit()
     .AddMkitsIpBans(builder.Configuration)
     .AddMkitsNotifications(builder.Configuration)
+    .AddMkitsSessions(builder.Configuration)
     .AddMkitsIdentity(builder.Environment);
 
 // Web UI (ADR-0020): static SSR by default, interactive server rendering per page.
@@ -30,6 +32,7 @@ var app = builder.Build();
 app.PrepareDataDirectory();
 await app.InitializeDatabaseAsync().ConfigureAwait(false);
 await app.InitializeIdentityAsync().ConfigureAwait(false);
+await app.InitializeSessionsAsync().ConfigureAwait(false);
 await app.Services.GetRequiredService<IpBanService>().ReloadAsync().ConfigureAwait(false);
 await app.Services.GetRequiredService<IAuditLog>()
     .WriteAsync(new AuditEntry(AuditEventTypes.ServerStarted, AuditActorType.System))
