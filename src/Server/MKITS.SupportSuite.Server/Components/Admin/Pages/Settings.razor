@@ -1,0 +1,78 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/admin/settings"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using MKITS.SupportSuite.Server.Features.Notifications
+@inject IOptionsMonitor<SmtpOptions> Smtp
+@inject IEmailSender EmailSender
+@inject UserManager<MkitsUser> UserManager
+
+<PageTitle>@L["Settings_Title"]</PageTitle>
+
+<AuthorizeView Policy="@Policies.Admin">
+    <Authorized>
+        <section class="card">
+            <h1>@L["Settings_Title"]</h1>
+            <p class="hint">@L["Settings_Intro"]</p>
+
+            <h2>@L["Settings_Email"]</h2>
+            @if (!Smtp.CurrentValue.IsConfigured)
+            {
+                <StatusMessage Kind="info" Text="@L["Settings_Email_NotConfigured"]" />
+            }
+            else
+            {
+                <dl class="settings">
+                    <dt>Host</dt><dd><code>@Smtp.CurrentValue.Host:@Smtp.CurrentValue.Port</code></dd>
+                    <dt>@L["Settings_Email_Security"]</dt><dd>@Smtp.CurrentValue.Security</dd>
+                    <dt>@L["Settings_Email_From"]</dt><dd>@Smtp.CurrentValue.From</dd>
+                    <dt>@L["Field_UserName"]</dt><dd>@(string.IsNullOrEmpty(Smtp.CurrentValue.UserName) ? "–" : Smtp.CurrentValue.UserName)</dd>
+                    <dt>@L["Settings_Email_Limit"]</dt><dd>@Smtp.CurrentValue.MaxNotificationsPerHour</dd>
+                </dl>
+
+                <StatusMessage Kind="success" Text="@_message" />
+                <StatusMessage Kind="error" Text="@_error" />
+                <button type="button" @onclick="SendTestAsync" disabled="@_sending">@L["Settings_Email_SendTest"]</button>
+            }
+        </section>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private string? _message;
+    private string? _error;
+    private bool _sending;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    private async Task SendTestAsync()
+    {
+        _message = _error = null;
+        var state = await AuthenticationState;
+        var user = await UserManager.GetUserAsync(state.User);
+        if (user?.Email is null)
+        {
+            _error = L["Settings_Email_NoAddress"];
+            return;
+        }
+
+        _sending = true;
+        try
+        {
+            await EmailSender.SendAsync(new EmailMessage(user.Email, L["Settings_Email_TestSubject"], L["Settings_Email_TestBody"]));
+            _message = L["Settings_Email_TestSent", user.Email];
+        }
+        catch (Exception ex) when (ex is MailKit.ProtocolException or MailKit.Net.Smtp.SmtpCommandException or MailKit.Security.AuthenticationException or System.Net.Sockets.SocketException or IOException or InvalidOperationException)
+        {
+            // Show the technical reason to the Admin: it is needed to fix the configuration. The password is never part of it.
+            _error = L["Settings_Email_TestFailed", ex.Message];
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+}

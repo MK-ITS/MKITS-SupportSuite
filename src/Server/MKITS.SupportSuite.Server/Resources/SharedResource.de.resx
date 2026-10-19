@@ -114,4 +114,64 @@
   <data name="Identity_PasswordMismatch" xml:space="preserve"><value>Falsches Passwort.</value></data>
   <data name="Identity_PasswordTooShort" xml:space="preserve"><value>Das Passwort muss mindestens {0} Zeichen lang sein.</value></data>
   <data name="Identity_PasswordRequiresUniqueChars" xml:space="preserve"><value>Das Passwort muss mindestens {0} verschiedene Zeichen enthalten.</value></data>
+  <data name="Nav_IpBans" xml:space="preserve"><value>IP-Sperren</value></data>
+  <data name="Nav_Audit" xml:space="preserve"><value>Audit-Log</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Einstellungen</value></data>
+  <data name="IpBans_Title" xml:space="preserve"><value>IP-Sperren und Listen</value></data>
+  <data name="IpBans_Intro" xml:space="preserve"><value>Netze werden nach wiederholten fehlgeschlagenen Anmeldungen, Setup-Tokens oder Sitzungscodes automatisch gesperrt. Gesperrte Clients erhalten nur ein 403.</value></data>
+  <data name="IpBans_Active" xml:space="preserve"><value>Aktive Sperren</value></data>
+  <data name="IpBans_NoBans" xml:space="preserve"><value>Keine aktiven Sperren.</value></data>
+  <data name="IpBans_Column_Network" xml:space="preserve"><value>Netz</value></data>
+  <data name="IpBans_Column_Reason" xml:space="preserve"><value>Grund</value></data>
+  <data name="IpBans_Column_Created" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="IpBans_Column_Expires" xml:space="preserve"><value>Läuft ab</value></data>
+  <data name="IpBans_Column_List" xml:space="preserve"><value>Liste</value></data>
+  <data name="IpBans_Column_Comment" xml:space="preserve"><value>Kommentar</value></data>
+  <data name="IpBans_Permanent" xml:space="preserve"><value>dauerhaft</value></data>
+  <data name="IpBans_Action_Lift" xml:space="preserve"><value>Sperre aufheben</value></data>
+  <data name="IpBans_Action_Remove" xml:space="preserve"><value>Entfernen</value></data>
+  <data name="IpBans_Create" xml:space="preserve"><value>Netz manuell sperren</value></data>
+  <data name="IpBans_DurationDays" xml:space="preserve"><value>Dauer in Tagen (0 = dauerhaft)</value></data>
+  <data name="IpBans_CreateSubmit" xml:space="preserve"><value>Sperren</value></data>
+  <data name="IpBans_Lists" xml:space="preserve"><value>Allow- und Deny-Listen</value></data>
+  <data name="IpBans_ListsIntro" xml:space="preserve"><value>Allow-Liste: wird nie gesperrt, Fehlversuche werden nicht gezählt. Deny-Liste: wird immer abgewiesen. Einträge aus der Konfiguration können hier nicht geändert werden.</value></data>
+  <data name="IpBans_List_Allow" xml:space="preserve"><value>Allow</value></data>
+  <data name="IpBans_List_Deny" xml:space="preserve"><value>Deny</value></data>
+  <data name="IpBans_FromConfiguration" xml:space="preserve"><value>aus der Konfiguration</value></data>
+  <data name="IpBans_AddEntry" xml:space="preserve"><value>Eintrag hinzufügen</value></data>
+  <data name="IpBans_Error_InvalidNetwork" xml:space="preserve"><value>Ungültige Adresse oder ungültiges Netz. Beispiele: 203.0.113.7, 203.0.113.0/24, 2001:db8::/64</value></data>
+  <data name="IpBans_Error_Duplicate" xml:space="preserve"><value>Dieser Eintrag existiert bereits.</value></data>
+  <data name="Audit_Title" xml:space="preserve"><value>Audit-Log</value></data>
+  <data name="Audit_Filter_Type" xml:space="preserve"><value>Ereignis</value></data>
+  <data name="Audit_Filter_All" xml:space="preserve"><value>Alle</value></data>
+  <data name="Audit_Filter_Text" xml:space="preserve"><value>Suche</value></data>
+  <data name="Audit_Verify" xml:space="preserve"><value>Integrität prüfen</value></data>
+  <data name="Audit_Verify_Ok" xml:space="preserve"><value>Integrität bestätigt: {0} Einträge, Hash-Kette unversehrt.</value></data>
+  <data name="Audit_Verify_Broken" xml:space="preserve"><value>Integritätsprüfung FEHLGESCHLAGEN bei Eintrag {0}: Das Log wurde verändert oder Einträge wurden gelöscht.</value></data>
+  <data name="Audit_Column_Time" xml:space="preserve"><value>Zeit</value></data>
+  <data name="Audit_Column_Event" xml:space="preserve"><value>Ereignis</value></data>
+  <data name="Audit_Column_Actor" xml:space="preserve"><value>Auslöser</value></data>
+  <data name="Audit_Column_Target" xml:space="preserve"><value>Ziel</value></data>
+  <data name="Audit_Column_Details" xml:space="preserve"><value>Details</value></data>
+  <data name="Audit_Page" xml:space="preserve"><value>Seite {0} von {1} ({2} Einträge)</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Einstellungen</value></data>
+  <data name="Settings_Intro" xml:space="preserve"><value>Einstellungen werden über Umgebungsvariablen vorgenommen (siehe Administrationshandbuch). Diese Seite zeigt die wirksamen Werte.</value></data>
+  <data name="Settings_Email" xml:space="preserve"><value>E-Mail-Benachrichtigungen</value></data>
+  <data name="Settings_Email_NotConfigured" xml:space="preserve"><value>E-Mail ist nicht eingerichtet. Setzen Sie Mkits__Smtp__Host und Mkits__Smtp__From, um Benachrichtigungen zu aktivieren.</value></data>
+  <data name="Settings_Email_Security" xml:space="preserve"><value>Verschlüsselung</value></data>
+  <data name="Settings_Email_From" xml:space="preserve"><value>Absender</value></data>
+  <data name="Settings_Email_Limit" xml:space="preserve"><value>Max. Benachrichtigungen pro Stunde</value></data>
+  <data name="Settings_Email_SendTest" xml:space="preserve"><value>Test-E-Mail an mich senden</value></data>
+  <data name="Settings_Email_NoAddress" xml:space="preserve"><value>Ihr Konto hat keine E-Mail-Adresse.</value></data>
+  <data name="Settings_Email_TestSubject" xml:space="preserve"><value>MKITS-SupportSuite: Test-E-Mail</value></data>
+  <data name="Settings_Email_TestBody" xml:space="preserve"><value>Dies ist eine Test-E-Mail Ihres MKITS-SupportSuite-Servers. E-Mail-Benachrichtigungen funktionieren.</value></data>
+  <data name="Settings_Email_TestSent" xml:space="preserve"><value>Test-E-Mail an {0} gesendet.</value></data>
+  <data name="Settings_Email_TestFailed" xml:space="preserve"><value>Versand fehlgeschlagen: {0}</value></data>
+  <data name="Mail_IpBanned_Subject" xml:space="preserve"><value>MKITS-SupportSuite: Netz {0} gesperrt</value></data>
+  <data name="Mail_IpBanned_Body" xml:space="preserve"><value>Das Netz {0} wurde automatisch gesperrt.
+
+Grund: {1}
+Gesperrt bis (UTC): {2}
+
+Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></data>
 </root>

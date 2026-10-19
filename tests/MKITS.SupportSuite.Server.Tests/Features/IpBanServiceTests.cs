@@ -19,6 +19,7 @@ public sealed class IpBanServiceTests : IDisposable
     private readonly ManualTimeProvider _time = new();
     private readonly IpBanOptions _options = new();
     private readonly AuditLog _auditLog;
+    private readonly RecordingNotificationQueue _notifications = new();
     private readonly IpBanService _service;
 
     public IpBanServiceTests()
@@ -26,7 +27,7 @@ public sealed class IpBanServiceTests : IDisposable
         _auditLog = new AuditLog(_database, _time);
         _service = new IpBanService(
             _database, new StaticOptionsMonitor<IpBanOptions>(_options), new FailureTracker(), _auditLog, _time,
-            NullLogger<IpBanService>.Instance);
+            NullLogger<IpBanService>.Instance, _notifications);
     }
 
     public void Dispose()
@@ -152,6 +153,53 @@ public sealed class IpBanServiceTests : IDisposable
         _service.ResetFailures(Attacker);
 
         Assert.False(await _service.RecordFailureAsync(Attacker, FailureKinds.Login));
+        Assert.True(_service.IsAllowed(Attacker));
+    }
+
+    [Fact]
+    public async Task AutomaticBan_NotifiesAdmins_ManualBanDoesNot()
+    {
+        await _service.CreateBanAsync("192.0.2.9", "manual", TimeSpan.FromDays(1), createdByUserId: Guid.NewGuid());
+        Assert.Empty(_notifications.Items);
+
+        await FailManyTimesAsync(Attacker);
+
+        var notification = Assert.Single(_notifications.Items);
+        Assert.Equal("Mail_IpBanned_Subject", notification.SubjectKey);
+        Assert.Equal("203.0.113.7/32", notification.Arguments[0]);
+    }
+
+    [Fact]
+    public async Task ListEntries_AddAndRemove_TakeEffectImmediately()
+    {
+        var admin = Guid.NewGuid();
+
+        Assert.Null(await _service.AddListEntryAsync("192.0.2.0/24", IpListType.Deny, "test", admin));
+        Assert.False(_service.IsAllowed(IPAddress.Parse("192.0.2.10")));
+
+        var entry = Assert.Single(await _service.GetListEntriesAsync());
+        Assert.True(await _service.RemoveListEntryAsync(entry.Id, admin));
+        Assert.True(_service.IsAllowed(IPAddress.Parse("192.0.2.10")));
+        Assert.False(await _service.RemoveListEntryAsync(entry.Id, admin));
+    }
+
+    [Fact]
+    public async Task ListEntries_InvalidOrDuplicate_AreRejected()
+    {
+        var admin = Guid.NewGuid();
+
+        Assert.Equal("IpBans_Error_InvalidNetwork", await _service.AddListEntryAsync("not-a-network", IpListType.Allow, null, admin));
+        Assert.Null(await _service.AddListEntryAsync("198.51.100.4", IpListType.Allow, null, admin));
+        Assert.Equal("IpBans_Error_Duplicate", await _service.AddListEntryAsync("198.51.100.4/32", IpListType.Allow, null, admin));
+    }
+
+    [Fact]
+    public async Task AllowListEntryFromDatabase_PreventsBans()
+    {
+        await _service.AddListEntryAsync("203.0.113.0/24", IpListType.Allow, "office", Guid.NewGuid());
+
+        await FailManyTimesAsync(Attacker);
+
         Assert.True(_service.IsAllowed(Attacker));
     }
 

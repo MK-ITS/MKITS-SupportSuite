@@ -138,13 +138,17 @@ public sealed class AuthenticationFlowTests
         Assert.Contains(AdminUser, await users2.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task AdminPage_Anonymous_RedirectsToLogin()
+    [Theory]
+    [InlineData("/admin/users")]
+    [InlineData("/admin/ip-bans")]
+    [InlineData("/admin/audit")]
+    [InlineData("/admin/settings")]
+    public async Task AdminPage_Anonymous_RedirectsToLogin(string path)
     {
         using var factory = new MkitsWebApplicationFactory();
         using var client = CreateClient(factory);
 
-        using var response = await client.GetAsync(new Uri("/admin/users", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri(path, UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/account/login", HtmlForms.RedirectTarget(response), StringComparison.Ordinal);

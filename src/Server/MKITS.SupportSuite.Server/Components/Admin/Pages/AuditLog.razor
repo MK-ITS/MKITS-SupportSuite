@@ -1,0 +1,115 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/admin/audit"
+@rendermode InteractiveServer
+@using MKITS.SupportSuite.Server.Features.Audit
+@inject AuditLogReader Reader
+@inject IAuditLog Audit
+@inject UserAdministration Users
+
+<PageTitle>@L["Audit_Title"]</PageTitle>
+
+<AuthorizeView Policy="@Policies.Admin">
+    <Authorized>
+        <section class="card wide">
+            <h1>@L["Audit_Title"]</h1>
+
+            <div class="toolbar">
+                <label for="audit-type">@L["Audit_Filter_Type"]</label>
+                <select id="audit-type" @bind="_type" @bind:after="SearchAsync">
+                    <option value="">@L["Audit_Filter_All"]</option>
+                    <option value="auth.">auth.*</option>
+                    <option value="user.">user.*</option>
+                    <option value="ipban.">ipban.*</option>
+                    <option value="iplist.">iplist.*</option>
+                    <option value="session.">session.*</option>
+                    <option value="server.">server.*</option>
+                </select>
+
+                <label for="audit-text">@L["Audit_Filter_Text"]</label>
+                <input id="audit-text" @bind="_text" @bind:event="onchange" @bind:after="SearchAsync" placeholder="IP, ID …" />
+
+                <button type="button" class="secondary" @onclick="VerifyAsync">@L["Audit_Verify"]</button>
+            </div>
+
+            @if (_verification is { } verification)
+            {
+                if (verification.IsValid)
+                {
+                    <StatusMessage Kind="success" Text="@L["Audit_Verify_Ok", verification.CheckedEntries].Value" />
+                }
+                else
+                {
+                    <StatusMessage Kind="error" Text="@L["Audit_Verify_Broken", verification.FirstInvalidId ?? 0].Value" />
+                }
+            }
+
+            <table class="table audit">
+                <thead>
+                    <tr>
+                        <th>@L["Audit_Column_Time"]</th>
+                        <th>@L["Audit_Column_Event"]</th>
+                        <th>@L["Audit_Column_Actor"]</th>
+                        <th>IP</th>
+                        <th>@L["Audit_Column_Target"]</th>
+                        <th>@L["Audit_Column_Details"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in _page.Items)
+                    {
+                        <tr>
+                            <td>@entry.Timestamp.ToLocalTime().ToString("G", CultureInfo.CurrentCulture)</td>
+                            <td><code>@entry.EventType</code></td>
+                            <td>@Actor(entry)</td>
+                            <td>@entry.Ip</td>
+                            <td>@Target(entry)</td>
+                            <td><code class="details">@(entry.Details == "{}" ? string.Empty : entry.Details)</code></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="pager">
+                <button type="button" class="secondary" disabled="@(_page.Page <= 1)" @onclick="() => GoToAsync(_page.Page - 1)">‹</button>
+                <span>@L["Audit_Page", _page.Page, _page.PageCount, _page.TotalCount]</span>
+                <button type="button" class="secondary" disabled="@(_page.Page >= _page.PageCount)" @onclick="() => GoToAsync(_page.Page + 1)">›</button>
+            </div>
+        </section>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private AuditPage _page = new([], 0, 1, 50);
+    private string _type = string.Empty;
+    private string _text = string.Empty;
+    private AuditVerificationResult? _verification;
+    private Dictionary<string, string> _userNames = new(StringComparer.Ordinal);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userNames = (await Users.ListAsync()).ToDictionary(u => u.Id.ToString(), u => u.UserName, StringComparer.Ordinal);
+        await LoadAsync(1);
+    }
+
+    private Task SearchAsync() => LoadAsync(1);
+
+    private Task GoToAsync(int page) => LoadAsync(page);
+
+    private async Task LoadAsync(int page) =>
+        _page = await Reader.QueryAsync(new AuditQuery(_type, _text, page));
+
+    private async Task VerifyAsync() => _verification = await Audit.VerifyAsync();
+
+    private string Actor(AuditEvent entry) =>
+        entry.ActorId is { } id && _userNames.TryGetValue(id, out var name) ? name : entry.ActorId ?? entry.ActorType.ToString();
+
+    private string Target(AuditEvent entry)
+    {
+        if (entry.TargetId is null)
+        {
+            return string.Empty;
+        }
+
+        return entry.TargetType == "user" && _userNames.TryGetValue(entry.TargetId, out var name) ? name : entry.TargetId;
+    }
+}

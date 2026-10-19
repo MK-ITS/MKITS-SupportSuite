@@ -7,6 +7,7 @@ using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Notifications;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
 
 namespace MKITS.SupportSuite.Server.Features.IpBans;
@@ -34,7 +35,8 @@ public sealed partial class IpBanService(
     FailureTracker failureTracker,
     IAuditLog auditLog,
     TimeProvider timeProvider,
-    ILogger<IpBanService> logger)
+    ILogger<IpBanService> logger,
+    IAdminNotificationQueue? notifications = null)
 {
     private volatile Snapshot _snapshot = Snapshot.Empty;
     private volatile ConfiguredLists? _configuredLists;
@@ -178,6 +180,11 @@ public sealed partial class IpBanService(
                 ["expiresAt"] = ban.ExpiresAt?.ToString("O", CultureInfo.InvariantCulture),
             }), cancellationToken).ConfigureAwait(false);
 
+        if (createdByUserId is null)
+        {
+            notifications?.Enqueue(AdminNotification.IpBanned(ban.Network, ban.Reason, ban.ExpiresAt));
+        }
+
         return ban;
     }
 
@@ -217,6 +224,86 @@ public sealed partial class IpBanService(
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Allow/deny entries managed in the admin UI.</summary>
+    public async Task<IReadOnlyList<IpListEntry>> GetListEntriesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.IpListEntries.AsNoTracking()
+            .OrderBy(e => e.ListType).ThenBy(e => e.Network)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Entries from configuration (<c>Mkits:IpBan:AllowList/DenyList</c>); read-only in the UI.</summary>
+    public (IReadOnlyList<string> AllowList, IReadOnlyList<string> DenyList) GetConfiguredLists()
+    {
+        var settings = options.CurrentValue;
+        return ([.. settings.AllowList], [.. settings.DenyList]);
+    }
+
+    /// <summary>Adds an allow or deny entry. Returns a resource key on failure, <c>null</c> on success.</summary>
+    public async Task<string?> AddListEntryAsync(string network, IpListType listType, string? comment, Guid createdByUserId, CancellationToken cancellationToken = default)
+    {
+        if (!IpNetworks.TryParseNetwork(network?.Trim() ?? string.Empty, out var parsed))
+        {
+            return "IpBans_Error_InvalidNetwork";
+        }
+
+        var normalized = parsed.ToString();
+        await using (var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (await db.IpListEntries.AnyAsync(e => e.ListType == listType && e.Network == normalized, cancellationToken).ConfigureAwait(false))
+            {
+                return "IpBans_Error_Duplicate";
+            }
+
+            db.IpListEntries.Add(new IpListEntry
+            {
+                Id = Guid.CreateVersion7(),
+                Network = normalized,
+                ListType = listType,
+                Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim(),
+                CreatedAt = timeProvider.GetUtcNow(),
+                CreatedByUserId = createdByUserId,
+            });
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await ReloadAsync(cancellationToken).ConfigureAwait(false);
+        await AuditListChangeAsync("added", listType, normalized, createdByUserId, cancellationToken).ConfigureAwait(false);
+        return null;
+    }
+
+    /// <summary>Removes an allow or deny entry. Returns <c>false</c> if it does not exist.</summary>
+    public async Task<bool> RemoveListEntryAsync(Guid entryId, Guid removedByUserId, CancellationToken cancellationToken = default)
+    {
+        IpListEntry? entry;
+        await using (var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false))
+        {
+            entry = await db.IpListEntries.FirstOrDefaultAsync(e => e.Id == entryId, cancellationToken).ConfigureAwait(false);
+            if (entry is null)
+            {
+                return false;
+            }
+
+            db.IpListEntries.Remove(entry);
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await ReloadAsync(cancellationToken).ConfigureAwait(false);
+        await AuditListChangeAsync("removed", entry.ListType, entry.Network, removedByUserId, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private Task AuditListChangeAsync(string change, IpListType listType, string network, Guid userId, CancellationToken cancellationToken) =>
+        auditLog.WriteAsync(new AuditEntry(
+            AuditEventTypes.IpListChanged, AuditActorType.User, ActorId: userId.ToString(),
+            TargetType: "network", TargetId: network,
+            Details: new Dictionary<string, string?>
+            {
+                ["change"] = change,
+                ["list"] = listType == IpListType.Allow ? "allow" : "deny",
+            }), cancellationToken);
 
     private bool IsAllowListed(IPAddress ip, Snapshot snapshot, IpBanOptions settings) =>
         ContainsAny(GetConfiguredLists(settings).AllowList, ip) || ContainsAny(snapshot.AllowList, ip);

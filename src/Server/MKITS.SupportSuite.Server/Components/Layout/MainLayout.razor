@@ -10,6 +10,9 @@
                 <AuthorizeView Policy="@Policies.Admin" Context="adminContext">
                     <Authorized>
                         <a href="/admin/users">@L["Nav_Users"]</a>
+                        <a href="/admin/ip-bans">@L["Nav_IpBans"]</a>
+                        <a href="/admin/audit">@L["Nav_Audit"]</a>
+                        <a href="/admin/settings">@L["Nav_Settings"]</a>
                     </Authorized>
                 </AuthorizeView>
                 <a href="/account/manage">@L["Nav_Profile"]</a>
