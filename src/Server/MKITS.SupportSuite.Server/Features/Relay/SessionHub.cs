@@ -10,6 +10,7 @@ using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Sessions;
+using SessionOptions = MKITS.SupportSuite.Server.Features.Sessions.SessionOptions;
 using SessionStatus = MKITS.SupportSuite.Server.Features.Sessions.SessionStatus;
 using WireStatus = MKITS.SupportSuite.Common.Protocol.V0.SessionStatus;
 
