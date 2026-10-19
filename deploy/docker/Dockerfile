@@ -15,6 +15,7 @@ COPY src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj src/C
 COPY src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj src/Server/MKITS.SupportSuite.Server/
 RUN dotnet restore src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj
 
+COPY proto/ proto/
 COPY src/Common/ src/Common/
 COPY src/Server/ src/Server/
 RUN dotnet publish src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj \
