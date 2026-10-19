@@ -7,6 +7,7 @@ using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Notifications;
+using MKITS.SupportSuite.Server.Features.Relay;
 using MKITS.SupportSuite.Server.Features.Sessions;
 using MKITS.SupportSuite.Server.Infrastructure;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
@@ -21,6 +22,7 @@ builder.Services
     .AddMkitsIpBans(builder.Configuration)
     .AddMkitsNotifications(builder.Configuration)
     .AddMkitsSessions(builder.Configuration)
+    .AddMkitsRelay()
     .AddMkitsIdentity(builder.Environment);
 
 // Web UI (ADR-0020): static SSR by default, interactive server rendering per page.
@@ -40,7 +42,8 @@ await app.Services.GetRequiredService<IAuditLog>()
 
 // ---- middleware (order matters) ----
 app.UseMkitsForwardedHeaders();       // 1. real client IP from trusted proxies
-app.UseMiddleware<IpBanMiddleware>(); // 2. reject banned networks before anything else runs
+app.UseMiddleware<IpBanMiddleware>(); // 2. reject banned networks before anything else runs (incl. WebSocket upgrades)
+app.UseWebSockets();                  //    WebSocket support for the relay (/ws/agent, /ws/viewer)
 app.UseMkitsWebBasics();              // 3. security headers, error handling, localization
 app.UseAuthentication();              // 4. who is it
 app.UseAuthorization();               // 5. may they
@@ -50,6 +53,7 @@ app.UseAntiforgery();                 // 6. CSRF protection for forms
 app.MapHealthChecks("/health");
 app.MapSystemEndpoints();
 app.MapAccountEndpoints();
+app.MapRelayEndpoints();
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 

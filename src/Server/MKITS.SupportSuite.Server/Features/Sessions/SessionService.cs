@@ -35,6 +35,17 @@ public sealed record RedeemResult(Guid? SessionId, string? ErrorCode, string? Op
 /// <summary>Machine data reported by an ad-hoc agent (shown to the supporter).</summary>
 public sealed record AgentInfo(string? MachineName, IPAddress? Address);
 
+/// <summary>Raised after a session was ended in the database (by a supporter, an Admin or the system).</summary>
+public sealed class SessionEndedEventArgs(Guid sessionId, string reason) : EventArgs
+{
+    public Guid SessionId { get; } = sessionId;
+
+    public string Reason { get; } = reason;
+}
+
+/// <summary>Persisted facts about a session that the relay needs when a peer attaches.</summary>
+public sealed record SessionFacts(Guid Id, SessionKind Kind, SessionStatus Status, Guid OwnerUserId, string? AgentMachineName);
+
 /// <summary>One row of the session list.</summary>
 public sealed record SessionSummary(
     Guid Id,
@@ -68,6 +79,12 @@ public sealed class SessionService(
     private static readonly TimeSpan ExpiredCodeMemory = TimeSpan.FromDays(1);
 
     private const int MaxLabelLength = 200;
+
+    /// <summary>
+    /// Raised after a session ended, so live connections can be closed (the relay subscribes).
+    /// Handlers must not block; they run on the caller's thread.
+    /// </summary>
+    public event EventHandler<SessionEndedEventArgs>? SessionEnded;
 
     /// <summary>Creates an ad-hoc session with a new code (WaitingForAgent).</summary>
     public async Task<CreateSessionResult> CreateAdHocAsync(Guid ownerUserId, string? customerLabel, CancellationToken cancellationToken = default)
@@ -213,7 +230,76 @@ public sealed class SessionService(
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         await WriteEndedAsync(session, AuditActorType.User, actorUserId.ToString(), cancellationToken).ConfigureAwait(false);
+        OnEnded(session);
         return true;
+    }
+
+    /// <summary>
+    /// Ends a session on behalf of the relay or the system (customer ended it, consent denied, timeouts …),
+    /// storing the relayed byte count. Returns <c>false</c> if it was already ended.
+    /// </summary>
+    public async Task<bool> EndBySystemAsync(
+        Guid sessionId, string reason, long bytesRelayed, AuditActorType actorType = AuditActorType.System, string? actorId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken).ConfigureAwait(false);
+        if (session is null || session.IsEnded)
+        {
+            return false;
+        }
+
+        session.BytesRelayed = Math.Max(session.BytesRelayed, bytesRelayed);
+        MarkEnded(session, reason, timeProvider.GetUtcNow());
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await WriteEndedAsync(session, actorType, actorId, cancellationToken).ConfigureAwait(false);
+        OnEnded(session);
+        return true;
+    }
+
+    /// <summary>
+    /// Stores a state change reported by the relay. Moving to <see cref="SessionStatus.Active"/> sets
+    /// <see cref="SupportSession.StartedAt"/> the first time. Ended sessions are never changed.
+    /// </summary>
+    public async Task UpdateStatusAsync(Guid sessionId, SessionStatus status, CancellationToken cancellationToken = default)
+    {
+        if (status == SessionStatus.Ended)
+        {
+            throw new ArgumentException("Use EndBySystemAsync to end a session.", nameof(status));
+        }
+
+        DateTimeOffset? startedAt = status == SessionStatus.Active ? timeProvider.GetUtcNow() : null;
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        await db.Sessions
+            .Where(s => s.Id == sessionId && s.Status != SessionStatus.Ended)
+            .ExecuteUpdateAsync(
+                update => update
+                    .SetProperty(s => s.Status, status)
+                    .SetProperty(s => s.StartedAt, s => s.StartedAt ?? startedAt),
+                cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Facts for the relay, or <c>null</c> if the session does not exist.</summary>
+    public async Task<SessionFacts?> GetFactsAsync(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.Sessions.AsNoTracking()
+            .Where(s => s.Id == sessionId)
+            .Select(s => new SessionFacts(s.Id, s.Kind, s.Status, s.OwnerUserId, s.AgentMachineName))
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Display name of a user (shown to the customer), or <c>null</c> if the user is unknown or disabled.</summary>
+    public async Task<string?> GetActiveUserDisplayNameAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId && !u.IsDisabled)
+            .Select(u => u.DisplayName)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -288,6 +374,7 @@ public sealed class SessionService(
         foreach (var session in due)
         {
             await WriteEndedAsync(session, AuditActorType.System, null, cancellationToken).ConfigureAwait(false);
+            OnEnded(session);
         }
 
         return due.Count;
@@ -364,6 +451,9 @@ public sealed class SessionService(
             ? (CodeCheckResult.Valid, match.Id, match.OwnerUserId)
             : (CodeCheckResult.Expired, match.Id, match.OwnerUserId);
     }
+
+    private void OnEnded(SupportSession session) =>
+        SessionEnded?.Invoke(this, new SessionEndedEventArgs(session.Id, session.EndReason ?? string.Empty));
 
     private static void MarkEnded(SupportSession session, string reason, DateTimeOffset now)
     {

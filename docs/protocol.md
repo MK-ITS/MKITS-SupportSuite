@@ -1,6 +1,6 @@
 # Wire protocol
 
-> Status: **specification (Phase 2)**, protocol version **0.1**. Normative schema: [`proto/mkits/v0/`](../proto/mkits/v0/).
+> Status: **implemented on the server (Phase 5)**, protocol version **0.2**. Normative schema: [`proto/mkits/v0/`](../proto/mkits/v0/).
 > Versioning rules: [`ProtocolVersion`](../src/Common/MKITS.SupportSuite.Common/Protocol/ProtocolVersion.cs). Serialization decision: ADR-0017. Encryption: ADR-0018.
 
 ## 1. Transport
@@ -45,7 +45,11 @@ peer                                   server
 | `AdHocCode` | ad-hoc agent | session code, machine name, OS info |
 | `DeviceSignature` | permanent agent | device id, ECDSA P-256 signature over `HelloAck.nonce` |
 | `Enrollment` | new permanent agent | enrollment token, device public key, machine info |
-| `ViewerTicket` | viewer | one-time ticket issued by `POST /api/sessions/{id}/viewer-ticket` |
+| `ViewerTicket` | viewer | one-time ticket (60 s) issued by the server to an authorized supporter's web session |
+| `Resume` | agent after a connection loss | `session_id` + the one-time `AuthResult.resume_token` of its previous connection (only while the session is *Suspended*) |
+
+`AuthResult.resume_token` (agents only) is replaced on every successful (re)connect; the server stores only its hash.
+Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within 30 s after `HelloAck`.
 
 ## 4. Control messages (excerpt)
 
@@ -53,7 +57,7 @@ peer                                   server
 |---|---|---|
 | `SessionAssigned` | server → agent | agent bound to a session; includes consent policy and whether recording is active |
 | `ViewerJoined` / `ViewerLeft` | server → agent | supporter (display name, role) joined/left |
-| `ConsentRequest` | server → agent | ask the end user; agent answers `ConsentResponse{granted}` |
+| `ConsentRequest` | server → agent | ask the end user for one viewer (`viewer_id`); agent answers `ConsentResponse{viewer_id, granted}` |
 | `SessionState` | server → peers | state changes (see [session-lifecycle.md](session-lifecycle.md)) |
 | `EndSession` | any → server | end with reason |
 | `KeyExchange` | agent ↔ viewer (relayed) | ephemeral ECDH public keys (see §6) – relayed as control because it precedes encryption |
@@ -72,7 +76,15 @@ peer                                   server
 | 6 | `CHAT` | both | `ChatMessage{author, text, timestamp}` |
 | 7 | `SHELL` | both | `ShellOpen{type, cols, rows, elevated}`, `ShellData`, `ShellResize`, `ShellExit{code}` |
 
-**Flow control (video):** the viewer acknowledges every frame with `FrameAck{sequence}`. The agent keeps at most **N = 3** unacknowledged frames in flight and skips capture otherwise; after a skip it sends the next frame as a keyframe if the gap exceeded 1 s. The relay additionally drops video frames (never other channels) for a viewer whose send buffer exceeds 4 MiB.
+**Routing rules (enforced by the relay):**
+
+- Viewers can send `SessionData` and `KeyExchange` only after the customer granted consent for them; earlier frames are dropped.
+- The relay overwrites `viewer_id` on frames from viewers with the sender's real id (no spoofing).
+- `SessionData` from the agent with an empty `viewer_id` goes to all granted viewers, otherwise to that viewer only.
+- Channel `INPUT` is accepted only from the controlling viewer (the first granted viewer; explicit hand-over follows with the viewer UI).
+- At most 5 viewers per session.
+
+**Flow control (video):** the viewer acknowledges every frame with `FrameAck{sequence}`. The agent keeps at most **N = 3** unacknowledged frames in flight and skips capture otherwise; after a skip it sends the next frame as a keyframe if the gap exceeded 1 s. The relay additionally drops video frames (never other channels) for a peer whose send queue exceeds 4 MiB, and disconnects a peer whose queue exceeds 16 MiB (it cannot keep up).
 
 **Input coordinates** are normalized to `0..65535` per monitor, so viewer scaling never needs agent-side knowledge.
 
@@ -97,4 +109,5 @@ P-256 is chosen over X25519 because it is available in WebCrypto in all supporte
 
 - Unknown fields are ignored (Protobuf default) – allows adding fields in minor versions.
 - Unknown message types and channels are ignored and logged at debug level.
+- Version history: **0.1** initial schema; **0.2** adds `Authenticate.resume`, `AuthResult.resume_token`, `ConsentRequest.viewer_id`, `ConsentResponse.viewer_id`.
 - Peers announce optional features in `Hello.capabilities` (e.g. `video.h264`, `video.jpeg`, `shell.conpty`, `clipboard.files`); features are only used if both sides announce them.

@@ -24,6 +24,9 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
 
     public string DataDirectory { get; } = Path.Combine(Path.GetTempPath(), $"mkits-tests-{Guid.NewGuid():N}");
 
+    /// <summary>Optional service overrides (e.g. a manual <see cref="TimeProvider"/>), applied after the app's registrations.</summary>
+    public Action<IServiceCollection>? ConfigureServices { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -31,7 +34,11 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("Mkits:DataDirectory", DataDirectory);
         builder.UseSetting("Mkits:PublicBaseUrl", "https://support.example.test");
-        builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, TestRemoteIpStartupFilter>());
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IStartupFilter, TestRemoteIpStartupFilter>();
+            ConfigureServices?.Invoke(services);
+        });
     }
 
     protected override void Dispose(bool disposing)

@@ -1,6 +1,6 @@
 # Session lifecycle
 
-> Status: **specification (Phase 2)**. Implemented in Phase 5. Timeouts are defaults and configurable (`Mkits:Sessions:*`).
+> Status: **implemented on the server (Phase 5)**: `Features/Sessions` (persisted state, codes) and `Features/Relay` (live state machine, timeouts). Timeouts are defaults and configurable (`Mkits:Sessions:*`).
 
 ## 1. Session kinds
 
