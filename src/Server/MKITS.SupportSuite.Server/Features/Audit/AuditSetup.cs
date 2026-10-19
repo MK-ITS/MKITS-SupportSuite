@@ -10,6 +10,7 @@ public static class AuditSetup
     {
         // Singleton: one writer lock for the whole process keeps the hash chain linear.
         services.AddSingleton<IAuditLog, AuditLog>();
+        services.AddSingleton<AuditLogReader>();
         return services;
     }
 }

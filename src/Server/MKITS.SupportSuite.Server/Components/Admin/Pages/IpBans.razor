@@ -1,0 +1,215 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/admin/ip-bans"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using MKITS.SupportSuite.Server.Features.IpBans
+@inject IpBanService BanService
+
+<PageTitle>@L["IpBans_Title"]</PageTitle>
+
+<AuthorizeView Policy="@Policies.Admin">
+    <Authorized>
+        <section class="card wide">
+            <h1>@L["IpBans_Title"]</h1>
+            <p>@L["IpBans_Intro"]</p>
+            <StatusMessage Kind="success" Text="@_message" />
+            <StatusMessage Kind="error" Text="@_error" />
+
+            <h2>@L["IpBans_Active"]</h2>
+            @if (_bans.Count == 0)
+            {
+                <p class="hint">@L["IpBans_NoBans"]</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>@L["IpBans_Column_Network"]</th>
+                            <th>@L["IpBans_Column_Reason"]</th>
+                            <th>@L["IpBans_Column_Created"]</th>
+                            <th>@L["IpBans_Column_Expires"]</th>
+                            <th>@L["Common_Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ban in _bans)
+                        {
+                            <tr>
+                                <td><code>@ban.Network</code></td>
+                                <td>@ban.Reason</td>
+                                <td>@Format(ban.CreatedAt)</td>
+                                <td>@(ban.ExpiresAt is { } expires ? Format(expires) : L["IpBans_Permanent"])</td>
+                                <td><button type="button" class="secondary" @onclick="() => LiftAsync(ban.Id)">@L["IpBans_Action_Lift"]</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            <h2>@L["IpBans_Create"]</h2>
+            <EditForm Model="_newBan" OnSubmit="CreateBanAsync" class="form grid" Context="banForm">
+                <label for="ban-network">@L["IpBans_Column_Network"]</label>
+                <InputText id="ban-network" @bind-Value="_newBan.Network" placeholder="203.0.113.7 / 203.0.113.0/24" required />
+
+                <label for="ban-reason">@L["IpBans_Column_Reason"]</label>
+                <InputText id="ban-reason" @bind-Value="_newBan.Reason" />
+
+                <label for="ban-days">@L["IpBans_DurationDays"]</label>
+                <InputNumber id="ban-days" @bind-Value="_newBan.Days" min="0" />
+
+                <button type="submit">@L["IpBans_CreateSubmit"]</button>
+            </EditForm>
+
+            <h2>@L["IpBans_Lists"]</h2>
+            <p class="hint">@L["IpBans_ListsIntro"]</p>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>@L["IpBans_Column_List"]</th>
+                        <th>@L["IpBans_Column_Network"]</th>
+                        <th>@L["IpBans_Column_Comment"]</th>
+                        <th>@L["Common_Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var network in _configured.AllowList)
+                    {
+                        <tr><td>@L["IpBans_List_Allow"]</td><td><code>@network</code></td><td class="hint">@L["IpBans_FromConfiguration"]</td><td></td></tr>
+                    }
+                    @foreach (var network in _configured.DenyList)
+                    {
+                        <tr><td>@L["IpBans_List_Deny"]</td><td><code>@network</code></td><td class="hint">@L["IpBans_FromConfiguration"]</td><td></td></tr>
+                    }
+                    @foreach (var entry in _entries)
+                    {
+                        <tr>
+                            <td>@(entry.ListType == IpListType.Allow ? L["IpBans_List_Allow"] : L["IpBans_List_Deny"])</td>
+                            <td><code>@entry.Network</code></td>
+                            <td>@entry.Comment</td>
+                            <td><button type="button" class="secondary" @onclick="() => RemoveEntryAsync(entry.Id)">@L["IpBans_Action_Remove"]</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <EditForm Model="_newEntry" OnSubmit="AddEntryAsync" class="form grid" Context="entryForm">
+                <label for="entry-list">@L["IpBans_Column_List"]</label>
+                <InputSelect id="entry-list" @bind-Value="_newEntry.ListType">
+                    <option value="@IpListType.Allow">@L["IpBans_List_Allow"]</option>
+                    <option value="@IpListType.Deny">@L["IpBans_List_Deny"]</option>
+                </InputSelect>
+
+                <label for="entry-network">@L["IpBans_Column_Network"]</label>
+                <InputText id="entry-network" @bind-Value="_newEntry.Network" placeholder="192.0.2.0/24" required />
+
+                <label for="entry-comment">@L["IpBans_Column_Comment"]</label>
+                <InputText id="entry-comment" @bind-Value="_newEntry.Comment" />
+
+                <button type="submit">@L["IpBans_AddEntry"]</button>
+            </EditForm>
+        </section>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private IReadOnlyList<IpBan> _bans = [];
+    private IReadOnlyList<IpListEntry> _entries = [];
+    private (IReadOnlyList<string> AllowList, IReadOnlyList<string> DenyList) _configured = ([], []);
+    private Guid _actorId;
+    private string? _message;
+    private string? _error;
+    private NewBanInput _newBan = new();
+    private NewEntryInput _newEntry = new();
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationState;
+        _ = Guid.TryParse(state.User.FindFirstValue(ClaimTypes.NameIdentifier), out _actorId);
+        await ReloadAsync();
+    }
+
+    private async Task CreateBanAsync()
+    {
+        if (!IpNetworks.TryParseNetwork(_newBan.Network?.Trim() ?? string.Empty, out _))
+        {
+            ShowError("IpBans_Error_InvalidNetwork");
+            return;
+        }
+
+        var duration = _newBan.Days is > 0 ? TimeSpan.FromDays(_newBan.Days.Value) : (TimeSpan?)null;
+        var reason = string.IsNullOrWhiteSpace(_newBan.Reason) ? "manual" : _newBan.Reason.Trim();
+        await BanService.CreateBanAsync(_newBan.Network!.Trim(), reason, duration, _actorId);
+        _newBan = new();
+        await DoneAsync();
+    }
+
+    private async Task LiftAsync(Guid banId)
+    {
+        await BanService.LiftBanAsync(banId, _actorId);
+        await DoneAsync();
+    }
+
+    private async Task AddEntryAsync()
+    {
+        var error = await BanService.AddListEntryAsync(_newEntry.Network ?? string.Empty, _newEntry.ListType, _newEntry.Comment, _actorId);
+        if (error is not null)
+        {
+            ShowError(error);
+            return;
+        }
+
+        _newEntry = new();
+        await DoneAsync();
+    }
+
+    private async Task RemoveEntryAsync(Guid entryId)
+    {
+        await BanService.RemoveListEntryAsync(entryId, _actorId);
+        await DoneAsync();
+    }
+
+    private async Task DoneAsync()
+    {
+        _error = null;
+        _message = L["Users_Done"];
+        await ReloadAsync();
+    }
+
+    private void ShowError(string key)
+    {
+        _message = null;
+        _error = L[key];
+    }
+
+    private async Task ReloadAsync()
+    {
+        _bans = await BanService.GetActiveBansAsync();
+        _entries = await BanService.GetListEntriesAsync();
+        _configured = BanService.GetConfiguredLists();
+    }
+
+    private static string Format(DateTimeOffset value) => value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+
+    private sealed class NewBanInput
+    {
+        public string? Network { get; set; }
+
+        public string? Reason { get; set; }
+
+        /// <summary>0 or empty = permanent.</summary>
+        public int? Days { get; set; } = 7;
+    }
+
+    private sealed class NewEntryInput
+    {
+        public IpListType ListType { get; set; } = IpListType.Allow;
+
+        public string? Network { get; set; }
+
+        public string? Comment { get; set; }
+    }
+}

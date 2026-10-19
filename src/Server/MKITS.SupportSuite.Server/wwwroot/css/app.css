@@ -182,3 +182,15 @@ ul.alert { padding-left: 2rem; }
 .reconnect-modal.components-reconnect-rejected .reconnect-text { display: none; }
 .reconnect-modal.components-reconnect-failed .reconnect-failed-text,
 .reconnect-modal.components-reconnect-rejected .reconnect-failed-text { display: block; }
+
+/* ---- admin: toolbar, pager, settings ---- */
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 1rem 0; }
+.toolbar label { font-weight: 600; }
+.toolbar button { margin-top: 0; }
+.pager { display: flex; gap: 1rem; align-items: center; justify-content: center; }
+.pager button { margin: 0; }
+.table.audit { font-size: 0.85rem; }
+.table.audit code.details { white-space: pre-wrap; word-break: break-word; font-size: 0.8rem; color: var(--muted); }
+dl.settings { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; }
+dl.settings dt { font-weight: 600; color: var(--muted); }
+dl.settings dd { margin: 0; }

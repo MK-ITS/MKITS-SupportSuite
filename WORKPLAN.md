@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 2–3 done; Phase 4A in PR #8, Phase 4B (Blazor UI: setup, login, TOTP, users) in PR #9; next: admin UI for IP bans + audit log, e-mail notifications
+- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; next: Phase 5 (session broker & relay)
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -165,9 +165,9 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [x] 4.0a First-run setup token + `/setup` page (docs/security-concept.md §4)
 - [x] 4.1 User management: Identity model, roles, password policy, lockout, admin UI (`/admin/users`, self-/last-admin protection)
 - [x] 4.2 Login/logout, cookie security (`__Host-`, SameSite=Strict), CSRF, TOTP 2FA (QR, recovery codes, mandatory for Admins), profile + language
-- [~] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR allow/deny lists (config + DB), middleware, manual ban/unban API ✅ – admin UI and SMTP notification open (4B)
-- [ ] 4.4 Rate limiting: code entry, API, enrollment
-- [~] 4.5 Audit log: hash-chained store + verification ✅ – events are added by each feature; admin UI open (4B)
+- [x] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR allow/deny lists (config + DB), middleware, admin UI (`/admin/ip-bans`), SMTP notification (throttled, localized)
+- [~] 4.4 Rate limiting: nginx limits for auth/setup/code endpoints ✅; in-app limits follow with the session-code and enrollment endpoints (Phases 5/10)
+- [x] 4.5 Audit log: hash-chained store + verification, admin UI (`/admin/audit`, filter, paging, integrity check); events are added by each feature. CSV export open
 
 ### Phase 5 – Session broker & relay
 - [ ] 5.1 Session codes (supporter-created, expiry, single use)
@@ -279,3 +279,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-17 | Phase 2 done (architecture, protocol + proto schema, session lifecycle, security concept, data model, ADR-0017…0019). Phase 3 infrastructure (options, trusted proxies, data directory, Data Protection, security headers, localization). Compose/nginx templates, GHCR publish workflow, installation + administration guides EN/DE. |
 | 2026-10-18 | Phase 4A: SQLite/EF Core with Identity, hash-chained audit log, IP ban service + middleware, EF migration workflow, docs/development.md. CI now also runs for stacked PRs. |
 | 2026-10-18 | Phase 4B: Blazor UI (ADR-0020) with setup token, login, TOTP, recovery codes, profile/language, user administration; nginx header inheritance bug fixed (X-Forwarded-For was lost in locations); .vsconfig for Visual Studio 2026. |
+| 2026-10-19 | PRs #7–#9 merged. Phase 4C: admin pages for IP bans/lists, audit log viewer with integrity check, settings page with SMTP test mail, throttled localized admin notifications (MailKit). |

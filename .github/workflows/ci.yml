@@ -33,7 +33,7 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore MKITS.SupportSuite.slnx
+        run: dotnet restore MKITS.SupportSuite.slnx "-flp:ErrorsOnly;LogFile=build-errors.log"
 
       - name: Check formatting
         if: runner.os == 'Linux'

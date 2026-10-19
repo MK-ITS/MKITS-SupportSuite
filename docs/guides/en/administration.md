@@ -13,8 +13,7 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Server container, nginx setup, health/version endpoints, configuration validation | ✅ available |
 | Security headers, trusted reverse proxies, data directory, localization (EN/DE) | ✅ available |
 | First-run setup, login, users, roles, TOTP 2FA, profile/language | ✅ available |
-| IP bans, allow/deny lists (configuration), audit log (recording) | ✅ available |
-| Admin UI for IP bans and audit log, e-mail notifications | 🔜 Phase 4 (next) |
+| IP bans, allow/deny lists, audit log with integrity check, e-mail notifications (admin UI) | ✅ available |
 | Ad-hoc sessions, customer portal, consent, relay | 🔜 Phases 5–6 |
 | Windows agent, browser viewer (chat, files, clipboard, shell) | 🔜 Phases 7–9 (milestone M1) |
 | Device groups, permanent access, installers, auto-update | 🔜 Phase 10 (M2) |
@@ -99,11 +98,11 @@ The device list shows online status, OS, agent version, last seen and last IP. A
 
 ## 7. Security administration
 
-### 7.1 IP bans *(planned)*
+### 7.1 IP bans
 
 Failed logins, wrong 2FA codes, wrong session codes, invalid enrollment tokens and invalid device signatures are counted per IP address (IPv6 per /64 network). Defaults: **5 failures within 10 minutes → blocked for 7 days.**
 
-*Administration → Security → IP bans*: view active bans, lift a ban, create a manual ban, export.
+*IP bans* (top navigation): view active bans, lift a ban, ban a network manually (duration in days, 0 = permanent), manage allow and deny entries. Entries from the configuration are shown read-only.
 
 - **Allow list:** networks that are never banned (e.g. your office). Do not add networks you do not control.
 - **Deny list:** networks that are always rejected.
@@ -122,9 +121,9 @@ The server only accepts client IP addresses from the proxies configured in `Mkit
 - Keep the host updated (`unattended-upgrades`) and update MKITS promptly.
 - Back up the data volume daily; protect backups (they contain keys).
 
-## 8. E-mail notifications *(planned)*
+## 8. E-mail notifications
 
-*Administration → Settings → E-mail*, or via environment variables:
+Configured via environment variables; *Settings* (top navigation) shows the effective values and sends a test e-mail to you:
 
 ```ini
 Mkits__Smtp__Host=smtp.example.com
@@ -135,12 +134,12 @@ Mkits__Smtp__Password=…               # better: Docker secret / .env with chmo
 Mkits__Smtp__From=MKITS Support <mkits@example.com>
 ```
 
-Notifications: IP bans, new devices pending approval, failed integrity check, server update available.
+Notifications are sent to every active Admin with an e-mail address, in the Admin's UI language. Currently: automatic IP bans. Planned: new devices pending approval, failed integrity check, server update available. At most `Mkits__Smtp__MaxNotificationsPerHour` (default 20) e-mails per hour are sent, so an attack cannot flood your mailbox.
 
-## 9. Audit log and recordings *(planned)*
+## 9. Audit log and recordings
 
-- *Administration → Audit log*: filter by time, user, device, event type, IP. Export as CSV/JSON. The log is hash-chained; *Verify integrity* detects modified or deleted entries.
-- *Administration → Recordings*: play back, download or delete recordings. Playback is audited. Recordings are deleted automatically after the retention period.
+- *Audit log* (top navigation): filter by event type and free text (IP, IDs, details), newest first, 50 per page. The log is hash-chained; *Verify integrity* detects modified or deleted entries. *(CSV/JSON export: planned.)*
+- *Recordings* *(planned)*: play back, download or delete recordings. Playback is audited. Recordings are deleted automatically after the retention period.
 
 ## 10. Settings reference
 
@@ -153,18 +152,19 @@ Environment variables (`Section__Key`) override settings from the admin UI. ✅ 
 | `Mkits__ReverseProxy__KnownProxies__N` | – | ✅ | trusted proxy IPs |
 | `Mkits__ReverseProxy__KnownNetworks__N` | – | ✅ | trusted proxy networks (CIDR) |
 | `Mkits__ReverseProxy__ForwardLimit` | `1` | ✅ | proxy hops |
-| `Mkits__IpBan__MaxFailures` | `5` | 🔜 | failures before a ban |
-| `Mkits__IpBan__Window` | `00:10:00` | 🔜 | counting window |
-| `Mkits__IpBan__BanDuration` | `7.00:00:00` | 🔜 | ban length (d.hh:mm:ss) |
-| `Mkits__IpBan__IPv6PrefixLength` | `64` | 🔜 | IPv6 aggregation |
-| `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | 🔜 | CIDR lists (in addition to the admin UI) |
+| `Mkits__IpBan__MaxFailures` | `5` | ✅ | failures before a ban |
+| `Mkits__IpBan__Window` | `00:10:00` | ✅ | counting window |
+| `Mkits__IpBan__BanDuration` | `7.00:00:00` | ✅ | ban length (d.hh:mm:ss) |
+| `Mkits__IpBan__IPv6PrefixLength` | `64` | ✅ | IPv6 aggregation |
+| `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | ✅ | CIDR lists (in addition to the admin UI) |
 | `Mkits__Sessions__CodeLength` | `8` | 🔜 | digits of ad-hoc codes (6–12) |
 | `Mkits__Sessions__CodeLifetime` | `00:10:00` | 🔜 | validity of unused codes |
 | `Mkits__Sessions__ConsentTimeout` | `00:02:00` | 🔜 | time for the end user to approve |
 | `Mkits__Sessions__SuspendGracePeriod` | `00:01:00` | 🔜 | reconnect window after connection loss |
 | `Mkits__Sessions__MaxDuration` | `08:00:00` | 🔜 | maximum session length |
 | `Mkits__Security__RequireTwoFactorForUsers` | `false` | 🔜 | 2FA also for Users |
-| `Mkits__Smtp__*` | – | 🔜 | e-mail (section 8) |
+| `Mkits__Smtp__Host`, `__Port` (587), `__Security` (StartTls), `__UserName`, `__Password`, `__From` | – | ✅ | e-mail (section 8); empty Host = disabled |
+| `Mkits__Smtp__MaxNotificationsPerHour` | `20` | ✅ | flood protection |
 | `Mkits__Retention__AuditLogDays` | `365` | 🔜 | audit log retention |
 | `Mkits__Retention__RecordingDays` | `30` | 🔜 | recording retention |
 | `Mkits__Retention__FailedAttemptDays` | `30` | 🔜 | failed-attempt records |

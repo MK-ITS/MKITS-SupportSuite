@@ -114,4 +114,64 @@
   <data name="Identity_PasswordMismatch" xml:space="preserve"><value>Incorrect password.</value></data>
   <data name="Identity_PasswordTooShort" xml:space="preserve"><value>The password must be at least {0} characters long.</value></data>
   <data name="Identity_PasswordRequiresUniqueChars" xml:space="preserve"><value>The password must contain at least {0} different characters.</value></data>
+  <data name="Nav_IpBans" xml:space="preserve"><value>IP bans</value></data>
+  <data name="Nav_Audit" xml:space="preserve"><value>Audit log</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="IpBans_Title" xml:space="preserve"><value>IP bans and lists</value></data>
+  <data name="IpBans_Intro" xml:space="preserve"><value>Networks are banned automatically after repeated failed logins, setup tokens or session codes. Banned clients get a bare 403.</value></data>
+  <data name="IpBans_Active" xml:space="preserve"><value>Active bans</value></data>
+  <data name="IpBans_NoBans" xml:space="preserve"><value>No active bans.</value></data>
+  <data name="IpBans_Column_Network" xml:space="preserve"><value>Network</value></data>
+  <data name="IpBans_Column_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="IpBans_Column_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="IpBans_Column_Expires" xml:space="preserve"><value>Expires</value></data>
+  <data name="IpBans_Column_List" xml:space="preserve"><value>List</value></data>
+  <data name="IpBans_Column_Comment" xml:space="preserve"><value>Comment</value></data>
+  <data name="IpBans_Permanent" xml:space="preserve"><value>permanent</value></data>
+  <data name="IpBans_Action_Lift" xml:space="preserve"><value>Lift ban</value></data>
+  <data name="IpBans_Action_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="IpBans_Create" xml:space="preserve"><value>Ban a network manually</value></data>
+  <data name="IpBans_DurationDays" xml:space="preserve"><value>Duration in days (0 = permanent)</value></data>
+  <data name="IpBans_CreateSubmit" xml:space="preserve"><value>Ban</value></data>
+  <data name="IpBans_Lists" xml:space="preserve"><value>Allow and deny lists</value></data>
+  <data name="IpBans_ListsIntro" xml:space="preserve"><value>Allow list: never banned, failures are not counted. Deny list: always rejected. Entries from the configuration cannot be changed here.</value></data>
+  <data name="IpBans_List_Allow" xml:space="preserve"><value>Allow</value></data>
+  <data name="IpBans_List_Deny" xml:space="preserve"><value>Deny</value></data>
+  <data name="IpBans_FromConfiguration" xml:space="preserve"><value>from configuration</value></data>
+  <data name="IpBans_AddEntry" xml:space="preserve"><value>Add entry</value></data>
+  <data name="IpBans_Error_InvalidNetwork" xml:space="preserve"><value>Invalid address or network. Examples: 203.0.113.7, 203.0.113.0/24, 2001:db8::/64</value></data>
+  <data name="IpBans_Error_Duplicate" xml:space="preserve"><value>This entry already exists.</value></data>
+  <data name="Audit_Title" xml:space="preserve"><value>Audit log</value></data>
+  <data name="Audit_Filter_Type" xml:space="preserve"><value>Event</value></data>
+  <data name="Audit_Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Audit_Filter_Text" xml:space="preserve"><value>Search</value></data>
+  <data name="Audit_Verify" xml:space="preserve"><value>Verify integrity</value></data>
+  <data name="Audit_Verify_Ok" xml:space="preserve"><value>Integrity verified: {0} entries, hash chain intact.</value></data>
+  <data name="Audit_Verify_Broken" xml:space="preserve"><value>Integrity check FAILED at entry {0}: the log has been modified or entries were deleted.</value></data>
+  <data name="Audit_Column_Time" xml:space="preserve"><value>Time</value></data>
+  <data name="Audit_Column_Event" xml:space="preserve"><value>Event</value></data>
+  <data name="Audit_Column_Actor" xml:space="preserve"><value>Actor</value></data>
+  <data name="Audit_Column_Target" xml:space="preserve"><value>Target</value></data>
+  <data name="Audit_Column_Details" xml:space="preserve"><value>Details</value></data>
+  <data name="Audit_Page" xml:space="preserve"><value>Page {0} of {1} ({2} entries)</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_Intro" xml:space="preserve"><value>Settings are configured with environment variables (see administration guide). This page shows the effective values.</value></data>
+  <data name="Settings_Email" xml:space="preserve"><value>E-mail notifications</value></data>
+  <data name="Settings_Email_NotConfigured" xml:space="preserve"><value>E-mail is not configured. Set Mkits__Smtp__Host and Mkits__Smtp__From to enable notifications.</value></data>
+  <data name="Settings_Email_Security" xml:space="preserve"><value>Encryption</value></data>
+  <data name="Settings_Email_From" xml:space="preserve"><value>Sender</value></data>
+  <data name="Settings_Email_Limit" xml:space="preserve"><value>Max. notifications per hour</value></data>
+  <data name="Settings_Email_SendTest" xml:space="preserve"><value>Send test e-mail to me</value></data>
+  <data name="Settings_Email_NoAddress" xml:space="preserve"><value>Your account has no e-mail address.</value></data>
+  <data name="Settings_Email_TestSubject" xml:space="preserve"><value>MKITS-SupportSuite: test e-mail</value></data>
+  <data name="Settings_Email_TestBody" xml:space="preserve"><value>This is a test e-mail from your MKITS-SupportSuite server. E-mail notifications work.</value></data>
+  <data name="Settings_Email_TestSent" xml:space="preserve"><value>Test e-mail sent to {0}.</value></data>
+  <data name="Settings_Email_TestFailed" xml:space="preserve"><value>Sending failed: {0}</value></data>
+  <data name="Mail_IpBanned_Subject" xml:space="preserve"><value>MKITS-SupportSuite: network {0} banned</value></data>
+  <data name="Mail_IpBanned_Body" xml:space="preserve"><value>The network {0} was banned automatically.
+
+Reason: {1}
+Banned until (UTC): {2}
+
+You can lift the ban under Administration → IP bans.</value></data>
 </root>

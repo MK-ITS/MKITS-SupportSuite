@@ -13,8 +13,7 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Server-Container, nginx-Einrichtung, Health-/Versions-Endpunkt, Konfigurationsprüfung | ✅ verfügbar |
 | Sicherheits-Header, vertrauenswürdige Reverse Proxys, Datenverzeichnis, Lokalisierung (DE/EN) | ✅ verfügbar |
 | Ersteinrichtung, Anmeldung, Benutzer, Rollen, Zwei-Faktor (TOTP), Profil/Sprache | ✅ verfügbar |
-| IP-Sperren, Allow-/Deny-Listen (Konfiguration), Audit-Log (Aufzeichnung) | ✅ verfügbar |
-| Admin-Oberfläche für IP-Sperren und Audit-Log, E-Mail-Benachrichtigungen | 🔜 Phase 4 (als Nächstes) |
+| IP-Sperren, Allow-/Deny-Listen, Audit-Log mit Integritätsprüfung, E-Mail-Benachrichtigungen (Admin-Oberfläche) | ✅ verfügbar |
 | Adhoc-Sitzungen, Kundenportal, Zustimmung, Relay | 🔜 Phasen 5–6 |
 | Windows-Agent, Browser-Viewer (Chat, Dateien, Zwischenablage, Shell) | 🔜 Phasen 7–9 (Meilenstein M1) |
 | Gerätegruppen, dauerhafter Zugriff, Installer, Auto-Update | 🔜 Phase 10 (M2) |
@@ -99,11 +98,11 @@ Die Geräteliste zeigt Online-Status, Betriebssystem, Agent-Version, zuletzt ges
 
 ## 7. Sicherheitsverwaltung
 
-### 7.1 IP-Sperren *(geplant)*
+### 7.1 IP-Sperren
 
 Fehlgeschlagene Anmeldungen, falsche 2FA-Codes, falsche Sitzungscodes, ungültige Registrierungs-Tokens und ungültige Gerätesignaturen werden je IP-Adresse gezählt (IPv6 je /64-Netz). Standard: **5 Fehlversuche innerhalb von 10 Minuten → 7 Tage gesperrt.**
 
-*Administration → Sicherheit → IP-Sperren*: aktive Sperren ansehen, Sperre aufheben, manuelle Sperre anlegen, exportieren.
+*IP-Sperren* (obere Navigation): aktive Sperren ansehen, Sperre aufheben, Netz manuell sperren (Dauer in Tagen, 0 = dauerhaft), Allow- und Deny-Einträge pflegen. Einträge aus der Konfiguration werden schreibgeschützt angezeigt.
 
 - **Allow-Liste:** Netze, die nie gesperrt werden (z. B. Ihr Büro). Keine Netze eintragen, die Sie nicht kontrollieren.
 - **Deny-Liste:** Netze, die immer abgewiesen werden.
@@ -122,9 +121,9 @@ Der Server übernimmt Client-IP-Adressen nur von den in `Mkits__ReverseProxy__*`
 - Host aktuell halten (`unattended-upgrades`) und MKITS zeitnah aktualisieren.
 - Datenvolume täglich sichern; Sicherungen schützen (sie enthalten Schlüssel).
 
-## 8. E-Mail-Benachrichtigungen *(geplant)*
+## 8. E-Mail-Benachrichtigungen
 
-*Administration → Einstellungen → E-Mail* oder per Umgebungsvariablen:
+Einrichtung über Umgebungsvariablen; *Einstellungen* (obere Navigation) zeigt die wirksamen Werte und sendet Ihnen eine Test-E-Mail:
 
 ```ini
 Mkits__Smtp__Host=smtp.example.com
@@ -135,12 +134,12 @@ Mkits__Smtp__Password=…               # besser: Docker-Secret / .env mit chmod
 Mkits__Smtp__From=MKITS Support <mkits@example.com>
 ```
 
-Benachrichtigungen: IP-Sperren, neue Geräte warten auf Freigabe, fehlgeschlagene Integritätsprüfung, Server-Update verfügbar.
+Benachrichtigungen gehen an jeden aktiven Admin mit E-Mail-Adresse, in dessen Oberflächensprache. Derzeit: automatische IP-Sperren. Geplant: neue Geräte warten auf Freigabe, fehlgeschlagene Integritätsprüfung, Server-Update verfügbar. Es werden höchstens `Mkits__Smtp__MaxNotificationsPerHour` (Standard 20) E-Mails pro Stunde versendet, damit ein Angriff Ihr Postfach nicht flutet.
 
-## 9. Audit-Log und Aufzeichnungen *(geplant)*
+## 9. Audit-Log und Aufzeichnungen
 
-- *Administration → Audit-Log*: Filter nach Zeit, Benutzer, Gerät, Ereignistyp, IP. Export als CSV/JSON. Das Log ist per Hash-Kette verkettet; *Integrität prüfen* erkennt veränderte oder gelöschte Einträge.
-- *Administration → Aufzeichnungen*: abspielen, herunterladen oder löschen. Das Abspielen wird protokolliert. Aufzeichnungen werden nach Ablauf der Aufbewahrungsfrist automatisch gelöscht.
+- *Audit-Log* (obere Navigation): Filter nach Ereignistyp und Freitext (IP, IDs, Details), neueste zuerst, 50 je Seite. Das Log ist per Hash-Kette verkettet; *Integrität prüfen* erkennt veränderte oder gelöschte Einträge. *(Export als CSV/JSON: geplant.)*
+- *Aufzeichnungen* *(geplant)*: abspielen, herunterladen oder löschen. Das Abspielen wird protokolliert. Aufzeichnungen werden nach Ablauf der Aufbewahrungsfrist automatisch gelöscht.
 
 ## 10. Einstellungsreferenz
 
@@ -153,18 +152,19 @@ Umgebungsvariablen (`Abschnitt__Schlüssel`) haben Vorrang vor Einstellungen aus
 | `Mkits__ReverseProxy__KnownProxies__N` | – | ✅ | vertrauenswürdige Proxy-IPs |
 | `Mkits__ReverseProxy__KnownNetworks__N` | – | ✅ | vertrauenswürdige Proxy-Netze (CIDR) |
 | `Mkits__ReverseProxy__ForwardLimit` | `1` | ✅ | Proxy-Stufen |
-| `Mkits__IpBan__MaxFailures` | `5` | 🔜 | Fehlversuche bis zur Sperre |
-| `Mkits__IpBan__Window` | `00:10:00` | 🔜 | Zählzeitraum |
-| `Mkits__IpBan__BanDuration` | `7.00:00:00` | 🔜 | Sperrdauer (t.hh:mm:ss) |
-| `Mkits__IpBan__IPv6PrefixLength` | `64` | 🔜 | IPv6-Zusammenfassung |
-| `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | 🔜 | CIDR-Listen (zusätzlich zur Admin-Oberfläche) |
+| `Mkits__IpBan__MaxFailures` | `5` | ✅ | Fehlversuche bis zur Sperre |
+| `Mkits__IpBan__Window` | `00:10:00` | ✅ | Zählzeitraum |
+| `Mkits__IpBan__BanDuration` | `7.00:00:00` | ✅ | Sperrdauer (t.hh:mm:ss) |
+| `Mkits__IpBan__IPv6PrefixLength` | `64` | ✅ | IPv6-Zusammenfassung |
+| `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | ✅ | CIDR-Listen (zusätzlich zur Admin-Oberfläche) |
 | `Mkits__Sessions__CodeLength` | `8` | 🔜 | Stellen des Adhoc-Codes (6–12) |
 | `Mkits__Sessions__CodeLifetime` | `00:10:00` | 🔜 | Gültigkeit unbenutzter Codes |
 | `Mkits__Sessions__ConsentTimeout` | `00:02:00` | 🔜 | Zeit für die Zustimmung am Gerät |
 | `Mkits__Sessions__SuspendGracePeriod` | `00:01:00` | 🔜 | Wiederverbindungsfenster nach Verbindungsabbruch |
 | `Mkits__Sessions__MaxDuration` | `08:00:00` | 🔜 | maximale Sitzungsdauer |
 | `Mkits__Security__RequireTwoFactorForUsers` | `false` | 🔜 | 2FA auch für User |
-| `Mkits__Smtp__*` | – | 🔜 | E-Mail (Abschnitt 8) |
+| `Mkits__Smtp__Host`, `__Port` (587), `__Security` (StartTls), `__UserName`, `__Password`, `__From` | – | ✅ | E-Mail (Abschnitt 8); leerer Host = deaktiviert |
+| `Mkits__Smtp__MaxNotificationsPerHour` | `20` | ✅ | Schutz vor Mail-Fluten |
 | `Mkits__Retention__AuditLogDays` | `365` | 🔜 | Aufbewahrung Audit-Log |
 | `Mkits__Retention__RecordingDays` | `30` | 🔜 | Aufbewahrung Aufzeichnungen |
 | `Mkits__Retention__FailedAttemptDays` | `30` | 🔜 | Aufbewahrung Fehlversuche |

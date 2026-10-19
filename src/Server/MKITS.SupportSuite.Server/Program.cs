@@ -6,6 +6,7 @@ using MKITS.SupportSuite.Server.Endpoints;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
+using MKITS.SupportSuite.Server.Features.Notifications;
 using MKITS.SupportSuite.Server.Infrastructure;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
 
@@ -17,6 +18,7 @@ builder.Services
     .AddMkitsDatabase()
     .AddMkitsAudit()
     .AddMkitsIpBans(builder.Configuration)
+    .AddMkitsNotifications(builder.Configuration)
     .AddMkitsIdentity(builder.Environment);
 
 // Web UI (ADR-0020): static SSR by default, interactive server rendering per page.
