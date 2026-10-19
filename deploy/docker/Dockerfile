@@ -30,8 +30,9 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
-ENV ASPNETCORE_URLS=http://+:8080 \
-    MKITS_DATA_DIR=/data
+# The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).
+ENV Mkits__DataDirectory=/data \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1
 RUN mkdir -p /data && chown "$APP_UID" /data
 VOLUME ["/data"]
 

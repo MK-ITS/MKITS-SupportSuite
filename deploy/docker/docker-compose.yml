@@ -1,0 +1,54 @@
+# MKITS-SupportSuite – Docker Compose deployment.
+# Usage: see docs/guides/en/installation.md
+#
+#   cp .env.example .env      # adjust values
+#   docker compose up -d
+#
+# The server listens only on 127.0.0.1:8080. nginx on the host terminates TLS and forwards to it.
+
+name: mkits
+
+services:
+  server:
+    image: ${MKITS_IMAGE:-ghcr.io/mk-its/mkits-supportsuite-server:edge}
+    # To build from source instead of pulling the image, comment out "image" above and use:
+    # build:
+    #   context: ../..
+    #   dockerfile: deploy/docker/Dockerfile
+    container_name: mkits-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MKITS_HTTP_PORT:-8080}:8080"
+    volumes:
+      - mkits-data:/data
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Mkits__PublicBaseUrl: ${MKITS_PUBLIC_BASE_URL:?set MKITS_PUBLIC_BASE_URL in .env}
+      Mkits__DataDirectory: /data
+      # Requests from the host's nginx arrive from the gateway of the network below.
+      Mkits__ReverseProxy__KnownNetworks__0: 172.30.80.0/24
+      TZ: ${TZ:-Etc/UTC}
+    networks:
+      - mkits
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  mkits-data:
+
+networks:
+  mkits:
+    ipam:
+      config:
+        - subnet: 172.30.80.0/24
+          gateway: 172.30.80.1

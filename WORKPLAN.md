@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phase 1 – Repository foundation done; next: Phase 2 (architecture & protocol specification)
+- **Status:** Phase 2 done, Phase 3 mostly done (database moves to Phase 4); installation/administration guides available; next: Phase 4 (identity & security)
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -144,20 +144,23 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [ ] 1.7 Repository settings on GitHub (owner): branch protection for `main`, private vulnerability reporting, secret scanning + push protection
 
 ### Phase 2 – Architecture & protocol specification
-- [ ] 2.1 `docs/architecture.md` (components, responsibilities, data flow)
-- [ ] 2.2 Wire protocol spec: framing over WSS, channels (video, input, clipboard, file, chat, shell, control), versioning, Protobuf schema
-- [ ] 2.3 Session lifecycle spec: code generation/expiry, join, consent, banner, end
-- [ ] 2.4 Security concept: threat model, tokens, agent identity/enrollment, E2E key exchange, recording vs. E2E, update signing
-- [ ] 2.5 Data model: users, roles, TOTP, sessions, devices, groups, permissions, bans, audit, recordings
+- [x] 2.1 `docs/architecture.md` (components, responsibilities, data flow)
+- [x] 2.2 Wire protocol spec: framing over WSS, channels (video, input, clipboard, file, chat, shell, control), versioning, Protobuf schema
+- [x] 2.3 Session lifecycle spec: code generation/expiry, join, consent, banner, end
+- [x] 2.4 Security concept: threat model, tokens, agent identity/enrollment, E2E key exchange, recording vs. E2E, update signing
+- [x] 2.5 Data model: users, roles, TOTP, sessions, devices, groups, permissions, bans, audit, recordings
 
 ### Phase 3 – Server core
-- [ ] 3.1 ASP.NET Core host, configuration (appsettings + env), structured logging (Serilog), health endpoint
-- [ ] 3.2 EF Core + SQLite (WAL), migrations, repository interfaces
-- [ ] 3.3 Forwarded headers / trusted proxies, configurable ports
-- [ ] 3.4 Localization de/en (resource files, per-user UI culture, browser fallback)
-- [ ] 3.5 `Dockerfile`, `docker-compose.yml` (server + optional nginx), volumes, sample nginx config (TLS, WebSocket upgrade, timeouts)
+- [x] 3.6 Security headers (CSP, frame/sniff/referrer policies), no `Server` header
+- [x] 3.1 ASP.NET Core host, validated configuration (appsettings + env), health endpoint incl. data directory check (logging: built-in console logging for now; Serilog not needed yet)
+- [ ] 3.2 EF Core + SQLite (WAL), migrations, repository interfaces → moved to Phase 4 (first schema = Identity)
+- [x] 3.3 Forwarded headers / trusted proxies, configurable ports
+- [x] 3.4 Localization de/en (resource files, per-user UI culture, browser fallback)
+- [x] 3.5 `Dockerfile`, `docker-compose.yml` (server + optional nginx), volumes, sample nginx config (TLS, WebSocket upgrade, timeouts)
 
 ### Phase 4 – Identity & security
+- [ ] 4.0 EF Core + SQLite (WAL), first migration, automatic migration at startup, backup-friendly (from 3.2)
+- [ ] 4.0a First-run setup token + `/setup` page (docs/security-concept.md §4)
 - [ ] 4.1 User management, roles Guest/User/Admin, ASP.NET Core Identity, password policy
 - [ ] 4.2 Login/logout, cookie security, CSRF, TOTP 2FA (enrollment, recovery codes)
 - [ ] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR whitelist/blacklist, admin UI, manual unban, SMTP notification
@@ -234,8 +237,8 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 **→ M5**
 
 ### Phase 14 – Deployment & operations
-- [ ] 14.1 Published Docker image (GHCR), versioned tags
-- [ ] 14.2 Installation guide (Ubuntu 26.04 + Docker + nginx + Let's Encrypt), backup/restore of SQLite + recordings, upgrade procedure
+- [x] 14.1 Published Docker image (GHCR), versioned tags (workflow `publish.yml`; `edge` from main, semver from tags)
+- [x] 14.2 Installation guide (Ubuntu 26.04 + Docker + nginx + Let's Encrypt), backup/restore, upgrade procedure – `docs/guides/{en,de}/installation.md` (extend with each feature)
 - [ ] 14.3 Monitoring/metrics, log rotation
 
 ### Phase 15 – Quality & security assurance
@@ -245,7 +248,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [ ] 15.4 Test matrix: Windows 10/11, Server 2016–2025, Debian 12/13, Ubuntu LTS (X11 + Wayland), Android 10–16
 
 ### Phase 16 – Documentation & release
-- [ ] 16.1 User docs (de/en): customer, supporter, admin
+- [~] 16.1 User docs (de/en): administration guide written (`docs/guides/{en,de}/administration.md`, target behavior marked as planned); customer and supporter guides open
 - [ ] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend
 - [ ] 16.3 Release process (SemVer), changelog, signed release artifacts
 
@@ -271,3 +274,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-17 | Initial version: requirements, draft architecture, open questions Q1–Q21, roadmap |
 | 2026-10-17 | Answers Q1–Q17 recorded as ADR-0001…0016; architecture and roadmap updated (SQLite, Docker, both viewers, Wayland in v1, E2E, recording, public GitHub); new questions Q22–Q23 |
 | 2026-10-17 | Phase 1 done: solution skeleton (Common, Server, Agent.Core/Windows/Linux, tests), build rules, CI, docs, ADR files. Replaced the repository's initial GPL-3.0 `LICENSE` with AGPL-3.0. Project `Shared` named `Common` (CA1716: `Shared` is a VB keyword). |
+| 2026-10-17 | Phase 2 done (architecture, protocol + proto schema, session lifecycle, security concept, data model, ADR-0017…0019). Phase 3 infrastructure (options, trusted proxies, data directory, Data Protection, security headers, localization). Compose/nginx templates, GHCR publish workflow, installation + administration guides EN/DE. |

@@ -1,0 +1,176 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) MK-ITSolutions and contributors
+//
+// MKITS-SupportSuite wire protocol, version 0.x – top-level frame and control plane.
+// Specification: docs/protocol.md. Code generation for C#, TypeScript and Kotlin starts in Phase 5.
+
+syntax = "proto3";
+
+package mkits.v0;
+
+option csharp_namespace = "MKITS.SupportSuite.Common.Protocol.V0";
+
+// Exactly one Frame per WebSocket binary message.
+message Frame {
+  oneof body {
+    Hello hello = 1;
+    HelloAck hello_ack = 2;
+    Authenticate authenticate = 3;
+    AuthResult auth_result = 4;
+    Ping ping = 5;
+    Pong pong = 6;
+    Error error = 7;
+    SessionAssigned session_assigned = 10;
+    SessionState session_state = 11;
+    ConsentRequest consent_request = 12;
+    ConsentResponse consent_response = 13;
+    ViewerJoined viewer_joined = 14;
+    ViewerLeft viewer_left = 15;
+    EndSession end_session = 16;
+    KeyExchange key_exchange = 17;
+    SessionData session_data = 20;
+  }
+}
+
+enum PeerRole {
+  PEER_ROLE_UNSPECIFIED = 0;
+  PEER_ROLE_AGENT = 1;
+  PEER_ROLE_VIEWER = 2;
+}
+
+message Hello {
+  uint32 protocol_major = 1;
+  uint32 protocol_minor = 2;
+  PeerRole role = 3;
+  string platform = 4;            // "windows", "linux", "android", "browser", "desktop"
+  string product_version = 5;
+  repeated string capabilities = 6; // e.g. "video.h264", "shell.conpty"
+}
+
+message HelloAck {
+  string server_version = 1;
+  bytes nonce = 2;                // 32 random bytes, signed by permanent agents
+  uint32 heartbeat_seconds = 3;
+}
+
+message Authenticate {
+  oneof method {
+    AdHocCode ad_hoc_code = 1;
+    DeviceSignature device_signature = 2;
+    Enrollment enrollment = 3;
+    ViewerTicket viewer_ticket = 4;
+  }
+}
+
+message MachineInfo {
+  string machine_name = 1;
+  string os_name = 2;
+  string os_version = 3;
+  string user_name = 4;
+}
+
+message AdHocCode {
+  string code = 1;
+  MachineInfo machine = 2;
+}
+
+message DeviceSignature {
+  string device_id = 1;
+  bytes signature = 2;            // ECDSA P-256 / SHA-256 over HelloAck.nonce
+}
+
+message Enrollment {
+  string token = 1;
+  bytes device_public_key = 2;    // SubjectPublicKeyInfo (DER), ECDSA P-256
+  MachineInfo machine = 3;
+}
+
+message ViewerTicket {
+  string ticket = 1;
+}
+
+message AuthResult {
+  bool ok = 1;
+  string peer_id = 2;
+}
+
+message Ping { uint64 timestamp_ms = 1; }
+message Pong { uint64 timestamp_ms = 1; }
+
+message Error {
+  string code = 1;                // stable identifier, see docs/protocol.md §7
+  string detail = 2;              // English, for logs only – never shown verbatim to users
+}
+
+enum ConsentPolicy {
+  CONSENT_POLICY_UNSPECIFIED = 0;
+  CONSENT_POLICY_ASK = 1;
+  CONSENT_POLICY_NOTIFY = 2;
+  CONSENT_POLICY_SILENT = 3;
+}
+
+message SessionAssigned {
+  string session_id = 1;
+  ConsentPolicy consent_policy = 2;
+  bool recording = 3;
+  string operator_name = 4;       // shown in the agent UI (who is connecting)
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_WAITING_FOR_AGENT = 1;
+  SESSION_STATUS_WAITING_FOR_VIEWER = 2;
+  SESSION_STATUS_AWAITING_CONSENT = 3;
+  SESSION_STATUS_ACTIVE = 4;
+  SESSION_STATUS_SUSPENDED = 5;   // a peer disconnected, grace period running
+  SESSION_STATUS_ENDED = 6;
+}
+
+message SessionState {
+  string session_id = 1;
+  SessionStatus status = 2;
+  string end_reason = 3;
+}
+
+message ConsentRequest {
+  string session_id = 1;
+  string supporter_display_name = 2;
+  repeated string requested_permissions = 3; // "view", "control", "files", "shell"
+}
+
+message ConsentResponse {
+  string session_id = 1;
+  bool granted = 2;
+}
+
+message ViewerJoined {
+  string session_id = 1;
+  string viewer_id = 2;
+  string display_name = 3;
+}
+
+message ViewerLeft {
+  string session_id = 1;
+  string viewer_id = 2;
+}
+
+message EndSession {
+  string session_id = 1;
+  string reason = 2;
+}
+
+message KeyExchange {
+  string session_id = 1;
+  string viewer_id = 2;
+  bytes ephemeral_public_key = 3; // SubjectPublicKeyInfo (DER), ECDH P-256
+  bytes device_signature = 4;     // permanent agents only: signature over ephemeral_public_key
+}
+
+// Session plane: routed opaquely by the server. Only the header fields are visible to it.
+message SessionData {
+  string session_id = 1;
+  string viewer_id = 2;           // target/source viewer (empty = broadcast to all viewers)
+  uint32 channel = 3;             // see Channel in session.proto
+  uint64 sequence = 4;
+  bytes ciphertext = 5;           // AES-256-GCM(SessionPayload) including tag
+}

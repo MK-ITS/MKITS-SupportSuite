@@ -2,12 +2,15 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 using MKITS.SupportSuite.Server.Endpoints;
+using MKITS.SupportSuite.Server.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHealthChecks();
+builder.AddMkitsInfrastructure();
 
 var app = builder.Build();
+
+app.UseMkitsInfrastructure();
 
 app.MapHealthChecks("/health");
 app.MapSystemEndpoints();
