@@ -61,9 +61,9 @@ public sealed class FrameSocket(WebSocket socket) : IAsyncDisposable
 
             return FrameCodec.TryDecode(buffer.AsSpan(0, length), out var frame) ? frame : null;
         }
-        catch (WebSocketException)
+        catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
         {
-            return null;
+            return null; // connection lost
         }
         finally
         {

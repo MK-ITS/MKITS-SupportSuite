@@ -68,9 +68,12 @@ jobs:
                   if result.get("outcome") != "Failed":
                       continue
                   message = result.find(".//t:Message", ns)
+                  stack = result.find(".//t:StackTrace", ns)
                   text = (message.text or "") if message is not None else ""
-                  text = " ".join(text.split())[:900].replace("%", "%25")
-                  print(f"::error title=Test failed: {result.get('testName')}::{text}")
+                  # Only our own frames from the stack trace – enough to find the failing line.
+                  frames = [l.strip() for l in ((stack.text or "") if stack is not None else "").splitlines() if "MKITS" in l]
+                  text = " ".join(text.split())[:700] + (" | at " + " <- ".join(frames[:4]) if frames else "")
+                  print(f"::error title=Test failed: {result.get('testName')}::{text[:1800].replace('%', '%25')}")
 
       - name: Upload test results
         if: always()

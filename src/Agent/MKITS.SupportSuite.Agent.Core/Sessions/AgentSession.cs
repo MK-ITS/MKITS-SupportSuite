@@ -33,6 +33,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
     private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<string, ViewerState> _viewers = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _stop = new();
+    private readonly TaskCompletionSource _endedByServer = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private FrameSocket? _socket;
     private string? _sessionId;
     private string? _resumeToken;
@@ -83,6 +84,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
             var closedNormally = await ReceiveLoopAsync(token).ConfigureAwait(false);
             if (closedNormally || token.IsCancellationRequested)
             {
+                _endedByServer.TrySetResult();
                 _ui.OnStatusChanged(AgentStatus.Ended, _endReason);
                 return new AgentSessionResult(_endReason ?? "ended_by_customer", null);
             }
@@ -99,22 +101,26 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         }
     }
 
-    /// <summary>The end user clicked "End session" (always available).</summary>
+    /// <summary>
+    /// The end user clicked "End session" (always available). Tells the server and waits briefly for its
+    /// confirmation, so supporters see a clean end instead of a connection loss.
+    /// </summary>
     public async Task EndAsync()
     {
+        _endReason ??= "ended_by_customer";
         if (_socket is { } socket && _sessionId is not null)
         {
             try
             {
                 await socket.SendAsync(new Frame { EndSession = new EndSession { SessionId = _sessionId, Reason = "ended_by_customer" } }, CancellationToken.None).ConfigureAwait(false);
+                await _endedByServer.Task.WaitAsync(TimeSpan.FromSeconds(5), _timeProvider).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is System.Net.WebSockets.WebSocketException or IOException or ObjectDisposedException or InvalidOperationException)
+            catch (Exception ex) when (ex is System.Net.WebSockets.WebSocketException or IOException or ObjectDisposedException or InvalidOperationException or TimeoutException)
             {
                 // the connection is gone anyway
             }
         }
 
-        _endReason ??= "ended_by_customer";
         await _stop.CancelAsync().ConfigureAwait(false);
     }
 
@@ -232,6 +238,11 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
 
     private async Task<string?> ReconnectAsync(CancellationToken cancellationToken)
     {
+        if (_sessionId is null || _resumeToken is null)
+        {
+            return ErrorCodes.AuthFailed; // lost before the session was assigned – a resume can never succeed
+        }
+
         var deadline = _timeProvider.GetUtcNow() + _options.ReconnectWindow;
         var delay = TimeSpan.FromSeconds(1);
         string? lastError = ErrorCodes.Internal;

@@ -96,6 +96,49 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
     }
 
     [Fact]
+    public async Task ConnectionLoss_AgentResumes_AndNewKeyExchangeRestoresChat()
+    {
+        var created = (await Sessions.CreateAdHocAsync(_supporterId, null)).Session!;
+        var ui = new RecordingUi(grant: true);
+        var chat = new EchoChatHandler();
+        var connector = new TestServerConnector(_factory.Server);
+        await using var agent = new AgentSession(Options(created.Code), connector, ui, [chat]);
+        var run = agent.RunAsync(CancellationToken.None);
+        await ui.WaitForStatusAsync(AgentStatus.WaitingForSupporter);
+
+        var ticket = await Sessions.IssueViewerTicketAsync(created.SessionId, _supporterId, userIsAdmin: false);
+        var (viewer, _) = await TestPeer.ConnectViewerAsync(_factory.Server, ticket!);
+        await using var viewerHandle = viewer;
+        await viewer.ExpectEventuallyAsync(Frame.BodyOneofCase.SessionState, f => f.SessionState.Status == WireStatus.Active);
+
+        connector.LastSocket!.Abort();
+
+        await viewer.ExpectEventuallyAsync(Frame.BodyOneofCase.SessionState, f => f.SessionState.Status == WireStatus.Suspended);
+        await viewer.ExpectEventuallyAsync(Frame.BodyOneofCase.SessionState, f => f.SessionState.Status == WireStatus.Active);
+        Assert.Equal(2, connector.Connections);
+        Assert.Contains(AgentStatus.Reconnecting, ui.Statuses);
+        Assert.Single(ui.Prompts); // consent survives the reconnect
+
+        // The old keys are gone; a new key exchange makes the session plane work again.
+        var sessionId = created.SessionId.ToString();
+        using var viewerKey = new E2EKeyPair();
+        await viewer.SendAsync(new Frame { KeyExchange = new KeyExchange { EphemeralPublicKey = ByteString.CopyFrom(viewerKey.PublicKey) } });
+        var answer = (await viewer.ExpectEventuallyAsync(Frame.BodyOneofCase.KeyExchange)).KeyExchange;
+        using var cipher = SessionCrypto.Establish(E2ERole.Viewer, viewerKey, sessionId, answer.EphemeralPublicKey.ToByteArray(), viewerKey.PublicKey);
+
+        var payload = new SessionPayload { ChatMessage = new ChatMessage { Text = "still there?" } };
+        var (sequence, ciphertext) = cipher.Encrypt((uint)Channel.Chat, payload.ToByteArray());
+        await viewer.SendAsync(new Frame
+        {
+            SessionData = new SessionData { SessionId = sessionId, Channel = (uint)Channel.Chat, Sequence = sequence, Ciphertext = ByteString.CopyFrom(ciphertext) },
+        });
+        Assert.Equal("still there?", await chat.Received.Task.WaitAsync(Timeout));
+
+        await agent.EndAsync();
+        Assert.True((await run.WaitAsync(Timeout)).Succeeded);
+    }
+
+    [Fact]
     public async Task InvalidCode_ReturnsCodeInvalid()
     {
         var ui = new RecordingUi(grant: true);

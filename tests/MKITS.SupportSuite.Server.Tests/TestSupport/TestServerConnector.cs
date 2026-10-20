@@ -11,13 +11,20 @@ namespace MKITS.SupportSuite.Server.Tests.TestSupport;
 /// <summary>Connects the real agent core to the in-memory test server.</summary>
 public sealed class TestServerConnector(TestServer server, string remoteIp = "198.51.100.30") : IWebSocketConnector
 {
-    public Task<WebSocket> ConnectAsync(Uri uri, CancellationToken cancellationToken)
+    /// <summary>The most recent connection (tests abort it to simulate a network failure).</summary>
+    public WebSocket? LastSocket { get; private set; }
+
+    public int Connections { get; private set; }
+
+    public async Task<WebSocket> ConnectAsync(Uri uri, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(uri);
 
         var client = server.CreateWebSocketClient();
         client.SubProtocols.Add(FrameCodec.SubProtocol);
         client.ConfigureRequest = request => request.Headers[MkitsWebApplicationFactory.TestRemoteIpHeader] = remoteIp;
-        return client.ConnectAsync(new Uri(server.BaseAddress, uri.PathAndQuery), cancellationToken);
+        LastSocket = await client.ConnectAsync(new Uri(server.BaseAddress, uri.PathAndQuery), cancellationToken);
+        Connections++;
+        return LastSocket;
     }
 }
