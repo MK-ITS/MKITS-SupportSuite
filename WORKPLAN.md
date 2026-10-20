@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; Phase 6 (web UI) mostly done; next: Phase 7 (agent core)
+- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; Phase 6 (web UI) mostly done; Phase 7 (agent core) in progress
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -185,8 +185,8 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 ### Phase 7 – Agent core (C#, shared Windows/Linux)
 - [~] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto – `AgentSession` (handshake, code/resume auth, consent callback, key exchange per viewer, encrypted dispatch, reconnect) done, tested end-to-end against the relay
 - [ ] 7.2 Configuration, logging, ad-hoc vs. permanent mode
-- [ ] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY)
-- [ ] 7.4 Chat, file transfer, clipboard, remote shell implementations
+- [~] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY) – `IScreenSource`, `IInputInjector`, `IClipboard`, `IChatPresenter` done; file system and shell follow
+- [~] 7.4 Chat, file transfer, clipboard, remote shell implementations – `ScreenStreamer` (flow control, change detection, per-viewer fps/monitor), `InputHandler` (coordinate mapping, stuck-key release), `ClipboardHandler`, `ChatHandler` done; file transfer and shell follow
 
 ### Phase 8 – Windows agent
 - [ ] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback)
@@ -285,3 +285,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-19 | Phase 5C: E2E session crypto in Common (`SessionCrypto`, `SessionCipher`, security code) with tests. |
 | 2026-10-20 | PR #11 merged. Phase 6A: customer portal on the start page (code check with IP-ban counting, OS detection, POST download with `MKITS-Support_<host>[+port]_<code>` file name, `AdHocClientFileName` in Common), client catalog in `/data/agents`, settings section, guides. |
 | 2026-10-20 | Phase 7A: agent core `AgentSession` + UI/channel-handler contracts, `PayloadChannels` in Common; end-to-end tests agent ↔ relay ↔ viewer with real crypto. |
+| 2026-10-20 | PRs #13–#15 merged. Phase 7B: agent feature handlers (screen streaming, input, clipboard, chat) with platform abstractions and viewer lifecycle hooks; new test project Agent.Core.Tests. |

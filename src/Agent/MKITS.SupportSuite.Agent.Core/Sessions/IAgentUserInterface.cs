@@ -40,6 +40,14 @@ public interface ISessionChannelHandler
 {
     /// <summary>Called for every decrypted payload; ignore those that are not for this handler.</summary>
     Task HandleAsync(ISessionContext context, string viewerId, Common.Protocol.V0.SessionPayload payload, CancellationToken cancellationToken);
+
+    /// <summary>A viewer finished the key exchange and can receive payloads (e.g. start streaming, send the monitor list).</summary>
+    Task OnViewerReadyAsync(ISessionContext context, string viewerId, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>A viewer left or its keys were discarded (e.g. release pressed keys, stop streaming to it).</summary>
+    void OnViewerGone(string viewerId)
+    {
+    }
 }
 
 /// <summary>Lets channel handlers send payloads back (encrypted per viewer by the session).</summary>

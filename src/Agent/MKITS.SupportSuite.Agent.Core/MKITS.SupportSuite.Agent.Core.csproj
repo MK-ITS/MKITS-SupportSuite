@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="MKITS.SupportSuite.Agent.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Common\MKITS.SupportSuite.Common\MKITS.SupportSuite.Common.csproj" />
   </ItemGroup>
 </Project>
