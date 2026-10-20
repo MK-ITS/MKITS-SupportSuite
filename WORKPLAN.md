@@ -183,7 +183,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [x] 6.4 i18n de/en for all texts, AGPL source link in footer
 
 ### Phase 7 – Agent core (C#, shared Windows/Linux)
-- [ ] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto
+- [~] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto – `AgentSession` (handshake, code/resume auth, consent callback, key exchange per viewer, encrypted dispatch, reconnect) done, tested end-to-end against the relay
 - [ ] 7.2 Configuration, logging, ad-hoc vs. permanent mode
 - [ ] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY)
 - [ ] 7.4 Chat, file transfer, clipboard, remote shell implementations
@@ -284,3 +284,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-19 | Phase 5B: WebSocket relay (`/ws/agent`, `/ws/viewer`), handshake + authentication, session broker with consent per viewer, suspend/resume (resume token, protocol 0.2), heartbeat, timeouts, backpressure, routing rules. |
 | 2026-10-19 | Phase 5C: E2E session crypto in Common (`SessionCrypto`, `SessionCipher`, security code) with tests. |
 | 2026-10-20 | PR #11 merged. Phase 6A: customer portal on the start page (code check with IP-ban counting, OS detection, POST download with `MKITS-Support_<host>[+port]_<code>` file name, `AdHocClientFileName` in Common), client catalog in `/data/agents`, settings section, guides. |
+| 2026-10-20 | Phase 7A: agent core `AgentSession` + UI/channel-handler contracts, `PayloadChannels` in Common; end-to-end tests agent ↔ relay ↔ viewer with real crypto. |
