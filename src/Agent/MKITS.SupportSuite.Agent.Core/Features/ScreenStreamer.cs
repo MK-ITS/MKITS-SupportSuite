@@ -113,8 +113,8 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
         return Task.CompletedTask;
     }
 
-    /// <summary>One streaming step for all viewers; public for tests (the loop calls it on every tick).</summary>
-    public async Task TickAsync(ISessionContext context, CancellationToken cancellationToken)
+    /// <summary>One streaming step for all viewers (the loop calls it on every tick; internal for tests).</summary>
+    internal async Task TickAsync(ISessionContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
 
