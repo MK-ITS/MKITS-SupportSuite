@@ -114,7 +114,8 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
         connector.LastSocket!.Abort();
 
         // Depending on who notices the loss first, the server suspends the session or replaces the connection directly.
-        await ui.WaitForStatusAfterAsync(AgentStatus.Reconnecting, AgentStatus.WaitingForSupporter);
+        // Wait until the agent knows the supporter again (ViewerJoined after the resume) before starting the key exchange.
+        await ui.WaitForEventAfterAsync(nameof(AgentStatus.Reconnecting), "supporters=1");
         Assert.Equal(2, connector.Connections);
         Assert.Single(ui.Prompts); // consent survives the reconnect
 
@@ -201,29 +202,31 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
             return Task.FromResult(grant);
         }
 
+        /// <summary>Statuses and supporter changes in order, e.g. <c>Reconnecting</c>, <c>supporters=1</c>.</summary>
+        public ConcurrentQueue<string> Events { get; } = new();
+
         public void OnStatusChanged(AgentStatus status, string? detail)
         {
             Statuses.Enqueue(status);
+            Events.Enqueue(status.ToString());
             Reached(status).TrySetResult();
         }
 
-        public void OnSupportersChanged(IReadOnlyList<string> displayNames)
-        {
-        }
+        public void OnSupportersChanged(IReadOnlyList<string> displayNames) => Events.Enqueue($"supporters={displayNames.Count}");
 
         public void OnSecurityCode(string supporterDisplayName, string securityCode) => SecurityCode.TrySetResult(securityCode);
 
         public Task WaitForStatusAsync(AgentStatus status) => Reached(status).Task.WaitAsync(Timeout);
 
-        /// <summary>Waits until <paramref name="then"/> was reported after <paramref name="first"/>.</summary>
-        public async Task WaitForStatusAfterAsync(AgentStatus first, AgentStatus then)
+        /// <summary>Waits until event <paramref name="then"/> was recorded after event <paramref name="first"/>.</summary>
+        public async Task WaitForEventAfterAsync(string first, string then)
         {
             var deadline = DateTime.UtcNow + Timeout;
             while (DateTime.UtcNow < deadline)
             {
-                var statuses = Statuses.ToArray();
-                var index = Array.IndexOf(statuses, first);
-                if (index >= 0 && Array.IndexOf(statuses, then, index + 1) > index)
+                var events = Events.ToArray();
+                var index = Array.IndexOf(events, first);
+                if (index >= 0 && Array.IndexOf(events, then, index + 1) > index)
                 {
                     return;
                 }
@@ -231,7 +234,7 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
                 await Task.Delay(50);
             }
 
-            throw new TimeoutException($"{then} after {first} not reported: {string.Join(", ", Statuses)}");
+            throw new TimeoutException($"{then} after {first} not recorded: {string.Join(", ", Events)}");
         }
 
         private TaskCompletionSource Reached(AgentStatus status) =>
