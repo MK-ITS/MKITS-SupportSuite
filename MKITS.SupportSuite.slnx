@@ -9,5 +9,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/MKITS.SupportSuite.Server.Tests/MKITS.SupportSuite.Server.Tests.csproj" />
     <Project Path="tests/MKITS.SupportSuite.Common.Tests/MKITS.SupportSuite.Common.Tests.csproj" />
+    <Project Path="tests/MKITS.SupportSuite.Agent.Core.Tests/MKITS.SupportSuite.Agent.Core.Tests.csproj" />
   </Folder>
 </Solution>

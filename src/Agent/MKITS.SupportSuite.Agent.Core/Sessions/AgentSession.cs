@@ -311,6 +311,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
                 case Frame.BodyOneofCase.ViewerLeft:
                     if (_viewers.TryRemove(frame.ViewerLeft.ViewerId, out var left))
                     {
+                        NotifyViewerGone(left.Id);
                         left.Dispose();
                     }
 
@@ -421,6 +422,11 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         }, cancellationToken).ConfigureAwait(false);
 
         _ui.OnSecurityCode(viewer.DisplayName, SessionCrypto.ComputeSecurityCode(_sessionId, own.PublicKey, viewerKey));
+
+        foreach (var handler in _handlers)
+        {
+            await handler.OnViewerReadyAsync(this, viewer.Id, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task OnSessionDataAsync(SessionData data, CancellationToken cancellationToken)
@@ -459,10 +465,19 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
 
     private void PublishSupporters() => _ui.OnSupportersChanged(_viewers.Values.Select(v => v.DisplayName).ToList());
 
+    private void NotifyViewerGone(string viewerId)
+    {
+        foreach (var handler in _handlers)
+        {
+            handler.OnViewerGone(viewerId);
+        }
+    }
+
     private void ResetViewers()
     {
         foreach (var viewer in _viewers.Values)
         {
+            NotifyViewerGone(viewer.Id);
             viewer.Dispose();
         }
 
