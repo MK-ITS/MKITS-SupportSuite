@@ -35,21 +35,24 @@ public sealed class ClipboardHandler(IClipboard clipboard) : ISessionChannelHand
             return Task.CompletedTask;
         }
 
+        // Never call the platform clipboard while holding the lock: implementations may marshal to a UI thread
+        // that is itself waiting for the lock (PollAsync runs on a UI timer on Windows).
         lock (_lock)
         {
             _lastKnown = payload.ClipboardText.Text;
-            clipboard.SetText(payload.ClipboardText.Text);
         }
 
+        clipboard.SetText(payload.ClipboardText.Text);
         return Task.CompletedTask;
     }
 
     public Task OnViewerReadyAsync(ISessionContext context, string viewerId, CancellationToken cancellationToken)
     {
+        // Do not push the current clipboard to a new supporter unasked – only later changes are shared.
+        var current = clipboard.GetText();
         lock (_lock)
         {
-            // Do not push the current clipboard to a new supporter unasked – only later changes are shared.
-            _lastKnown ??= clipboard.GetText();
+            _lastKnown ??= current;
         }
 
         return Task.CompletedTask;
@@ -60,10 +63,9 @@ public sealed class ClipboardHandler(IClipboard clipboard) : ISessionChannelHand
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        string? text;
+        var text = clipboard.GetText();
         lock (_lock)
         {
-            text = clipboard.GetText();
             if (string.IsNullOrEmpty(text) || text.Length > MaxTextLength || string.Equals(text, _lastKnown, StringComparison.Ordinal))
             {
                 return;

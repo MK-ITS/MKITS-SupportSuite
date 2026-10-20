@@ -23,7 +23,7 @@ public sealed class GdiScreenSource : IScreenSource, IDisposable
         Screen.AllScreens
             .Select((screen, index) => new MonitorDescriptor(
                 (uint)(index + 1),
-                screen.Primary ? $"{index + 1} (primary)" : (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), // the viewer shows "primary" itself (localized)
                 screen.Bounds.Left,
                 screen.Bounds.Top,
                 screen.Bounds.Width,

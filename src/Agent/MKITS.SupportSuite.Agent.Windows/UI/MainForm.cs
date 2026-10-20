@@ -127,10 +127,17 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
 
     public string? GetText() => InvokeOnUi(() => Clipboard.ContainsText() ? Clipboard.GetText() : null);
 
-    public void SetText(string text) => InvokeOnUi(() =>
+    /// <summary>Posted, not awaited: the receive loop must never wait for the UI thread.</summary>
+    public void SetText(string text) => OnUi(() =>
     {
-        Clipboard.SetText(text.Length == 0 ? " " : text);
-        return true;
+        try
+        {
+            Clipboard.SetText(text.Length == 0 ? " " : text);
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            // clipboard locked by another application
+        }
     });
 
     // ------------------------------------------------------------------ lifecycle
