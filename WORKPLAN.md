@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; next: Phase 6 (customer portal)
+- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; Phase 6 (web UI) mostly done; next: Phase 7 (agent core)
 - **Requirements source:** `_system_prompt.md`
 
 ---
