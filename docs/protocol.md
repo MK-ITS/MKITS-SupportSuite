@@ -46,7 +46,7 @@ peer                                   server
 | `DeviceSignature` | permanent agent | device id, ECDSA P-256 signature over `HelloAck.nonce` |
 | `Enrollment` | new permanent agent | enrollment token, device public key, machine info |
 | `ViewerTicket` | viewer | one-time ticket (60 s) issued by the server to an authorized supporter's web session |
-| `Resume` | agent after a connection loss | `session_id` + the one-time `AuthResult.resume_token` of its previous connection (only while the session is *Suspended*) |
+| `Resume` | agent after a connection loss | `session_id` + the one-time `AuthResult.resume_token` of its previous connection (while the session is *Suspended*, or while the server still holds the old connection – that one is then dropped) |
 
 `AuthResult.resume_token` (agents only) is replaced on every successful (re)connect; the server stores only its hash.
 Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within 30 s after `HelloAck`.
@@ -94,7 +94,7 @@ Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within
 
 > Reference implementation: [`Common/Crypto/SessionCrypto.cs`](../src/Common/MKITS.SupportSuite.Common/Crypto/SessionCrypto.cs) (used by agents and the desktop viewer; the browser viewer mirrors it with WebCrypto). The shared secret is the raw ECDH x-coordinate (= WebCrypto `deriveBits`). In the HKDF `info` and the security-code input, concatenations (`||`) are length-prefixed (4-byte big-endian length before each part). The AES-GCM nonce (`channel` u32 BE ‖ `sequence` u64 BE, 12 bytes) and associated data (UTF-8 `session_id` ‖ `channel` u32 BE ‖ `sequence` u64 BE) are plain fixed-width concatenations without prefixes. The security code is `uint32_be(SHA-256("mkits/v0/sas" || session_id || agent_pub || viewer_pub)[0..4]) mod 10^6`, shown as `123 456`.
 
-1. After the viewer joins, agent and viewer each generate an **ephemeral ECDH P-256** key pair and exchange public keys via `KeyExchange` (relayed by the server).
+1. After consent was granted, the **viewer** generates an **ephemeral ECDH P-256** key pair and sends its public key in `KeyExchange`; the agent answers with its own ephemeral key (relayed by the server, which stamps `viewer_id`). A new `KeyExchange` from the viewer replaces the keys (rekeying, reconnect).
 2. Both derive `shared = ECDH(own_private, peer_public)` and run **HKDF-SHA256** with `salt = session_id` and `info = "mkits/v0/e2e" || agent_pub || viewer_pub` to obtain two 256-bit keys: `key_agent_to_viewer`, `key_viewer_to_agent`.
 3. Each `SessionData` payload is encrypted with **AES-256-GCM**. Nonce (96 bit) = `channel (32 bit) || sequence (64 bit)`; sequence numbers are per direction and channel and must strictly increase (replay protection). Associated data = `session_id || channel || sequence`.
 4. **Fingerprint (SAS):** both sides display a 6-digit code derived from `SHA-256(transcript)`. Supporter and customer can compare it by phone to rule out a man-in-the-middle by a compromised server.

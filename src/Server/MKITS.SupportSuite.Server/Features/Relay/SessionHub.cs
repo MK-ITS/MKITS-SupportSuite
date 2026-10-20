@@ -105,8 +105,20 @@ public sealed partial class SessionHub : IDisposable
         await live.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (live.IsEnded || live.Status != SessionStatus.Suspended || live.Agent is not null || live.ResumeTokenHash is null
-                || !CryptographicOperations.FixedTimeEquals(live.ResumeTokenHash, HashToken(token)))
+            if (live.IsEnded || live.ResumeTokenHash is null || !CryptographicOperations.FixedTimeEquals(live.ResumeTokenHash, HashToken(token)))
+            {
+                return false;
+            }
+
+            if (live.Agent is { } stale)
+            {
+                // The agent noticed the connection loss before the server did: the token proves it is the same
+                // agent, so the old connection is dropped and replaced.
+                _sessionByPeer.TryRemove(stale.Id, out _);
+                live.Agent = null;
+                stale.Abort();
+            }
+            else if (live.Status != SessionStatus.Suspended)
             {
                 return false;
             }
