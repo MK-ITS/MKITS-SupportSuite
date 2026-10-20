@@ -15,7 +15,8 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Ersteinrichtung, Anmeldung, Benutzer, Rollen, Zwei-Faktor (TOTP), Profil/Sprache | ✅ verfügbar |
 | IP-Sperren, Allow-/Deny-Listen, Audit-Log mit Integritätsprüfung, E-Mail-Benachrichtigungen (Admin-Oberfläche) | ✅ verfügbar |
 | Adhoc-Sitzungscodes (anlegen, auflisten, widerrufen, Ablauf) | ✅ verfügbar |
-| Kundenportal, Zustimmung, Relay | 🔜 Phasen 5–6 |
+| Kundenportal (Codeeingabe, Client-Download), Relay mit Zustimmung, E2E-Krypto (Serverseite) | ✅ verfügbar |
+| Zustimmungsdialog und Banner in den Clients | 🔜 Phasen 7–8 |
 | Windows-Agent, Browser-Viewer (Chat, Dateien, Zwischenablage, Shell) | 🔜 Phasen 7–9 (Meilenstein M1) |
 | Gerätegruppen, dauerhafter Zugriff, Installer, Auto-Update | 🔜 Phase 10 (M2) |
 | Linux-Agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
@@ -90,7 +91,7 @@ Die Geräteliste zeigt Online-Status, Betriebssystem, Agent-Version, zuletzt ges
 
 ## 6. Ablauf Adhoc-Support *(teilweise verfügbar)*
 
-Schritt 1 ist verfügbar (Menü *Sitzungen*); die übrigen Schritte folgen mit Portal, Client und Viewer.
+Schritte 1–2 sind verfügbar (Menü *Sitzungen*, Kundenportal auf der Startseite); die übrigen Schritte folgen mit Client und Viewer.
 
 1. *Sitzungen → Neue Ad-hoc-Sitzung*, optional eine Notiz (z. B. Ticketnummer) eingeben und *Sitzungscode erstellen* klicken. Der Code ist 10 Minuten gültig, einmalig verwendbar und wird nur einmal angezeigt. Nicht benötigte Codes können Sie widerrufen.
 2. Den Kunden bitten, `https://support.example.com` zu öffnen und den Code einzugeben.

@@ -213,3 +213,16 @@ dl.settings dd { margin: 0; }
   margin: 0.5rem 0;
   user-select: all;
 }
+
+/* ---- customer portal ---- */
+.code-input {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 1.75rem;
+  letter-spacing: 0.15em;
+  max-width: 14rem;
+}
+.downloads { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+.download { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.download button { margin-top: 0; }
+.steps { padding-left: 1.25rem; }
+.steps li { margin: 0.35rem 0; }

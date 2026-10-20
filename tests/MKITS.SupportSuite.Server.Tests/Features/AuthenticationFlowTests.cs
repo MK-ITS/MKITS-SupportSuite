@@ -197,7 +197,7 @@ public sealed class AuthenticationFlowTests
 
         using var response = await client.SendAsync(request);
 
-        Assert.Contains("Willkommen", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.Contains("Sitzungscode", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
     private static HttpClient CreateClient(MkitsWebApplicationFactory factory) =>

@@ -4,6 +4,7 @@
 using MKITS.SupportSuite.Server.Components;
 using MKITS.SupportSuite.Server.Endpoints;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Downloads;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Notifications;
@@ -23,6 +24,7 @@ builder.Services
     .AddMkitsNotifications(builder.Configuration)
     .AddMkitsSessions(builder.Configuration)
     .AddMkitsRelay()
+    .AddMkitsDownloads()
     .AddMkitsIdentity(builder.Environment);
 
 // Web UI (ADR-0020): static SSR by default, interactive server rendering per page.
@@ -54,6 +56,7 @@ app.MapHealthChecks("/health");
 app.MapSystemEndpoints();
 app.MapAccountEndpoints();
 app.MapRelayEndpoints();
+app.MapPortalEndpoints();
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 

@@ -21,8 +21,6 @@
   <data name="Nav_Login" xml:space="preserve"><value>Log in</value></data>
   <data name="Nav_Logout" xml:space="preserve"><value>Log out</value></data>
   <data name="Nav_Language" xml:space="preserve"><value>Language</value></data>
-  <data name="Home_Title" xml:space="preserve"><value>Welcome</value></data>
-  <data name="Home_PortalComingSoon" xml:space="preserve"><value>The customer portal for entering a session code will be available soon.</value></data>
   <data name="Home_SignedInAs" xml:space="preserve"><value>Signed in as {0}.</value></data>
   <data name="Field_UserName" xml:space="preserve"><value>User name</value></data>
   <data name="Field_Password" xml:space="preserve"><value>Password</value></data>
@@ -215,4 +213,33 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Sessions_EndReason_connection_lost" xml:space="preserve"><value>connection lost</value></data>
   <data name="Sessions_EndReason_max_duration" xml:space="preserve"><value>maximum duration reached</value></data>
   <data name="Sessions_EndReason_server_restart" xml:space="preserve"><value>server restarted</value></data>
+  <data name="Portal_Title" xml:space="preserve"><value>Remote support</value></data>
+  <data name="Portal_Intro" xml:space="preserve"><value>Your supporter gave you a session code? Enter it here to download the support client.</value></data>
+  <data name="Portal_Field_Code" xml:space="preserve"><value>Session code</value></data>
+  <data name="Portal_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Portal_CodeHint" xml:space="preserve"><value>The code has 8 digits and is valid for 10 minutes. Nothing is installed permanently.</value></data>
+  <data name="Portal_Error_Invalid" xml:space="preserve"><value>This code is not valid. Please check it or ask your supporter for a new one.</value></data>
+  <data name="Portal_Error_Expired" xml:space="preserve"><value>This code has expired. Please ask your supporter for a new one.</value></data>
+  <data name="Portal_Download_Title" xml:space="preserve"><value>Download the support client</value></data>
+  <data name="Portal_Download_None" xml:space="preserve"><value>No support client is available on this server yet. Please contact your supporter.</value></data>
+  <data name="Portal_Download_WindowsX64" xml:space="preserve"><value>Download for Windows</value></data>
+  <data name="Portal_Download_LinuxX64" xml:space="preserve"><value>Download for Linux (x86_64)</value></data>
+  <data name="Portal_Download_LinuxArm64" xml:space="preserve"><value>Download for Linux (ARM64)</value></data>
+  <data name="Portal_Download_Android" xml:space="preserve"><value>Download for Android</value></data>
+  <data name="Portal_Download_Recommended" xml:space="preserve"><value>recommended for your device</value></data>
+  <data name="Portal_Next_Title" xml:space="preserve"><value>Next steps</value></data>
+  <data name="Portal_Next_Run" xml:space="preserve"><value>Open the downloaded file. Do not rename it – it contains your session code.</value></data>
+  <data name="Portal_Next_Check" xml:space="preserve"><value>The client shows the server {0} and the name of your supporter. Only continue if both are correct.</value></data>
+  <data name="Portal_Next_Consent" xml:space="preserve"><value>Allow the connection when your supporter asks for it.</value></data>
+  <data name="Portal_Next_End" xml:space="preserve"><value>You can end the session at any time with “End session”.</value></data>
+  <data name="Portal_OtherCode" xml:space="preserve"><value>Enter a different code</value></data>
+  <data name="Portal_SupporterLogin" xml:space="preserve"><value>Supporter?</value></data>
+  <data name="Settings_Clients" xml:space="preserve"><value>Support clients</value></data>
+  <data name="Settings_Clients_Intro" xml:space="preserve"><value>Clients offered on the customer portal. Place the files in the data directory (see installation guide).</value></data>
+  <data name="Settings_Clients_Platform" xml:space="preserve"><value>Platform</value></data>
+  <data name="Settings_Clients_File" xml:space="preserve"><value>File</value></data>
+  <data name="Settings_Clients_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Settings_Clients_Available" xml:space="preserve"><value>available</value></data>
+  <data name="Settings_Clients_Missing" xml:space="preserve"><value>missing</value></data>
+  <data name="Settings_Clients_SearchPaths" xml:space="preserve"><value>Searched folders:</value></data>
 </root>

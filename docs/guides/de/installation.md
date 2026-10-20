@@ -144,6 +144,23 @@ Weitere Einstellungen (IP-Sperren, Sitzungen, SMTP, Aufbewahrung) stehen im [Adm
 
 > ⚠️ Nur die eigenen, echten Proxys als vertrauenswürdig eintragen. Sonst könnten Clients ihre IP-Adresse fälschen und IP-Sperren umgehen.
 
+### 8.1 Support-Clients für das Kundenportal
+
+Das Portal bietet den Adhoc-Client zum Download an, sobald die Datei im Datenvolume liegt. Bis offizielle Releases im Image enthalten sind (ab Phase 8), kopieren Sie die Dateien selbst dorthin:
+
+```bash
+# Ordner einmalig anlegen
+docker compose exec server mkdir -p /data/agents/windows-x64 /data/agents/linux-x64 /data/agents/linux-arm64 /data/agents/android
+# Windows-Client (portable EXE)
+docker compose cp MKITS-Support.exe server:/data/agents/windows-x64/MKITS-Support.exe
+# Linux-Clients (AppImage) und Android (APK), falls vorhanden
+docker compose cp MKITS-Support-x86_64.AppImage server:/data/agents/linux-x64/MKITS-Support.AppImage
+docker compose cp MKITS-Support-aarch64.AppImage server:/data/agents/linux-arm64/MKITS-Support.AppImage
+docker compose cp MKITS-Support.apk server:/data/agents/android/MKITS-Support.apk
+```
+
+*Administration → Einstellungen → Support-Clients* zeigt, welche Dateien gefunden wurden. Kunden laden die Datei unter einem Namen herunter, der Ihre Serveradresse und den Sitzungscode enthält (`MKITS-Support_support.example.com_12345678.exe`), sodass der Client ohne weitere Eingabe verbindet. Die Dateien werden bei jedem Download neu gelesen – ein Austausch erfordert keinen Neustart.
+
 ## 9. Updates
 
 ```bash

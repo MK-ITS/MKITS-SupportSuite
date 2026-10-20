@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; next: Phase 6 (customer portal)
+- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; Phase 6 (web UI) mostly done; next: Phase 7 (agent core)
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -177,10 +177,10 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display – crypto library `Common/Crypto` (ECDH P-256, HKDF, AES-256-GCM, replay protection, security code) done; relay forwards `KeyExchange`; display in agent/viewer UIs (Phases 7–9)
 
 ### Phase 6 – Web UI
-- [ ] 6.1 Customer portal: code entry → client download (OS detection), Guest session start
+- [~] 6.1 Customer portal: code entry → client download (OS detection), Guest session start – portal + download with code/host in the file name done (`Features/Downloads`); session start needs the client (Phase 8)
 - [~] 6.2 Supporter area: create ad-hoc session, session list, join – create/list/revoke done (`/sessions`), join follows with the viewer
-- [ ] 6.3 Admin area: users, roles, settings, SMTP, IP bans, audit log
-- [ ] 6.4 i18n de/en for all texts, AGPL source link in footer
+- [x] 6.3 Admin area: users, roles, settings, SMTP, IP bans, audit log (Phase 4)
+- [x] 6.4 i18n de/en for all texts, AGPL source link in footer
 
 ### Phase 7 – Agent core (C#, shared Windows/Linux)
 - [ ] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto
@@ -283,3 +283,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-19 | PR #10 merged (MailKit 4.16.0, patched System.Security.Cryptography.Pkcs pinned transitively). Phase 5A: C# code generation from `proto/` (Google.Protobuf), `FrameCodec`, session codes (hashed, single use, limits, expiry), viewer tickets, supporter page `/sessions`. |
 | 2026-10-19 | Phase 5B: WebSocket relay (`/ws/agent`, `/ws/viewer`), handshake + authentication, session broker with consent per viewer, suspend/resume (resume token, protocol 0.2), heartbeat, timeouts, backpressure, routing rules. |
 | 2026-10-19 | Phase 5C: E2E session crypto in Common (`SessionCrypto`, `SessionCipher`, security code) with tests. |
+| 2026-10-20 | PR #11 merged. Phase 6A: customer portal on the start page (code check with IP-ban counting, OS detection, POST download with `MKITS-Support_<host>[+port]_<code>` file name, `AdHocClientFileName` in Common), client catalog in `/data/agents`, settings section, guides. |
