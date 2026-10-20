@@ -56,13 +56,17 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(context);
 
         var monitors = _source.GetMonitors();
-        var primary = monitors.FirstOrDefault(m => m.Primary) ?? monitors.FirstOrDefault();
+        var primary = monitors.FirstOrDefault(m => m.Primary) ?? (monitors.Count > 0 ? monitors[0] : null);
         _viewers[viewerId] = new ViewerStream(primary?.Id ?? 0);
 
         var list = new MonitorList();
         list.Monitors.AddRange(monitors.Select(m => new WireMonitor
         {
-            Id = m.Id, Name = m.Name, Width = (uint)m.Width, Height = (uint)m.Height, Primary = m.Primary,
+            Id = m.Id,
+            Name = m.Name,
+            Width = (uint)m.Width,
+            Height = (uint)m.Height,
+            Primary = m.Primary,
         }));
         await context.SendAsync(viewerId, new SessionPayload { MonitorList = list }, cancellationToken).ConfigureAwait(false);
 
