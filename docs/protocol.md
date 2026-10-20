@@ -46,7 +46,7 @@ peer                                   server
 | `DeviceSignature` | permanent agent | device id, ECDSA P-256 signature over `HelloAck.nonce` |
 | `Enrollment` | new permanent agent | enrollment token, device public key, machine info |
 | `ViewerTicket` | viewer | one-time ticket (60 s) issued by the server to an authorized supporter's web session |
-| `Resume` | agent after a connection loss | `session_id` + the one-time `AuthResult.resume_token` of its previous connection (only while the session is *Suspended*) |
+| `Resume` | agent after a connection loss | `session_id` + the one-time `AuthResult.resume_token` of its previous connection (while the session is *Suspended*, or while the server still holds the old connection – that one is then dropped) |
 
 `AuthResult.resume_token` (agents only) is replaced on every successful (re)connect; the server stores only its hash.
 Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within 30 s after `HelloAck`.

@@ -113,10 +113,9 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
 
         connector.LastSocket!.Abort();
 
-        await viewer.ExpectEventuallyAsync(Frame.BodyOneofCase.SessionState, f => f.SessionState.Status == WireStatus.Suspended);
-        await viewer.ExpectEventuallyAsync(Frame.BodyOneofCase.SessionState, f => f.SessionState.Status == WireStatus.Active);
+        // Depending on who notices the loss first, the server suspends the session or replaces the connection directly.
+        await ui.WaitForStatusAfterAsync(AgentStatus.Reconnecting, AgentStatus.WaitingForSupporter);
         Assert.Equal(2, connector.Connections);
-        Assert.Contains(AgentStatus.Reconnecting, ui.Statuses);
         Assert.Single(ui.Prompts); // consent survives the reconnect
 
         // The old keys are gone; a new key exchange makes the session plane work again.
@@ -215,6 +214,25 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
         public void OnSecurityCode(string supporterDisplayName, string securityCode) => SecurityCode.TrySetResult(securityCode);
 
         public Task WaitForStatusAsync(AgentStatus status) => Reached(status).Task.WaitAsync(Timeout);
+
+        /// <summary>Waits until <paramref name="then"/> was reported after <paramref name="first"/>.</summary>
+        public async Task WaitForStatusAfterAsync(AgentStatus first, AgentStatus then)
+        {
+            var deadline = DateTime.UtcNow + Timeout;
+            while (DateTime.UtcNow < deadline)
+            {
+                var statuses = Statuses.ToArray();
+                var index = Array.IndexOf(statuses, first);
+                if (index >= 0 && Array.IndexOf(statuses, then, index + 1) > index)
+                {
+                    return;
+                }
+
+                await Task.Delay(50);
+            }
+
+            throw new TimeoutException($"{then} after {first} not reported: {string.Join(", ", Statuses)}");
+        }
 
         private TaskCompletionSource Reached(AgentStatus status) =>
             _reached.GetOrAdd(status, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
