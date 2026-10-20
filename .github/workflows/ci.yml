@@ -83,6 +83,33 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
+  windows-client:
+    name: Windows client (portable EXE)
+    runs-on: windows-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Publish single-file EXE
+        run: >
+          dotnet publish src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj
+          -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          -o publish/windows-x64
+
+      # Unsigned development build (code signing: ADR-0009). Copy it to /data/agents/windows-x64/ on a test server.
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: MKITS-Support-windows-x64
+          path: publish/windows-x64/MKITS-Support.exe
+          if-no-files-found: error
+          retention-days: 14
+
   docker:
     name: Docker image (server)
     runs-on: ubuntu-latest

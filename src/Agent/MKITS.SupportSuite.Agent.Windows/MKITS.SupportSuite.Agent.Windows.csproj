@@ -1,16 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Windows agent (Windows 10 x64+ / Server 2016+): screen capture (DXGI), input (SendInput),
-    Windows service + per-session helper for secure desktop / UAC, ConPTY shell.
+    Windows agent (Windows 10 x64+ / Server 2016+). Phase 8A: portable ad-hoc client (WinForms UI, GDI capture
+    with JPEG, SendInput, clipboard, chat). DXGI/H.264, the service for secure desktop / UAC and ConPTY follow.
     Builds on Linux too (EnableWindowsTargeting) so CI can compile it anywhere.
   -->
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <!-- The runtime identifier (win-x64) is set at publish time: dotnet publish -r win-x64 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- LibraryImport (source-generated P/Invoke) with blittable structs. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The runtime identifier (win-x64) is set at publish time: dotnet publish -r win-x64 -p:PublishSingleFile=true -->
     <RootNamespace>MKITS.SupportSuite.Agent.Windows</RootNamespace>
-    <AssemblyName>MKITS.SupportSuite.Agent</AssemblyName>
+    <AssemblyName>MKITS-Support</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

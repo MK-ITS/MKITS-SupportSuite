@@ -189,12 +189,12 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 7.4 Chat, file transfer, clipboard, remote shell implementations – `ScreenStreamer` (flow control, change detection, per-viewer fps/monitor), `InputHandler` (coordinate mapping, stuck-key release), `ClipboardHandler`, `ChatHandler` done; file transfer and shell follow
 
 ### Phase 8 – Windows agent
-- [ ] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback)
-- [ ] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback
-- [ ] 8.3 Input injection (SendInput, keyboard layouts, special keys)
+- [~] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback) – GDI capture, multi-monitor done (`GdiScreenSource`); DXGI open
+- [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; H.264 open
+- [~] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen done; Ctrl+Alt+Del needs the service (8.4)
 - [ ] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching
 - [ ] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated
-- [ ] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated")
+- [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" open
 
 ### Phase 9 – Browser viewer
 - [ ] 9.1 Canvas + WebCodecs H.264 decoder, fallback
@@ -286,3 +286,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-20 | PR #11 merged. Phase 6A: customer portal on the start page (code check with IP-ban counting, OS detection, POST download with `MKITS-Support_<host>[+port]_<code>` file name, `AdHocClientFileName` in Common), client catalog in `/data/agents`, settings section, guides. |
 | 2026-10-20 | Phase 7A: agent core `AgentSession` + UI/channel-handler contracts, `PayloadChannels` in Common; end-to-end tests agent ↔ relay ↔ viewer with real crypto. |
 | 2026-10-20 | PRs #13–#15 merged. Phase 7B: agent feature handlers (screen streaming, input, clipboard, chat) with platform abstractions and viewer lifecycle hooks; new test project Agent.Core.Tests. |
+| 2026-10-20 | Phase 8A: Windows portable client – WinForms UI (consent, status, supporters, security code, chat, end), GDI/JPEG capture, SendInput (scan codes, Unicode), clipboard; `ScanCodes` in Agent.Core; CI publishes the unsigned EXE as artifact. |
