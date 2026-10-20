@@ -171,9 +171,9 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 5 – Session broker & relay
 - [x] 5.1 Session codes (supporter-created, expiry, single use) – `Features/Sessions`, page `/sessions`, protobuf code generation in Common
-- [ ] 5.2 WebSocket endpoints for agents and viewers, authentication
-- [ ] 5.3 Relay routing per channel, backpressure, reconnect
-- [ ] 5.4 Consent flow + session banner
+- [x] 5.2 WebSocket endpoints for agents and viewers, authentication – `Features/Relay` (`/ws/agent`, `/ws/viewer`, ad-hoc code, viewer ticket, resume token)
+- [x] 5.3 Relay routing per channel, backpressure, reconnect – grace period 60 s, heartbeat 30/90 s, video drop at 4 MiB, disconnect at 16 MiB
+- [~] 5.4 Consent flow + session banner – server side done (request per viewer, timeout, deny); banner/dialog in the agents (Phase 7/8)
 - [ ] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display
 
 ### Phase 6 – Web UI
@@ -281,3 +281,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-18 | Phase 4B: Blazor UI (ADR-0020) with setup token, login, TOTP, recovery codes, profile/language, user administration; nginx header inheritance bug fixed (X-Forwarded-For was lost in locations); .vsconfig for Visual Studio 2026. |
 | 2026-10-19 | PRs #7–#9 merged. Phase 4C: admin pages for IP bans/lists, audit log viewer with integrity check, settings page with SMTP test mail, throttled localized admin notifications (MailKit). |
 | 2026-10-19 | PR #10 merged (MailKit 4.16.0, patched System.Security.Cryptography.Pkcs pinned transitively). Phase 5A: C# code generation from `proto/` (Google.Protobuf), `FrameCodec`, session codes (hashed, single use, limits, expiry), viewer tickets, supporter page `/sessions`. |
+| 2026-10-19 | Phase 5B: WebSocket relay (`/ws/agent`, `/ws/viewer`), handshake + authentication, session broker with consent per viewer, suspend/resume (resume token, protocol 0.2), heartbeat, timeouts, backpressure, routing rules. |

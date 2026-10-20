@@ -59,6 +59,7 @@ message Authenticate {
     DeviceSignature device_signature = 2;
     Enrollment enrollment = 3;
     ViewerTicket viewer_ticket = 4;
+    Resume resume = 5;              // since 0.2
   }
 }
 
@@ -89,9 +90,16 @@ message ViewerTicket {
   string ticket = 1;
 }
 
+// Reconnect of an agent within the grace period (docs/session-lifecycle.md §3, state Suspended).
+message Resume {
+  string session_id = 1;
+  string token = 2;               // AuthResult.resume_token of the previous connection
+}
+
 message AuthResult {
   bool ok = 1;
   string peer_id = 2;
+  string resume_token = 3;        // agents only; one-time, replaced on every successful (re)connect. Since 0.2
 }
 
 message Ping { uint64 timestamp_ms = 1; }
@@ -136,11 +144,13 @@ message ConsentRequest {
   string session_id = 1;
   string supporter_display_name = 2;
   repeated string requested_permissions = 3; // "view", "control", "files", "shell"
+  string viewer_id = 4;           // the viewer asking; echoed in ConsentResponse. Since 0.2
 }
 
 message ConsentResponse {
   string session_id = 1;
   bool granted = 2;
+  string viewer_id = 3;           // since 0.2
 }
 
 message ViewerJoined {

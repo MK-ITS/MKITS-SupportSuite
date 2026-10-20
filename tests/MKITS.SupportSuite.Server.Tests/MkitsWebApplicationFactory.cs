@@ -24,6 +24,12 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
 
     public string DataDirectory { get; } = Path.Combine(Path.GetTempPath(), $"mkits-tests-{Guid.NewGuid():N}");
 
+    /// <summary>Optional service overrides (e.g. a manual <see cref="TimeProvider"/>), applied after the app's registrations.</summary>
+    public Action<IServiceCollection>? ConfigureServices { get; init; }
+
+    /// <summary>Optional configuration values (e.g. <c>Mkits:Sessions:ConsentTimeout</c>).</summary>
+    public IReadOnlyDictionary<string, string>? Settings { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -31,7 +37,15 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("Mkits:DataDirectory", DataDirectory);
         builder.UseSetting("Mkits:PublicBaseUrl", "https://support.example.test");
-        builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, TestRemoteIpStartupFilter>());
+        foreach (var (key, value) in Settings ?? new Dictionary<string, string>())
+        {
+            builder.UseSetting(key, value);
+        }
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IStartupFilter, TestRemoteIpStartupFilter>();
+            ConfigureServices?.Invoke(services);
+        });
     }
 
     protected override void Dispose(bool disposing)
@@ -41,8 +55,20 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
         if (disposing && Directory.Exists(DataDirectory))
         {
             // Pooled SQLite connections keep the file open (blocks deletion on Windows).
-            SqliteConnection.ClearAllPools();
-            Directory.Delete(DataDirectory, recursive: true);
+            // Background work of the stopped host may release its last connection a moment later (Windows file locks).
+            for (var attempt = 1; ; attempt++)
+            {
+                SqliteConnection.ClearAllPools();
+                try
+                {
+                    Directory.Delete(DataDirectory, recursive: true);
+                    break;
+                }
+                catch (IOException) when (attempt < 10)
+                {
+                    Thread.Sleep(200);
+                }
+            }
         }
     }
 
