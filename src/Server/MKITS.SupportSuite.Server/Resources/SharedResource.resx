@@ -242,4 +242,31 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Settings_Clients_Available" xml:space="preserve"><value>available</value></data>
   <data name="Settings_Clients_Missing" xml:space="preserve"><value>missing</value></data>
   <data name="Settings_Clients_SearchPaths" xml:space="preserve"><value>Searched folders:</value></data>
+  <data name="Sessions_Action_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Viewer_Title" xml:space="preserve"><value>Remote session</value></data>
+  <data name="Viewer_Back" xml:space="preserve"><value>← Sessions</value></data>
+  <data name="Viewer_Connecting" xml:space="preserve"><value>Connecting …</value></data>
+  <data name="Viewer_Closed" xml:space="preserve"><value>Connection closed. Reload the page to reconnect.</value></data>
+  <data name="Viewer_SecurityCode" xml:space="preserve"><value>Security code:</value></data>
+  <data name="Viewer_SecurityCodeHint" xml:space="preserve"><value>Compare this code with the customer (e.g. by phone). If it differs, end the session.</value></data>
+  <data name="Viewer_Monitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="Viewer_Primary" xml:space="preserve"><value>primary</value></data>
+  <data name="Viewer_ClipboardSend" xml:space="preserve"><value>Send clipboard</value></data>
+  <data name="Viewer_ClipboardCopy" xml:space="preserve"><value>Copy customer clipboard</value></data>
+  <data name="Viewer_ClipboardDenied" xml:space="preserve"><value>The browser denied clipboard access.</value></data>
+  <data name="Viewer_ScreenLabel" xml:space="preserve"><value>Remote screen – click to control</value></data>
+  <data name="Viewer_Chat" xml:space="preserve"><value>Chat</value></data>
+  <data name="Viewer_ChatSend" xml:space="preserve"><value>Send</value></data>
+  <data name="Viewer_ChatYou" xml:space="preserve"><value>You</value></data>
+  <data name="Viewer_Status_WAITING_FOR_AGENT" xml:space="preserve"><value>Waiting for the customer to start the client …</value></data>
+  <data name="Viewer_Status_WAITING_FOR_VIEWER" xml:space="preserve"><value>Customer connected.</value></data>
+  <data name="Viewer_Status_AWAITING_CONSENT" xml:space="preserve"><value>Waiting for the customer to allow the connection …</value></data>
+  <data name="Viewer_Status_ACTIVE" xml:space="preserve"><value>Connected</value></data>
+  <data name="Viewer_Status_SUSPENDED" xml:space="preserve"><value>Customer connection interrupted – waiting …</value></data>
+  <data name="Viewer_Status_ENDED" xml:space="preserve"><value>Session ended</value></data>
+  <data name="Viewer_Error_CONSENT_DENIED" xml:space="preserve"><value>The customer denied the connection.</value></data>
+  <data name="Viewer_Error_SESSION_ENDED" xml:space="preserve"><value>The session has ended.</value></data>
+  <data name="Viewer_Error_AUTH_FAILED" xml:space="preserve"><value>The viewer ticket is no longer valid. Please reload the page.</value></data>
+  <data name="Viewer_Error_RATE_LIMITED" xml:space="preserve"><value>Too many supporters are connected to this session.</value></data>
+  <data name="Viewer_Error_KEY_EXCHANGE_FAILED" xml:space="preserve"><value>The encrypted connection could not be established.</value></data>
 </root>

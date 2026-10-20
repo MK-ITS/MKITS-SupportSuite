@@ -242,4 +242,31 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Settings_Clients_Available" xml:space="preserve"><value>verfügbar</value></data>
   <data name="Settings_Clients_Missing" xml:space="preserve"><value>fehlt</value></data>
   <data name="Settings_Clients_SearchPaths" xml:space="preserve"><value>Durchsuchte Ordner:</value></data>
+  <data name="Sessions_Action_Open" xml:space="preserve"><value>Öffnen</value></data>
+  <data name="Viewer_Title" xml:space="preserve"><value>Fernwartungssitzung</value></data>
+  <data name="Viewer_Back" xml:space="preserve"><value>← Sitzungen</value></data>
+  <data name="Viewer_Connecting" xml:space="preserve"><value>Verbinde …</value></data>
+  <data name="Viewer_Closed" xml:space="preserve"><value>Verbindung geschlossen. Laden Sie die Seite neu, um sich erneut zu verbinden.</value></data>
+  <data name="Viewer_SecurityCode" xml:space="preserve"><value>Sicherheitscode:</value></data>
+  <data name="Viewer_SecurityCodeHint" xml:space="preserve"><value>Vergleichen Sie diesen Code mit dem Kunden (z. B. telefonisch). Weicht er ab, beenden Sie die Sitzung.</value></data>
+  <data name="Viewer_Monitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="Viewer_Primary" xml:space="preserve"><value>Hauptmonitor</value></data>
+  <data name="Viewer_ClipboardSend" xml:space="preserve"><value>Zwischenablage senden</value></data>
+  <data name="Viewer_ClipboardCopy" xml:space="preserve"><value>Zwischenablage des Kunden kopieren</value></data>
+  <data name="Viewer_ClipboardDenied" xml:space="preserve"><value>Der Browser hat den Zugriff auf die Zwischenablage verweigert.</value></data>
+  <data name="Viewer_ScreenLabel" xml:space="preserve"><value>Entfernter Bildschirm – zum Steuern anklicken</value></data>
+  <data name="Viewer_Chat" xml:space="preserve"><value>Chat</value></data>
+  <data name="Viewer_ChatSend" xml:space="preserve"><value>Senden</value></data>
+  <data name="Viewer_ChatYou" xml:space="preserve"><value>Sie</value></data>
+  <data name="Viewer_Status_WAITING_FOR_AGENT" xml:space="preserve"><value>Warte darauf, dass der Kunde den Client startet …</value></data>
+  <data name="Viewer_Status_WAITING_FOR_VIEWER" xml:space="preserve"><value>Kunde verbunden.</value></data>
+  <data name="Viewer_Status_AWAITING_CONSENT" xml:space="preserve"><value>Warte auf die Zustimmung des Kunden …</value></data>
+  <data name="Viewer_Status_ACTIVE" xml:space="preserve"><value>Verbunden</value></data>
+  <data name="Viewer_Status_SUSPENDED" xml:space="preserve"><value>Verbindung zum Kunden unterbrochen – warte …</value></data>
+  <data name="Viewer_Status_ENDED" xml:space="preserve"><value>Sitzung beendet</value></data>
+  <data name="Viewer_Error_CONSENT_DENIED" xml:space="preserve"><value>Der Kunde hat die Verbindung abgelehnt.</value></data>
+  <data name="Viewer_Error_SESSION_ENDED" xml:space="preserve"><value>Die Sitzung wurde beendet.</value></data>
+  <data name="Viewer_Error_AUTH_FAILED" xml:space="preserve"><value>Das Viewer-Ticket ist nicht mehr gültig. Bitte laden Sie die Seite neu.</value></data>
+  <data name="Viewer_Error_RATE_LIMITED" xml:space="preserve"><value>Mit dieser Sitzung sind zu viele Supporter verbunden.</value></data>
+  <data name="Viewer_Error_KEY_EXCHANGE_FAILED" xml:space="preserve"><value>Die verschlüsselte Verbindung konnte nicht aufgebaut werden.</value></data>
 </root>

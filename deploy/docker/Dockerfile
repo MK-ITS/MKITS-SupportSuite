@@ -5,6 +5,15 @@
 
 ARG DOTNET_VERSION=10.0
 
+# ---- browser viewer (TypeScript → wwwroot/viewer/viewer.js) ----
+FROM node:22-bookworm-slim AS viewer
+WORKDIR /src
+COPY proto/ proto/
+COPY src/Viewer/web/package.json src/Viewer/web/package-lock.json src/Viewer/web/
+RUN cd src/Viewer/web && npm ci --no-audit --no-fund
+COPY src/Viewer/web/ src/Viewer/web/
+RUN cd src/Viewer/web && npm run build
+
 # ---- build stage ----
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
@@ -18,6 +27,7 @@ RUN dotnet restore src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Serve
 COPY proto/ proto/
 COPY src/Common/ src/Common/
 COPY src/Server/ src/Server/
+COPY --from=viewer /src/src/Server/MKITS.SupportSuite.Server/wwwroot/viewer/ src/Server/MKITS.SupportSuite.Server/wwwroot/viewer/
 RUN dotnet publish src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj \
     -c Release --no-restore -o /app/publish /p:UseAppHost=false
 

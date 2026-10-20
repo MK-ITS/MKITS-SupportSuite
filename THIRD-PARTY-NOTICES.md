@@ -11,6 +11,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | ASP.NET Core Identity (EF Core stores) | server | MIT | https://github.com/dotnet/aspnetcore |
 | Entity Framework Core + SQLite provider | server | MIT | https://github.com/dotnet/efcore |
 | Google.Protobuf | common (wire protocol), server, agents | BSD-3-Clause | https://github.com/protocolbuffers/protobuf |
+| @bufbuild/protobuf (Protobuf-ES runtime, bundled into viewer.js) | browser viewer | Apache-2.0 | https://github.com/bufbuild/protobuf-es |
 | MailKit / MimeKit | server (SMTP notifications) | MIT | https://github.com/jstedfast/MailKit |
 | QRCoder | server (TOTP QR codes) | MIT | https://github.com/codebude/QRCoder |
 | SQLite (via SQLitePCLRaw bundle) | server | Public Domain (SQLite), Apache-2.0 (SQLitePCLRaw) | https://sqlite.org, https://github.com/ericsink/SQLitePCL.raw |
@@ -24,6 +25,10 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | Microsoft.AspNetCore.Mvc.Testing | server tests | MIT | https://github.com/dotnet/aspnetcore |
 | Microsoft.EntityFrameworkCore.Design | migration tooling (not shipped) | MIT | https://github.com/dotnet/efcore |
 | Grpc.Tools (protoc code generator) | build of common (not shipped) | Apache-2.0 | https://github.com/grpc/grpc |
+| @bufbuild/buf, @bufbuild/protoc-gen-es | browser viewer code generation | Apache-2.0 | https://github.com/bufbuild/buf, https://github.com/bufbuild/protobuf-es |
+| TypeScript | browser viewer build | Apache-2.0 | https://github.com/microsoft/TypeScript |
+| esbuild | browser viewer bundling | MIT | https://github.com/evanw/esbuild |
+| Vitest | browser viewer tests | MIT | https://github.com/vitest-dev/vitest |
 
 ## Planned (to be confirmed when added)
 

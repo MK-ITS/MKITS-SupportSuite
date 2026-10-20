@@ -32,6 +32,20 @@ jobs:
         with:
           global-json-file: global.json
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/Viewer/web/package-lock.json
+
+      # Browser viewer: type check, tests (incl. the shared E2E test vector) and the bundle served by the server.
+      - name: Browser viewer
+        working-directory: src/Viewer/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+          npm run build
+
       - name: Restore
         run: dotnet restore MKITS.SupportSuite.slnx "-flp:ErrorsOnly;LogFile=build-errors.log"
 

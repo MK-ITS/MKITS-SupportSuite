@@ -178,7 +178,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 6 – Web UI
 - [~] 6.1 Customer portal: code entry → client download (OS detection), Guest session start – portal + download with code/host in the file name done (`Features/Downloads`); session start needs the client (Phase 8)
-- [~] 6.2 Supporter area: create ad-hoc session, session list, join – create/list/revoke done (`/sessions`), join follows with the viewer
+- [x] 6.2 Supporter area: create ad-hoc session, session list, join – `/sessions` (create/list/revoke/open), viewer page `/sessions/{id}/view`
 - [x] 6.3 Admin area: users, roles, settings, SMTP, IP bans, audit log (Phase 4)
 - [x] 6.4 i18n de/en for all texts, AGPL source link in footer
 
@@ -197,11 +197,11 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" open
 
 ### Phase 9 – Browser viewer
-- [ ] 9.1 Canvas + WebCodecs H.264 decoder, fallback
-- [ ] 9.2 Mouse/keyboard mapping, special key toolbar
-- [ ] 9.3 Multi-monitor, scaling, quality settings
-- [ ] 9.4 Chat, file transfer, clipboard, terminal (xterm.js)
-- [ ] 9.5 E2E crypto via WebCrypto
+- [~] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling) done; WebCodecs/H.264 follows with the agent encoder
+- [x] 9.2 Mouse/keyboard mapping, special key toolbar – pointer (throttled moves, buttons, wheel), physical keys (`KeyboardEvent.code`), Ctrl+Alt+Del / Win / Alt+Tab
+- [~] 9.3 Multi-monitor, scaling, quality settings – monitor selection, fit-to-window, default quality; quality UI open
+- [~] 9.4 Chat, file transfer, clipboard, terminal (xterm.js) – chat and clipboard (buttons, browser permission) done; file transfer and terminal open
+- [x] 9.5 E2E crypto via WebCrypto – `src/Viewer/web/src/crypto.ts`, byte-compatible with C# (shared test vector `proto/testvectors/e2e-v0.json`)
 
 **→ M1: Windows ad-hoc remote support end-to-end (portal → download → consent → control + chat/file/clipboard/shell)**
 
@@ -287,3 +287,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-20 | Phase 7A: agent core `AgentSession` + UI/channel-handler contracts, `PayloadChannels` in Common; end-to-end tests agent ↔ relay ↔ viewer with real crypto. |
 | 2026-10-20 | PRs #13–#15 merged. Phase 7B: agent feature handlers (screen streaming, input, clipboard, chat) with platform abstractions and viewer lifecycle hooks; new test project Agent.Core.Tests. |
 | 2026-10-20 | Phase 8A: Windows portable client – WinForms UI (consent, status, supporters, security code, chat, end), GDI/JPEG capture, SendInput (scan codes, Unicode), clipboard; `ScanCodes` in Agent.Core; CI publishes the unsigned EXE as artifact. |
+| 2026-10-20 | PRs #16/#17 merged. Phase 9A: browser viewer (TypeScript, Protobuf-ES, WebCrypto) with viewer page `/sessions/{id}/view` (one-time ticket, no inline script), screen/input/chat/clipboard/special keys; shared E2E test vector checked by C# and TypeScript; server re-announces ACTIVE after an agent resume (viewers re-key); CI and Docker build the viewer bundle. |

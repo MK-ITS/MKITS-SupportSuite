@@ -17,7 +17,7 @@ Components:
 | Agent core | .NET 10 class library, platform-independent | `src/Agent/*.Agent.Core` |
 | Windows agent | .NET 10 (`net10.0-windows`) | `src/Agent/*.Agent.Windows` |
 | Linux agent (X11 + Wayland) | .NET 10 | `src/Agent/*.Agent.Linux` |
-| Browser viewer | TypeScript (planned) | `src/Viewer/web` |
+| Browser viewer | TypeScript, Protobuf-ES, WebCrypto (npm, esbuild, vitest) | `src/Viewer/web` |
 | Native viewer | .NET 10 + Avalonia (planned) | `src/Viewer/desktop` |
 | Android agent | Kotlin (planned) | `android` |
 
@@ -56,6 +56,8 @@ dotnet test    MKITS.SupportSuite.slnx -c Release
 dotnet format  MKITS.SupportSuite.slnx --verify-no-changes   # CI fails if this reports changes
 dotnet run --project src/Server/MKITS.SupportSuite.Server      # http://localhost:5080
 docker build -f deploy/docker/Dockerfile -t mkits-server .
+# browser viewer (Node 22): tests and bundle → src/Server/.../wwwroot/viewer/viewer.js
+cd src/Viewer/web && npm ci && npm test && npm run build
 ```
 
 The Windows agent targets `net10.0-windows` but compiles on Linux (`EnableWindowsTargeting`). Running it requires Windows.

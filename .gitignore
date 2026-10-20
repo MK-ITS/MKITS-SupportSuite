@@ -25,6 +25,8 @@ node_modules/
 dist/
 *.tsbuildinfo
 npm-debug.log*
+# Built by src/Viewer/web (npm run build); produced in CI and the Docker build.
+src/Server/MKITS.SupportSuite.Server/wwwroot/viewer/
 
 # ---- Android ----
 .gradle/

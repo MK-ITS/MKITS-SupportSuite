@@ -56,6 +56,7 @@ app.MapHealthChecks("/health");
 app.MapSystemEndpoints();
 app.MapAccountEndpoints();
 app.MapRelayEndpoints();
+app.MapViewerPage();
 app.MapPortalEndpoints();
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();

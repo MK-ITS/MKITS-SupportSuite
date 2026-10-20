@@ -1,0 +1,6 @@
+# Generates TypeScript from the protocol schema (ADR-0017). Output is not committed (see .gitignore).
+version: v2
+plugins:
+  - local: protoc-gen-es
+    out: src/gen
+    opt: target=ts
