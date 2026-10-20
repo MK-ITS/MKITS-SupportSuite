@@ -95,8 +95,8 @@
         Input ??= new();
         _error = ErrorParam switch
         {
-            "invalid" => L["Portal_Error_Invalid"],
-            "expired" => L["Portal_Error_Expired"],
+            "invalid" => L["Portal_Error_Invalid"].Value,
+            "expired" => L["Portal_Error_Expired"].Value,
             _ => null,
         };
     }
