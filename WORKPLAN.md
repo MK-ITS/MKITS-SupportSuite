@@ -6,7 +6,7 @@
 > License: **AGPL-3.0**.
 
 - **Created:** 2026-10-17 · **Last update:** 2026-10-17
-- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) in progress
+- **Status:** Phases 1–3 done, Phase 4 (identity & security) done; Phase 5 (session broker & relay) done on the server; next: Phase 6 (customer portal)
 - **Requirements source:** `_system_prompt.md`
 
 ---
@@ -174,7 +174,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [x] 5.2 WebSocket endpoints for agents and viewers, authentication – `Features/Relay` (`/ws/agent`, `/ws/viewer`, ad-hoc code, viewer ticket, resume token)
 - [x] 5.3 Relay routing per channel, backpressure, reconnect – grace period 60 s, heartbeat 30/90 s, video drop at 4 MiB, disconnect at 16 MiB
 - [~] 5.4 Consent flow + session banner – server side done (request per viewer, timeout, deny); banner/dialog in the agents (Phase 7/8)
-- [ ] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display
+- [~] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display – crypto library `Common/Crypto` (ECDH P-256, HKDF, AES-256-GCM, replay protection, security code) done; relay forwards `KeyExchange`; display in agent/viewer UIs (Phases 7–9)
 
 ### Phase 6 – Web UI
 - [ ] 6.1 Customer portal: code entry → client download (OS detection), Guest session start
@@ -282,3 +282,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-19 | PRs #7–#9 merged. Phase 4C: admin pages for IP bans/lists, audit log viewer with integrity check, settings page with SMTP test mail, throttled localized admin notifications (MailKit). |
 | 2026-10-19 | PR #10 merged (MailKit 4.16.0, patched System.Security.Cryptography.Pkcs pinned transitively). Phase 5A: C# code generation from `proto/` (Google.Protobuf), `FrameCodec`, session codes (hashed, single use, limits, expiry), viewer tickets, supporter page `/sessions`. |
 | 2026-10-19 | Phase 5B: WebSocket relay (`/ws/agent`, `/ws/viewer`), handshake + authentication, session broker with consent per viewer, suspend/resume (resume token, protocol 0.2), heartbeat, timeouts, backpressure, routing rules. |
+| 2026-10-19 | Phase 5C: E2E session crypto in Common (`SessionCrypto`, `SessionCipher`, security code) with tests. |
