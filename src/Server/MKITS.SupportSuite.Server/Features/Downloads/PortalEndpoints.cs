@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) MK-ITSolutions and contributors
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using MKITS.SupportSuite.Common.Sessions;
+using MKITS.SupportSuite.Server.Features.Sessions;
+using MKITS.SupportSuite.Server.Infrastructure.Configuration;
+
+namespace MKITS.SupportSuite.Server.Features.Downloads;
+
+/// <summary>Customer portal endpoints (docs/session-lifecycle.md §5).</summary>
+public static class PortalEndpoints
+{
+    public const string DownloadPath = "/portal/download";
+
+    public static IServiceCollection AddMkitsDownloads(this IServiceCollection services)
+    {
+        services.AddSingleton<ClientCatalog>();
+        return services;
+    }
+
+    public static IEndpointRouteBuilder MapPortalEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+
+        // POST (not GET): the code must not end up in proxy access logs or the browser history.
+        // Antiforgery is validated automatically for form-bound minimal API endpoints.
+        endpoints.MapPost(DownloadPath, DownloadAsync);
+        return endpoints;
+    }
+
+    private static async Task<IResult> DownloadAsync(
+        HttpContext context,
+        [FromForm] string? code,
+        [FromForm] string? platform,
+        SessionService sessions,
+        ClientCatalog catalog,
+        IOptions<MkitsOptions> options)
+    {
+        if (!Enum.TryParse<ClientPlatform>(platform, ignoreCase: false, out var clientPlatform) || !Enum.IsDefined(clientPlatform))
+        {
+            return Results.BadRequest();
+        }
+
+        var check = await sessions.CheckCodeAsync(code, context.Connection.RemoteIpAddress, context.RequestAborted).ConfigureAwait(false);
+        if (check != CodeCheckResult.Valid)
+        {
+            return Results.Redirect(check == CodeCheckResult.Expired ? "/?error=expired" : "/?error=invalid");
+        }
+
+        if (catalog.Get(clientPlatform) is not { } client)
+        {
+            return Results.NotFound();
+        }
+
+        var baseUri = new Uri(options.Value.PublicBaseUrl);
+        var fileName = client.Package.CodeInFileName
+            ? AdHocClientFileName.Build(baseUri.Host, baseUri.IsDefaultPort ? null : baseUri.Port, SessionCodeFormat.Normalize(code)!, client.Package.Extension)
+            : AdHocClientFileName.Prefix + client.Package.Extension;
+
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.File(client.FullPath, "application/octet-stream", fileName);
+    }
+}

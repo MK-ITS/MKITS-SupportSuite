@@ -15,7 +15,8 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | First-run setup, login, users, roles, TOTP 2FA, profile/language | ✅ available |
 | IP bans, allow/deny lists, audit log with integrity check, e-mail notifications (admin UI) | ✅ available |
 | Ad-hoc session codes (create, list, revoke, expiry) | ✅ available |
-| Customer portal, consent, relay | 🔜 Phases 5–6 |
+| Customer portal (code entry, client download), relay with consent, E2E crypto (server side) | ✅ available |
+| Consent dialog and banner in the clients | 🔜 Phases 7–8 |
 | Windows agent, browser viewer (chat, files, clipboard, shell) | 🔜 Phases 7–9 (milestone M1) |
 | Device groups, permanent access, installers, auto-update | 🔜 Phase 10 (M2) |
 | Linux agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
@@ -90,7 +91,7 @@ The device list shows online status, OS, agent version, last seen and last IP. A
 
 ## 6. Ad-hoc support workflow *(partly available)*
 
-Step 1 is available (menu *Sessions*); the remaining steps follow with the portal, client and viewer.
+Steps 1–2 are available (menu *Sessions*, customer portal on the start page); the remaining steps follow with the client and viewer.
 
 1. *Sessions → New ad-hoc session*, optionally enter a note (e.g. ticket number) and click *Create session code*. The code is valid for 10 minutes, can be used once and is shown only once. You can revoke codes you no longer need.
 2. Tell the customer to open `https://support.example.com` and enter the code.

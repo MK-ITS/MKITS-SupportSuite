@@ -4,6 +4,7 @@
 using MKITS.SupportSuite.Server.Components;
 using MKITS.SupportSuite.Server.Endpoints;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Downloads;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Notifications;

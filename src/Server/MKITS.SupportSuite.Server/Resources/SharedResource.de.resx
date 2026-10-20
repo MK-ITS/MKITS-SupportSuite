@@ -21,8 +21,6 @@
   <data name="Nav_Login" xml:space="preserve"><value>Anmelden</value></data>
   <data name="Nav_Logout" xml:space="preserve"><value>Abmelden</value></data>
   <data name="Nav_Language" xml:space="preserve"><value>Sprache</value></data>
-  <data name="Home_Title" xml:space="preserve"><value>Willkommen</value></data>
-  <data name="Home_PortalComingSoon" xml:space="preserve"><value>Das Kundenportal zur Eingabe eines Sitzungscodes folgt in Kürze.</value></data>
   <data name="Home_SignedInAs" xml:space="preserve"><value>Angemeldet als {0}.</value></data>
   <data name="Field_UserName" xml:space="preserve"><value>Benutzername</value></data>
   <data name="Field_Password" xml:space="preserve"><value>Passwort</value></data>
@@ -215,4 +213,33 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Sessions_EndReason_connection_lost" xml:space="preserve"><value>Verbindung verloren</value></data>
   <data name="Sessions_EndReason_max_duration" xml:space="preserve"><value>Höchstdauer erreicht</value></data>
   <data name="Sessions_EndReason_server_restart" xml:space="preserve"><value>Server neu gestartet</value></data>
+  <data name="Portal_Title" xml:space="preserve"><value>Fernwartung</value></data>
+  <data name="Portal_Intro" xml:space="preserve"><value>Ihr Supporter hat Ihnen einen Sitzungscode genannt? Geben Sie ihn hier ein, um den Support-Client herunterzuladen.</value></data>
+  <data name="Portal_Field_Code" xml:space="preserve"><value>Sitzungscode</value></data>
+  <data name="Portal_Continue" xml:space="preserve"><value>Weiter</value></data>
+  <data name="Portal_CodeHint" xml:space="preserve"><value>Der Code hat 8 Ziffern und ist 10 Minuten gültig. Es wird nichts dauerhaft installiert.</value></data>
+  <data name="Portal_Error_Invalid" xml:space="preserve"><value>Dieser Code ist nicht gültig. Bitte prüfen Sie ihn oder fragen Sie Ihren Supporter nach einem neuen.</value></data>
+  <data name="Portal_Error_Expired" xml:space="preserve"><value>Dieser Code ist abgelaufen. Bitte fragen Sie Ihren Supporter nach einem neuen.</value></data>
+  <data name="Portal_Download_Title" xml:space="preserve"><value>Support-Client herunterladen</value></data>
+  <data name="Portal_Download_None" xml:space="preserve"><value>Auf diesem Server ist noch kein Support-Client verfügbar. Bitte wenden Sie sich an Ihren Supporter.</value></data>
+  <data name="Portal_Download_WindowsX64" xml:space="preserve"><value>Für Windows herunterladen</value></data>
+  <data name="Portal_Download_LinuxX64" xml:space="preserve"><value>Für Linux (x86_64) herunterladen</value></data>
+  <data name="Portal_Download_LinuxArm64" xml:space="preserve"><value>Für Linux (ARM64) herunterladen</value></data>
+  <data name="Portal_Download_Android" xml:space="preserve"><value>Für Android herunterladen</value></data>
+  <data name="Portal_Download_Recommended" xml:space="preserve"><value>für Ihr Gerät empfohlen</value></data>
+  <data name="Portal_Next_Title" xml:space="preserve"><value>Nächste Schritte</value></data>
+  <data name="Portal_Next_Run" xml:space="preserve"><value>Öffnen Sie die heruntergeladene Datei. Benennen Sie sie nicht um – sie enthält Ihren Sitzungscode.</value></data>
+  <data name="Portal_Next_Check" xml:space="preserve"><value>Der Client zeigt den Server {0} und den Namen Ihres Supporters. Fahren Sie nur fort, wenn beides stimmt.</value></data>
+  <data name="Portal_Next_Consent" xml:space="preserve"><value>Erlauben Sie die Verbindung, wenn Ihr Supporter darum bittet.</value></data>
+  <data name="Portal_Next_End" xml:space="preserve"><value>Sie können die Sitzung jederzeit mit „Sitzung beenden“ beenden.</value></data>
+  <data name="Portal_OtherCode" xml:space="preserve"><value>Anderen Code eingeben</value></data>
+  <data name="Portal_SupporterLogin" xml:space="preserve"><value>Supporter?</value></data>
+  <data name="Settings_Clients" xml:space="preserve"><value>Support-Clients</value></data>
+  <data name="Settings_Clients_Intro" xml:space="preserve"><value>Im Kundenportal angebotene Clients. Legen Sie die Dateien im Datenverzeichnis ab (siehe Installationshandbuch).</value></data>
+  <data name="Settings_Clients_Platform" xml:space="preserve"><value>Plattform</value></data>
+  <data name="Settings_Clients_File" xml:space="preserve"><value>Datei</value></data>
+  <data name="Settings_Clients_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Settings_Clients_Available" xml:space="preserve"><value>verfügbar</value></data>
+  <data name="Settings_Clients_Missing" xml:space="preserve"><value>fehlt</value></data>
+  <data name="Settings_Clients_SearchPaths" xml:space="preserve"><value>Durchsuchte Ordner:</value></data>
 </root>

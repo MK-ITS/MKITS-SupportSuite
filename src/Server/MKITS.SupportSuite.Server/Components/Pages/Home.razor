@@ -1,19 +1,133 @@
 @* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
 @page "/"
+@page "/portal/code"
+@using MKITS.SupportSuite.Common.Sessions
+@using MKITS.SupportSuite.Server.Features.Downloads
+@using MKITS.SupportSuite.Server.Features.Sessions
+@inject SessionService SessionService
+@inject ClientCatalog Catalog
+@inject Microsoft.Extensions.Options.IOptions<MKITS.SupportSuite.Server.Infrastructure.Configuration.MkitsOptions> MkitsOptions
 
 <PageTitle>MKITS-SupportSuite</PageTitle>
 
 <section class="card">
-    <h1>@L["Home_Title"]</h1>
-    <p class="lead">@L["Product_Tagline"]</p>
-    <p>@L["Home_PortalComingSoon"]</p>
+    <h1>@L["Portal_Title"]</h1>
+    <p class="lead">@L["Portal_Intro"]</p>
+    <StatusMessage Kind="error" Text="@_error" />
+
+    @if (_validCode is null)
+    {
+        <EditForm Model="Input" method="post" action="/portal/code" OnSubmit="CheckAsync" FormName="portal-code" class="form" Enhance="false">
+            <label for="code">@L["Portal_Field_Code"]</label>
+            <InputText id="code" @bind-Value="Input.Code" class="code-input" inputmode="numeric" autocomplete="one-time-code"
+                       placeholder="1234 5678" maxlength="20" required autofocus />
+            <button type="submit">@L["Portal_Continue"]</button>
+        </EditForm>
+        <p class="hint">@L["Portal_CodeHint"]</p>
+    }
+    else
+    {
+        <h2>@L["Portal_Download_Title"]</h2>
+        @if (_clients.Count == 0)
+        {
+            <StatusMessage Kind="info" Text="@L["Portal_Download_None"]" />
+        }
+        else
+        {
+            <div class="downloads">
+                @foreach (var client in _clients)
+                {
+                    var recommended = client.Package.Platform == _detected;
+                    <form method="post" action="@PortalEndpoints.DownloadPath" class="download@(recommended ? " recommended" : string.Empty)">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="code" value="@_validCode" />
+                        <input type="hidden" name="platform" value="@client.Package.Platform" />
+                        <button type="submit" class="@(recommended ? string.Empty : "secondary")">
+                            @L["Portal_Download_" + client.Package.Platform]
+                        </button>
+                        <span class="hint">@FormatSize(client.SizeBytes)@(recommended ? " · " + L["Portal_Download_Recommended"] : string.Empty)</span>
+                    </form>
+                }
+            </div>
+
+            <h2>@L["Portal_Next_Title"]</h2>
+            <ol class="steps">
+                <li>@L["Portal_Next_Run"]</li>
+                <li>@L["Portal_Next_Check", ServerHost]</li>
+                <li>@L["Portal_Next_Consent"]</li>
+                <li>@L["Portal_Next_End"]</li>
+            </ol>
+        }
+
+        <p><a href="/">@L["Portal_OtherCode"]</a></p>
+    }
+
     <AuthorizeView>
         <Authorized>
-            <p>@L["Home_SignedInAs", context.User.Identity?.Name ?? string.Empty]</p>
-            <p><a class="button" href="/sessions">@L["Home_StartSupport"]</a></p>
+            <p class="hint">@L["Home_SignedInAs", context.User.Identity?.Name ?? string.Empty] <a href="/sessions">@L["Home_StartSupport"]</a></p>
         </Authorized>
         <NotAuthorized>
-            <p><a class="button" href="/account/login">@L["Nav_Login"]</a></p>
+            <p class="hint">@L["Portal_SupporterLogin"] <a href="/account/login">@L["Nav_Login"]</a></p>
         </NotAuthorized>
     </AuthorizeView>
 </section>
+
+@code {
+    private string? _error;
+    private string? _validCode;
+    private ClientPlatform? _detected;
+    private IReadOnlyList<AvailableClient> _clients = [];
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "portal-code")]
+    private CodeInput Input { get; set; } = default!;
+
+    /// <summary>Set by the download endpoint when the code became invalid in the meantime.</summary>
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? ErrorParam { get; set; }
+
+    private string ServerHost => new Uri(MkitsOptions.Value.PublicBaseUrl).Host;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+        _error = ErrorParam switch
+        {
+            "invalid" => L["Portal_Error_Invalid"],
+            "expired" => L["Portal_Error_Expired"],
+            _ => null,
+        };
+    }
+
+    private async Task CheckAsync()
+    {
+        var result = await SessionService.CheckCodeAsync(Input.Code, HttpContext.Connection.RemoteIpAddress);
+        switch (result)
+        {
+            case CodeCheckResult.Valid:
+                _error = null;
+                _validCode = SessionCodeFormat.Normalize(Input.Code);
+                _detected = PlatformDetector.FromUserAgent(HttpContext.Request.Headers.UserAgent.ToString());
+                _clients = Catalog.GetAvailable()
+                    .OrderByDescending(c => c.Package.Platform == _detected)
+                    .ToList();
+                break;
+            case CodeCheckResult.Expired:
+                _error = L["Portal_Error_Expired"];
+                break;
+            default:
+                _error = L["Portal_Error_Invalid"];
+                break;
+        }
+    }
+
+    private static string FormatSize(long bytes) =>
+        string.Format(CultureInfo.CurrentCulture, "{0:0.0} MB", bytes / 1024d / 1024d);
+
+    private sealed class CodeInput
+    {
+        public string? Code { get; set; }
+    }
+}

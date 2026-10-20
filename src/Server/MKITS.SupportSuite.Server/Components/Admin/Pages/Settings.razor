@@ -4,10 +4,12 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
+@using MKITS.SupportSuite.Server.Features.Downloads
 @using MKITS.SupportSuite.Server.Features.Notifications
 @inject IOptionsMonitor<SmtpOptions> Smtp
 @inject IEmailSender EmailSender
 @inject UserManager<MkitsUser> UserManager
+@inject ClientCatalog Catalog
 
 <PageTitle>@L["Settings_Title"]</PageTitle>
 
@@ -36,6 +38,24 @@
                 <StatusMessage Kind="error" Text="@_error" />
                 <button type="button" @onclick="SendTestAsync" disabled="@_sending">@L["Settings_Email_SendTest"]</button>
             }
+
+            <h2>@L["Settings_Clients"]</h2>
+            <p class="hint">@L["Settings_Clients_Intro"]</p>
+            <table class="table">
+                <thead><tr><th>@L["Settings_Clients_Platform"]</th><th>@L["Settings_Clients_File"]</th><th>@L["Settings_Clients_Status"]</th></tr></thead>
+                <tbody>
+                    @foreach (var package in ClientCatalog.Packages)
+                    {
+                        var available = Catalog.Get(package.Platform);
+                        <tr>
+                            <td>@L["Portal_Download_" + package.Platform]</td>
+                            <td><code>@(available?.FullPath ?? package.RelativePath)</code></td>
+                            <td>@(available is null ? L["Settings_Clients_Missing"] : L["Settings_Clients_Available"])</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p class="hint">@L["Settings_Clients_SearchPaths"] @string.Join(", ", Catalog.SearchPaths)</p>
         </section>
     </Authorized>
 </AuthorizeView>

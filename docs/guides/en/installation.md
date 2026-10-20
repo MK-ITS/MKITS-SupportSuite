@@ -144,6 +144,23 @@ Further settings (IP bans, sessions, SMTP, retention) are listed in the [adminis
 
 > ⚠️ Only list your real proxies as trusted. If an untrusted address is listed, clients could fake their IP address and bypass IP bans.
 
+### 8.1 Support clients for the customer portal
+
+The portal offers the ad-hoc client for download once the file is present in the data volume. Until official releases are bundled with the image (Phase 8 onwards), copy the files there yourself:
+
+```bash
+# Create the folders once
+docker compose exec server mkdir -p /data/agents/windows-x64 /data/agents/linux-x64 /data/agents/linux-arm64 /data/agents/android
+# Windows client (portable EXE)
+docker compose cp MKITS-Support.exe server:/data/agents/windows-x64/MKITS-Support.exe
+# Linux clients (AppImage) and Android (APK), if available
+docker compose cp MKITS-Support-x86_64.AppImage server:/data/agents/linux-x64/MKITS-Support.AppImage
+docker compose cp MKITS-Support-aarch64.AppImage server:/data/agents/linux-arm64/MKITS-Support.AppImage
+docker compose cp MKITS-Support.apk server:/data/agents/android/MKITS-Support.apk
+```
+
+*Administration → Settings → Support clients* shows which files were found. Customers download the file under a name that contains your server address and the session code (`MKITS-Support_support.example.com_12345678.exe`), so the client connects without further input. Files are read on every download – replacing them needs no restart.
+
 ## 9. Updates
 
 ```bash
