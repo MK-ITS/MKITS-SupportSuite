@@ -28,7 +28,7 @@
 
 Server: {1}
 
-The supporter will see your screen and can use mouse and keyboard, exchange files and the clipboard. You can end the session at any time.</value></data>
+The supporter will see your screen and can use mouse and keyboard, exchange files and the clipboard, and open a command line (PowerShell / cmd) with your user rights. You can end the session at any time.</value></data>
   <data name="Consent_Allow" xml:space="preserve"><value>Allow</value></data>
   <data name="Consent_Deny" xml:space="preserve"><value>Deny</value></data>
   <data name="Connect_Title" xml:space="preserve"><value>Connect to remote support</value></data>

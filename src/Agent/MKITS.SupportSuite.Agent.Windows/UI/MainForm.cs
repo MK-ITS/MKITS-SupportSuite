@@ -28,6 +28,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
     private AgentSession? _session;
     private ChatHandler? _chat;
     private FileTransferHandler? _files;
+    private ShellHandler? _shells;
     private ClipboardHandler? _clipboard;
     private GdiScreenSourceHolder? _screen;
     private bool _ended;
@@ -185,11 +186,12 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         _screen = new GdiScreenSourceHolder();
         _chat = new ChatHandler(this);
         _files = new FileTransferHandler(this);
+        _shells = new ShellHandler(new Platform.ConPtyShellHost());
         _clipboard = new ClipboardHandler(this);
         var streamer = new ScreenStreamer(_screen.Source);
         var input = new InputHandler(new Platform.SendInputInjector(), _screen.Source);
 
-        _session = new AgentSession(_options, new Core.Connection.ClientWebSocketConnector(), this, [streamer, input, _clipboard, _chat, _files]);
+        _session = new AgentSession(_options, new Core.Connection.ClientWebSocketConnector(), this, [streamer, input, _clipboard, _chat, _files, _shells]);
         try
         {
             var result = await _session.RunAsync(_closing.Token);
@@ -205,6 +207,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         finally
         {
             await streamer.DisposeAsync();
+            await _shells.DisposeAsync();
             await _session.DisposeAsync();
         }
     }

@@ -278,4 +278,8 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Viewer_FileOffering" xml:space="preserve"><value>Biete {0} dem Kunden an …</value></data>
   <data name="Viewer_FileSent" xml:space="preserve"><value>Gesendet: {0}</value></data>
   <data name="Viewer_FileNotSent" xml:space="preserve"><value>Nicht gesendet (abgelehnt oder fehlgeschlagen): {0}</value></data>
+  <data name="Viewer_Terminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="Viewer_TerminalClose" xml:space="preserve"><value>Schließen</value></data>
+  <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell beendet mit Code</value></data>
+  <data name="Viewer_TerminalRefused" xml:space="preserve"><value>Die Shell konnte nicht gestartet werden</value></data>
 </root>
