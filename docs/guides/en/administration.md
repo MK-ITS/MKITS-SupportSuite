@@ -14,11 +14,10 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Security headers, trusted reverse proxies, data directory, localization (EN/DE) | ✅ available |
 | First-run setup, login, users, roles, TOTP 2FA, profile/language | ✅ available |
 | IP bans, allow/deny lists, audit log with integrity check, e-mail notifications (admin UI) | ✅ available |
-| Ad-hoc session codes (create, list, revoke, expiry) | ✅ available |
-| Customer portal (code entry, client download), relay with consent, E2E crypto (server side) | ✅ available |
-| Consent dialog and banner in the clients | 🔜 Phases 7–8 |
-| Windows agent, browser viewer (chat, files, clipboard, shell) | 🔜 Phases 7–9 (milestone M1) |
-| Device groups, permanent access, installers, auto-update | 🔜 Phase 10 (M2) |
+| Ad-hoc sessions: codes, customer portal, Windows client with consent, browser viewer (screen, input, chat, files, clipboard, shell), administrator mode | ✅ available (milestone M1) |
+| Device groups, permissions, enrollment tokens, device list, supporter page *Devices* | ✅ available |
+| Windows agent as a service (unattended view and control, consent policies) | ✅ available (first version, see §5.2) |
+| Chat, files, clipboard and shell on permanent devices; MSI package; auto-update | 🔜 Phase 10 |
 | Linux agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
@@ -61,33 +60,33 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 - **2FA policy:** mandatory for Admins (admin pages are not accessible without it); Users can enable it under *My account*. Making it mandatory for Users is planned (`Mkits__Security__RequireTwoFactorForUsers`).
 - **Passwords:** at least 12 characters, no composition rules (long passphrases are better). After 10 wrong attempts an account is locked for 15 minutes (in addition to IP bans).
 
-## 5. Devices and permanent access *(planned)*
+## 5. Devices and permanent access
 
 ### 5.1 Device groups
 
-*Administration → Device groups* – typically one group per customer or site.
+*Device administration* (`/admin/devices`) – typically one group per customer or site.
 
 | Setting | Meaning |
 |---|---|
-| Consent policy | Ask / Notify / Silent |
-| Recording policy | Off / Optional (supporter decides) / Required |
-| Require enrollment approval | new devices stay *pending* until an Admin approves them |
-| Permissions | per User: View, Control, Files, Clipboard, Shell |
+| Consent of the user at the device | **Ask every time** (Yes/No message on the device; nobody logged on → declined), **Notify only** (message, no question), **Silent** (nothing – only where legally allowed, e.g. unattended servers) |
+| New devices need approval | new devices stay *awaiting approval* until an Admin approves them |
+| Permissions | per User: View, Control, Files, Shell, Clipboard (every permission includes View; Admins always have all). The server and the agent enforce them per function. |
 
 ### 5.2 Enrolling devices
 
-Create an **enrollment token** in the group (validity, maximum number of uses). Then:
+Create an **enrollment token** in the group (validity, number of devices). It is shown **once**, together with the install command. Then:
 
-- **Windows:** download the MSI from the group page and install it, e.g. via GPO/Intune:
-  `msiexec /i MKITS-Agent.msi /qn MKITS_SERVER=https://support.example.com MKITS_TOKEN=<token>`
-- **Linux (Debian/Ubuntu):** `sudo apt install ./mkits-agent_<version>_amd64.deb && sudo mkits-agent enroll --server https://support.example.com --token <token>`
-- **Android:** install the APK from the portal, open the app, scan the enrollment QR code, enable the accessibility service when asked.
+- **Windows** (10 / Server 2016 or newer, x64): download `MKITS-Agent.exe` (link next to the token) and run in an **administrator** command prompt, or via your software deployment / RMM tool:
+  `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
+  The agent installs itself to `%ProgramFiles%\MKITS-SupportSuite\Agent`, registers the service **MKITS SupportSuite Agent** (automatic start, restarts on failure) and enrolls. Identity and settings are stored DPAPI-protected in `%ProgramData%\MKITS-SupportSuite\agent` (SYSTEM and Administrators only); the log is `agent.log` there. Running `--install` again updates the agent and keeps the identity (`--reenroll` forces a new enrollment, a token is needed then). Remove with `MKITS-Agent.exe --uninstall`.
+  First version: screen, mouse/keyboard (including the lock screen, UAC prompts and Ctrl+Alt+Del) are available; chat, files, clipboard and shell on permanent devices follow.
+- **Linux, Android:** planned (Phases 11, 12).
 
-Tokens are shown once, stored only as hashes and can be revoked. Revoke tokens after a rollout.
+Tokens are stored only as hashes and can be revoked. Revoke tokens after a rollout.
 
 ### 5.3 Managing devices
 
-The device list shows online status, OS, agent version, last seen and last IP. Actions: rename, move to another group, disable (blocks connections), remove (the agent must be re-enrolled). Agents update themselves automatically from the server (signed updates).
+The device list shows the group, OS, agent version, last seen and last IP. Actions: approve, move to another group, disable (ends a running session and disconnects the device), remove (the agent must be enrolled again). Supporters see the devices they have access to on **Devices** (`/devices`) with the online state and connect or join a running session from there.
 
 ## 6. Ad-hoc support workflow *(partly available)*
 

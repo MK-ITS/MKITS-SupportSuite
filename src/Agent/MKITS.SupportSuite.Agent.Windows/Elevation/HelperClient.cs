@@ -31,6 +31,9 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
 
     public event EventHandler? Disconnected;
 
+    /// <summary>The pipe broke; a new helper is needed.</summary>
+    public bool IsBroken => Volatile.Read(ref _broken) != 0;
+
     public static string PipeNameFor(string id) => $"MKITS-Helper-{id}";
 
     /// <summary>
@@ -76,11 +79,17 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
             }
         }
 
-        var pipe = new NamedPipeClientStream(".", PipeNameFor(id), PipeDirection.InOut, PipeOptions.Asynchronous);
+        return await ConnectAsync(PipeNameFor(id), ElevatedSessionConfig.ExecutableFor(id), TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Connects to a helper whose process must run <paramref name="expectedExecutable"/> (guards against a squatted pipe name).</summary>
+    public static async Task<HelperClient?> ConnectAsync(string pipeName, string expectedExecutable, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         try
         {
-            await pipe.ConnectAsync((int)TimeSpan.FromSeconds(30).TotalMilliseconds, cancellationToken).ConfigureAwait(false);
-            if (!ServerIsOurHelper(pipe, id))
+            await pipe.ConnectAsync((int)timeout.TotalMilliseconds, cancellationToken).ConfigureAwait(false);
+            if (!ServerIsOurHelper(pipe, expectedExecutable))
             {
                 await pipe.DisposeAsync().ConfigureAwait(false);
                 return null;
@@ -221,7 +230,7 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
     }
 
     /// <summary>The pipe server must be the helper EXE from the protected folder (guards against a squatted pipe name).</summary>
-    private static bool ServerIsOurHelper(NamedPipeClientStream pipe, string id)
+    private static bool ServerIsOurHelper(NamedPipeClientStream pipe, string expectedExecutable)
     {
         if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var serverPid))
         {
@@ -239,7 +248,7 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
             var buffer = new char[1024];
             var length = buffer.Length;
             return QueryFullProcessImageName(process, 0, buffer, ref length)
-                && string.Equals(new string(buffer, 0, length), ElevatedSessionConfig.ExecutableFor(id), StringComparison.OrdinalIgnoreCase);
+                && string.Equals(new string(buffer, 0, length), expectedExecutable, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

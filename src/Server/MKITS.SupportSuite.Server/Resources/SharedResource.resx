@@ -352,6 +352,7 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Tokens_Field_MaxUses" xml:space="preserve"><value>Number of devices</value></data>
   <data name="Tokens_Create" xml:space="preserve"><value>Create token</value></data>
   <data name="Tokens_ShownOnce" xml:space="preserve"><value>New enrollment token – it is only shown now:</value></data>
+  <data name="Tokens_InstallWindows" xml:space="preserve"><value>Windows: download the agent and run this command in an administrator command prompt:</value></data>
   <data name="Tokens_ValidUntil" xml:space="preserve"><value>Valid until {0}.</value></data>
   <data name="Tokens_Column_Created" xml:space="preserve"><value>Created</value></data>
   <data name="Tokens_Column_Expires" xml:space="preserve"><value>Expires</value></data>
