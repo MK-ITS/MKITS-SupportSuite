@@ -97,7 +97,7 @@ Agent.Core
 ```
 
 - **Permanent agent:** installed service as above.
-- **Ad-hoc agent:** single portable EXE. Starts unprivileged in the user's session (no secure desktop access). Offers *Restart with administrator rights*: the UAC prompt appears on the customer's screen; after elevation it installs a temporary service with the same process model and removes it when the session ends.
+- **Ad-hoc agent:** single portable EXE. Starts unprivileged in the user's session (no secure desktop access). Offers *Restart with administrator rights*: the UAC prompt appears on the customer's screen; after elevation it installs a temporary service that starts the SYSTEM helper and removes itself when the session ends. In this mode the unprivileged client keeps the server connection and forwards capture/input to the helper (ADR-0021).
 
 ### Linux process model *(planned, Phase 11)*
 

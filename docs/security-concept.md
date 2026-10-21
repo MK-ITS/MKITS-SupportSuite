@@ -44,7 +44,7 @@
 | T10 | Replay / reordering on the session plane | GCM nonce from per-direction sequence numbers, strictly increasing; rekey limits |
 | T11 | Malicious update to agents | updates signed with an offline-generated ECDSA P-256 update key; public key compiled into the agent; agent verifies before installing; downgrade protection by version check |
 | T12 | Abuse by scammers ("tech support scam") | consent dialog naming operator and supporter, permanent on-screen banner, *End session* always available, no hidden mode for ad-hoc, server address shown in client |
-| T13 | Privilege escalation through the agent | Windows service ↔ helper IPC via named pipe with SYSTEM-only ACL; UI process unprivileged; no remote command reaches the service without an authenticated, consented session; shell `elevated` requires the session to run elevated and the permission `shell` |
+| T13 | Privilege escalation through the agent | Windows: helper pipe ACL SYSTEM + the customer's SID only, single connection, client PID and server image verified (ADR-0021); UI process unprivileged; no remote command reaches the service without an authenticated, consented session; shell `elevated` requires the session to run elevated and the permission `shell` |
 | T14 | Path traversal / malicious files in transfers | receiver sanitizes names (no paths, reserved names, length), writes to the user's download folder, never executes; size limits; SHA-256 verification |
 | T15 | Denial of service | nginx connection/request limits, server message size limits, per-IP connection caps, video backpressure, bounded queues |
 | T16 | Audit log tampering | append-only table, each entry contains `SHA-256(previous_hash ‖ entry)`; integrity check in the admin UI; export for external archiving |

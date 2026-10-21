@@ -49,4 +49,10 @@ Accept the file?</value></data>
   <data name="File_Offered" xml:space="preserve"><value>Offering file {0} …</value></data>
   <data name="File_Sent" xml:space="preserve"><value>File sent: {0}</value></data>
   <data name="File_NotSent" xml:space="preserve"><value>File not sent (declined or failed): {0}</value></data>
+  <data name="Elevate_Button" xml:space="preserve"><value>Restart with administrator rights</value></data>
+  <data name="Elevate_Waiting" xml:space="preserve"><value>Please confirm the Windows prompt (UAC) …</value></data>
+  <data name="Elevate_Failed" xml:space="preserve"><value>Administrator rights were not granted. The session continues without them.</value></data>
+  <data name="Elevate_Active" xml:space="preserve"><value>Administrator mode: the supporter can also see and use Windows security prompts and the lock screen. It ends with the session.</value></data>
+  <data name="Elevate_Lost" xml:space="preserve"><value>Administrator mode ended.</value></data>
+  <data name="Elevate_ChatNotice" xml:space="preserve"><value>The customer enabled administrator mode (UAC prompts, lock screen, Ctrl+Alt+Del).</value></data>
 </root>

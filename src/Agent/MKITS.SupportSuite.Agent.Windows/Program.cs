@@ -18,6 +18,19 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        // Roles of the elevated ad-hoc mode (ADR-0021); none of them shows a window.
+        switch (args.FirstOrDefault())
+        {
+            case "--elevate":
+                return Elevation.ElevationInstaller.Run(args);
+            case "--service" when args.Length > 1:
+                return Elevation.AdHocService.Run(args[1]);
+            case "--helper" when args.Length > 1:
+                return Elevation.PrivilegedHelper.Run(args[1]);
+            default:
+                break;
+        }
+
         ApplicationConfiguration.Initialize();
 
         var options = FromArguments(args) ?? FromFileName() ?? FromDialog();

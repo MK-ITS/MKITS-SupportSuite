@@ -15,6 +15,10 @@
     <PackageVersion Include="Grpc.Tools" Version="2.84.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Windows agent">
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.13" />
+  </ItemGroup>
+
   <ItemGroup Label="Server">
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
