@@ -6,6 +6,7 @@ using Google.Protobuf;
 using MKITS.SupportSuite.Common;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Sessions;
 
@@ -18,6 +19,7 @@ public static class RelaySetup
     {
         services.AddSingleton<SessionHub>();
         services.AddSingleton<RelayConnectionHandler>();
+        services.AddSingleton<DeviceSessionLauncher>();
         services.AddHostedService<RelayMaintenance>();
         return services;
     }
@@ -43,6 +45,7 @@ public static class RelaySetup
 public sealed partial class RelayConnectionHandler(
     SessionHub hub,
     SessionService sessions,
+    DeviceService devices,
     ViewerTicketStore viewerTickets,
     IpBanService ipBans,
     TimeProvider timeProvider,
@@ -110,12 +113,13 @@ public sealed partial class RelayConnectionHandler(
             return Fail(peer, ErrorCodes.ProtocolMismatch, $"server speaks {ProtocolVersion.AsString}");
         }
 
+        var nonce = RandomNumberGenerator.GetBytes(32);
         peer.Send(new Frame
         {
             HelloAck = new HelloAck
             {
                 ServerVersion = ProductInfo.Version,
-                Nonce = ByteString.CopyFrom(RandomNumberGenerator.GetBytes(32)),
+                Nonce = ByteString.CopyFrom(nonce),
                 HeartbeatSeconds = (uint)SessionHub.HeartbeatInterval.TotalSeconds,
             },
         });
@@ -131,9 +135,9 @@ public sealed partial class RelayConnectionHandler(
         {
             (PeerRole.Agent, Authenticate.MethodOneofCase.AdHocCode) => await AuthenticateAdHocAsync(peer, auth.AdHocCode, cancellationToken).ConfigureAwait(false),
             (PeerRole.Agent, Authenticate.MethodOneofCase.Resume) => await ResumeAsync(peer, auth.Resume, cancellationToken).ConfigureAwait(false),
+            (PeerRole.Agent, Authenticate.MethodOneofCase.Enrollment) => await EnrollAsync(peer, auth.Enrollment, hello.Hello, cancellationToken).ConfigureAwait(false),
+            (PeerRole.Agent, Authenticate.MethodOneofCase.DeviceSignature) => await AuthenticateDeviceAsync(peer, auth.DeviceSignature, nonce, hello.Hello, cancellationToken).ConfigureAwait(false),
             (PeerRole.Viewer, Authenticate.MethodOneofCase.ViewerTicket) => await AuthenticateViewerAsync(peer, auth.ViewerTicket, cancellationToken).ConfigureAwait(false),
-
-            // Enrollment and device signatures arrive with permanent devices (Phase 10).
             _ => Fail(peer, ErrorCodes.NotAuthorized, "authentication method not supported"),
         };
     }
@@ -147,6 +151,55 @@ public sealed partial class RelayConnectionHandler(
         }
 
         return await hub.AttachAgentAsync(peer, sessionId, result.OperatorName, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Registers a new permanent device (docs/protocol.md §3). The connection is closed afterwards; the agent
+    /// reconnects with its key (<see cref="AuthenticateDeviceAsync"/>).
+    /// </summary>
+    private async Task<bool> EnrollAsync(PeerConnection peer, Enrollment enrollment, Hello hello, CancellationToken cancellationToken)
+    {
+        var machine = enrollment.Machine;
+        var result = await devices.EnrollAsync(
+            enrollment.Token,
+            enrollment.DevicePublicKey.ToByteArray(),
+            new DeviceInfo(machine?.MachineName, hello.Platform, machine?.OsName, machine?.OsVersion, hello.ProductVersion),
+            peer.RemoteAddress,
+            cancellationToken).ConfigureAwait(false);
+        if (result.DeviceId is not { } deviceId)
+        {
+            return Fail(peer, result.ErrorCode ?? ErrorCodes.AuthFailed, "enrollment rejected");
+        }
+
+        peer.Send(new Frame { AuthResult = new AuthResult { Ok = true, PeerId = deviceId.ToString() } });
+        peer.Complete();
+        return false;
+    }
+
+    /// <summary>A permanent device proves possession of its key by signing this connection's nonce.</summary>
+    private async Task<bool> AuthenticateDeviceAsync(PeerConnection peer, DeviceSignature signature, byte[] nonce, Hello hello, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(signature.DeviceId, out var deviceId))
+        {
+            await ipBans.RecordFailureAsync(peer.RemoteAddress, FailureKinds.DeviceSignature, cancellationToken).ConfigureAwait(false);
+            return Fail(peer, ErrorCodes.AuthFailed, "device rejected");
+        }
+
+        var facts = await devices.AuthenticateAsync(
+            deviceId, nonce, signature.Signature.ToByteArray(),
+            new DeviceInfo(null, hello.Platform, null, null, hello.ProductVersion),
+            peer.RemoteAddress, cancellationToken).ConfigureAwait(false);
+        if (facts is null)
+        {
+            return Fail(peer, ErrorCodes.AuthFailed, "device rejected");
+        }
+
+        if (facts.Status != DeviceStatus.Active)
+        {
+            return Fail(peer, ErrorCodes.NotAuthorized, "device awaits approval");
+        }
+
+        return await hub.AttachDeviceAsync(peer, facts, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<bool> ResumeAsync(PeerConnection peer, Resume resume, CancellationToken cancellationToken)
@@ -234,6 +287,7 @@ public sealed partial class RelayMaintenance(SessionHub hub, TimeProvider timePr
             try
             {
                 await hub.TickAsync(stoppingToken).ConfigureAwait(false);
+                hub.TickIdleDevices();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

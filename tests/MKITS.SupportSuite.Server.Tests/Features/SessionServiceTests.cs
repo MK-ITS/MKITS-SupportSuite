@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Sessions;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Sessions;
@@ -36,7 +37,8 @@ public sealed class SessionServiceTests : IDisposable
             _database, new StaticOptionsMonitor<IpBanOptions>(_banOptions), new FailureTracker(), _auditLog, _time,
             NullLogger<IpBanService>.Instance);
         _tickets = new ViewerTicketStore(_time);
-        _service = new SessionService(_database, new StaticOptionsMonitor<SessionOptions>(_options), _ipBans, _tickets, _auditLog, _time);
+        _service = new SessionService(
+            _database, new StaticOptionsMonitor<SessionOptions>(_options), _ipBans, _tickets, new DeviceService(_database, _ipBans, _auditLog, _time), _auditLog, _time);
         _supporter = AddUser("alice", "Alice Supporter");
         _otherSupporter = AddUser("bob", "Bob Supporter");
     }

@@ -4,11 +4,12 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
+using MKITS.SupportSuite.Server.Features.Devices;
 
 namespace MKITS.SupportSuite.Server.Features.Sessions;
 
-/// <summary>What a redeemed viewer ticket grants: joining one session as one user.</summary>
-public sealed record ViewerTicketGrant(Guid SessionId, Guid UserId);
+/// <summary>What a redeemed viewer ticket grants: joining one session as one user with the given permissions.</summary>
+public sealed record ViewerTicketGrant(Guid SessionId, Guid UserId, DevicePermissions Permissions = DevicePermissions.All);
 
 /// <summary>
 /// One-time, short-lived tickets for the viewer WebSocket (docs/protocol.md §3). The web session (cookie) never
@@ -25,7 +26,7 @@ public sealed class ViewerTicketStore(TimeProvider timeProvider)
     public int Count => _tickets.Count;
 
     /// <summary>Creates a ticket (256 random bits, base64url).</summary>
-    public string Issue(Guid sessionId, Guid userId, TimeSpan lifetime)
+    public string Issue(Guid sessionId, Guid userId, TimeSpan lifetime, DevicePermissions permissions = DevicePermissions.All)
     {
         var now = timeProvider.GetUtcNow();
         if (_tickets.Count >= MaxTickets)
@@ -39,7 +40,7 @@ public sealed class ViewerTicketStore(TimeProvider timeProvider)
         }
 
         var ticket = Base64Url(RandomNumberGenerator.GetBytes(32));
-        _tickets[Hash(ticket)] = new Entry(new ViewerTicketGrant(sessionId, userId), now + lifetime);
+        _tickets[Hash(ticket)] = new Entry(new ViewerTicketGrant(sessionId, userId, permissions), now + lifetime);
         return ticket;
     }
 

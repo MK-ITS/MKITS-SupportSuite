@@ -37,6 +37,7 @@ public static class SessionEndReasons
     public const string ConnectionLost = "connection_lost";
     public const string MaxDurationReached = "max_duration";
     public const string ServerRestart = "server_restart";
+    public const string DeviceDisabled = "device_disabled";
 }
 
 /// <summary>A support session – ad-hoc (code) or permanent (device). See docs/data-model.md.</summary>

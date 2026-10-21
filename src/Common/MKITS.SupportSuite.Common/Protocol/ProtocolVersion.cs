@@ -17,7 +17,7 @@ public static class ProtocolVersion
 {
     public const int Major = 0;
 
-    public const int Minor = 2;
+    public const int Minor = 3;
 
     /// <summary>Returns <c>true</c> if a peer speaking the given major version can talk to this build.</summary>
     public static bool IsCompatible(int peerMajor) => peerMajor == Major;

@@ -283,6 +283,21 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell exited with code</value></data>
   <data name="Viewer_TerminalRefused" xml:space="preserve"><value>The shell could not be started</value></data>
   <data name="Nav_Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="Nav_DeviceAdmin" xml:space="preserve"><value>Device administration</value></data>
+  <data name="MyDevices_Title" xml:space="preserve"><value>Devices</value></data>
+  <data name="MyDevices_Intro" xml:space="preserve"><value>Permanent devices you have access to. Connecting starts a session according to the group's consent policy.</value></data>
+  <data name="MyDevices_Filter" xml:space="preserve"><value>Search</value></data>
+  <data name="MyDevices_OnlineOnly" xml:space="preserve"><value>Online only</value></data>
+  <data name="MyDevices_None" xml:space="preserve"><value>No devices.</value></data>
+  <data name="MyDevices_Column_State" xml:space="preserve"><value>State</value></data>
+  <data name="MyDevices_State_Online" xml:space="preserve"><value>online</value></data>
+  <data name="MyDevices_State_Offline" xml:space="preserve"><value>offline</value></data>
+  <data name="MyDevices_State_InSession" xml:space="preserve"><value>in a session</value></data>
+  <data name="MyDevices_Action_Connect" xml:space="preserve"><value>Connect</value></data>
+  <data name="MyDevices_Action_Join" xml:space="preserve"><value>Join session</value></data>
+  <data name="Devices_Error_NotAllowed" xml:space="preserve"><value>You have no access to this device.</value></data>
+  <data name="Devices_Error_Offline" xml:space="preserve"><value>The device is not online.</value></data>
+  <data name="Sessions_EndReason_device_disabled" xml:space="preserve"><value>device disabled or removed</value></data>
   <data name="Devices_Title" xml:space="preserve"><value>Permanent devices</value></data>
   <data name="Devices_Intro" xml:space="preserve"><value>Permanent devices are computers with the installed agent. They are enrolled into a group with an enrollment token; supporters get access per group.</value></data>
   <data name="Devices_List" xml:space="preserve"><value>Devices</value></data>

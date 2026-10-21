@@ -33,6 +33,12 @@ public sealed record EnrollResult(Guid? DeviceId, DeviceStatus Status, string? E
 /// <summary>Persisted facts the relay needs about a device.</summary>
 public sealed record DeviceFacts(Guid Id, Guid GroupId, string Name, DeviceStatus Status, DeviceConsentPolicy ConsentPolicy);
 
+/// <summary>A device was disabled, removed or moved: live connections and sessions must be re-evaluated.</summary>
+public sealed class DeviceChangedEventArgs(Guid deviceId) : EventArgs
+{
+    public Guid DeviceId { get; } = deviceId;
+}
+
 /// <summary>
 /// Device groups, permissions, enrollment tokens and the device registry (ADR-0013, data-model.md).
 /// Long-term device keys are ECDSA P-256; agents prove possession by signing the server's handshake nonce.
@@ -50,6 +56,26 @@ public sealed class DeviceService(
     public const string ErrorNotFound = "Devices_Error_NotFound";
 
     internal const int MaxNameLength = 100;
+
+    /// <summary>Wire names of the permissions (docs/protocol.md, <c>ConsentRequest</c> / <c>ViewerJoined</c>).</summary>
+    private static readonly (DevicePermissions Flag, string Name)[] PermissionNameMap =
+    [
+        (DevicePermissions.View, "view"),
+        (DevicePermissions.Control, "control"),
+        (DevicePermissions.Files, "files"),
+        (DevicePermissions.Shell, "shell"),
+        (DevicePermissions.Clipboard, "clipboard"),
+    ];
+
+    /// <summary>
+    /// Raised after a device was disabled, removed or moved, so the relay can end its sessions or disconnect it.
+    /// Handlers must not block.
+    /// </summary>
+    public event EventHandler<DeviceChangedEventArgs>? DeviceChanged;
+
+    /// <summary>The permissions as wire names, e.g. <c>["view", "control"]</c>.</summary>
+    public static IReadOnlyList<string> PermissionNames(DevicePermissions permissions) =>
+        PermissionNameMap.Where(p => permissions.HasFlag(p.Flag)).Select(p => p.Name).ToList();
     private const string P256Oid = "1.2.840.10045.3.1.7";
 
     // ------------------------------------------------------------------ groups
@@ -332,7 +358,14 @@ public sealed class DeviceService(
 
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         var device = await db.Devices.FirstOrDefaultAsync(d => d.Id == deviceId, cancellationToken).ConfigureAwait(false);
-        if (device is null || !Verify(device.PublicKey, nonce, signature))
+        if (device is null)
+        {
+            // Not counted for the IP ban service: a removed device keeps retrying and would otherwise ban the
+            // customer's whole network. Signatures cannot be guessed, so the count adds no protection here.
+            return null;
+        }
+
+        if (!Verify(device.PublicKey, nonce, signature))
         {
             await ipBans.RecordFailureAsync(address, FailureKinds.DeviceSignature, cancellationToken).ConfigureAwait(false);
             return null;
@@ -454,6 +487,7 @@ public sealed class DeviceService(
         db.Devices.Remove(device);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditEventTypes.DeviceRemoved, actorId, "device", deviceId, new() { ["name"] = device.Name }, cancellationToken).ConfigureAwait(false);
+        DeviceChanged?.Invoke(this, new DeviceChangedEventArgs(deviceId));
         return null;
     }
 
@@ -505,10 +539,16 @@ public sealed class DeviceService(
             return ErrorNotFound;
         }
 
+        var before = (device.Status, device.GroupId);
         change(device);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await AuditAsync(auditType, actorId, "device", deviceId,
             new() { ["name"] = device.Name, ["status"] = device.Status.ToString(), ["group"] = device.GroupId.ToString() }, cancellationToken).ConfigureAwait(false);
+        if (before != (device.Status, device.GroupId))
+        {
+            DeviceChanged?.Invoke(this, new DeviceChangedEventArgs(deviceId));
+        }
+
         return null;
     }
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Sessions;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
 
@@ -44,7 +45,7 @@ public sealed class SessionEndedEventArgs(Guid sessionId, string reason) : Event
 }
 
 /// <summary>Persisted facts about a session that the relay needs when a peer attaches.</summary>
-public sealed record SessionFacts(Guid Id, SessionKind Kind, SessionStatus Status, Guid OwnerUserId, string? AgentMachineName);
+public sealed record SessionFacts(Guid Id, SessionKind Kind, SessionStatus Status, Guid OwnerUserId, string? AgentMachineName, Guid? DeviceId = null);
 
 /// <summary>One row of the session list.</summary>
 public sealed record SessionSummary(
@@ -69,6 +70,7 @@ public sealed class SessionService(
     IOptionsMonitor<SessionOptions> options,
     IpBanService ipBans,
     ViewerTicketStore viewerTickets,
+    DeviceService devices,
     IAuditLog auditLog,
     TimeProvider timeProvider)
 {
@@ -142,6 +144,38 @@ public sealed class SessionService(
             cancellationToken).ConfigureAwait(false);
 
         return new CreateSessionResult(new CreatedSession(session.Id, code, session.CodeExpiresAt.Value), null);
+    }
+
+    /// <summary>
+    /// Creates a session for a permanent device (no code). The relay attaches the device's connection right away;
+    /// callers check the supporter's permission for the device first.
+    /// </summary>
+    public async Task<Guid> CreatePermanentAsync(Guid ownerUserId, Guid deviceId, string deviceName, CancellationToken cancellationToken = default)
+    {
+        var now = timeProvider.GetUtcNow();
+        var session = new SupportSession
+        {
+            Id = Guid.CreateVersion7(now),
+            Kind = SessionKind.Permanent,
+            Status = SessionStatus.WaitingForAgent,
+            OwnerUserId = ownerUserId,
+            DeviceId = deviceId,
+            AgentMachineName = Truncate(deviceName, 100),
+            CreatedAt = now,
+        };
+
+        await using (var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false))
+        {
+            db.Sessions.Add(session);
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await auditLog.WriteAsync(new AuditEntry(
+            AuditEventTypes.SessionCreated, AuditActorType.User, ActorId: ownerUserId.ToString(),
+            TargetType: "session", TargetId: session.Id.ToString(),
+            Details: new Dictionary<string, string?> { ["kind"] = nameof(SessionKind.Permanent), ["device"] = deviceId.ToString() }),
+            cancellationToken).ConfigureAwait(false);
+        return session.Id;
     }
 
     /// <summary>
@@ -288,7 +322,7 @@ public sealed class SessionService(
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         return await db.Sessions.AsNoTracking()
             .Where(s => s.Id == sessionId)
-            .Select(s => new SessionFacts(s.Id, s.Kind, s.Status, s.OwnerUserId, s.AgentMachineName))
+            .Select(s => new SessionFacts(s.Id, s.Kind, s.Status, s.OwnerUserId, s.AgentMachineName, s.DeviceId))
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -311,13 +345,19 @@ public sealed class SessionService(
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         var session = await db.Sessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken).ConfigureAwait(false);
 
-        // Phase 10 adds device-group permissions for permanent sessions; until then: owner or Admin.
-        if (session is null || session.IsEnded || (session.OwnerUserId != userId && !userIsAdmin))
+        if (session is null || session.IsEnded)
         {
             return null;
         }
 
-        return viewerTickets.Issue(sessionId, userId, options.CurrentValue.ViewerTicketLifetime);
+        // Ad-hoc: owner or Admin with all rights. Permanent: everyone with a permission on the device's group,
+        // limited to that permission (enforced per channel by the relay).
+        var permissions = session.Kind == SessionKind.Permanent && session.DeviceId is { } deviceId
+            ? await devices.GetPermissionsAsync(userId, userIsAdmin, deviceId, cancellationToken).ConfigureAwait(false)
+            : session.OwnerUserId == userId || userIsAdmin ? DevicePermissions.All : DevicePermissions.None;
+        return permissions == DevicePermissions.None
+            ? null
+            : viewerTickets.Issue(sessionId, userId, options.CurrentValue.ViewerTicketLifetime, permissions);
     }
 
     /// <summary>Sessions for the supporter list, newest first. <paramref name="ownerUserId"/> = <c>null</c> lists everyone's (Admins).</summary>

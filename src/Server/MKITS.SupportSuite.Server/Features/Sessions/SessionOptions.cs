@@ -26,6 +26,9 @@ public sealed class SessionOptions
     /// <summary>A connected agent without any viewer is disconnected after this time.</summary>
     public TimeSpan ViewerWaitTimeout { get; set; } = TimeSpan.FromMinutes(15);
 
+    /// <summary>A permanent device session without any viewer ends after this time (the device stays online).</summary>
+    public TimeSpan DeviceSessionIdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
+
     /// <summary>How long the customer has to answer a consent request.</summary>
     public TimeSpan ConsentTimeout { get; set; } = TimeSpan.FromMinutes(2);
 
@@ -54,6 +57,7 @@ public sealed class SessionOptionsValidator : IValidateOptions<SessionOptions>
 
         RequireRange(errors, nameof(options.CodeLifetime), options.CodeLifetime, TimeSpan.FromMinutes(1), TimeSpan.FromDays(1));
         RequireRange(errors, nameof(options.ViewerWaitTimeout), options.ViewerWaitTimeout, TimeSpan.FromMinutes(1), TimeSpan.FromDays(1));
+        RequireRange(errors, nameof(options.DeviceSessionIdleTimeout), options.DeviceSessionIdleTimeout, TimeSpan.FromSeconds(10), TimeSpan.FromHours(1));
         RequireRange(errors, nameof(options.ConsentTimeout), options.ConsentTimeout, TimeSpan.FromSeconds(10), TimeSpan.FromHours(1));
         RequireRange(errors, nameof(options.SuspendGracePeriod), options.SuspendGracePeriod, TimeSpan.FromSeconds(5), TimeSpan.FromHours(1));
         RequireRange(errors, nameof(options.MaxDuration), options.MaxDuration, TimeSpan.FromMinutes(5), TimeSpan.FromDays(7));

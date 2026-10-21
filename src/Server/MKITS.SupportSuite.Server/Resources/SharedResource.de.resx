@@ -283,6 +283,21 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell beendet mit Code</value></data>
   <data name="Viewer_TerminalRefused" xml:space="preserve"><value>Die Shell konnte nicht gestartet werden</value></data>
   <data name="Nav_Devices" xml:space="preserve"><value>Geräte</value></data>
+  <data name="Nav_DeviceAdmin" xml:space="preserve"><value>Geräteverwaltung</value></data>
+  <data name="MyDevices_Title" xml:space="preserve"><value>Geräte</value></data>
+  <data name="MyDevices_Intro" xml:space="preserve"><value>Dauerhafte Geräte, auf die Sie Zugriff haben. Beim Verbinden startet eine Sitzung gemäß der Zustimmungsrichtlinie der Gruppe.</value></data>
+  <data name="MyDevices_Filter" xml:space="preserve"><value>Suchen</value></data>
+  <data name="MyDevices_OnlineOnly" xml:space="preserve"><value>Nur online</value></data>
+  <data name="MyDevices_None" xml:space="preserve"><value>Keine Geräte.</value></data>
+  <data name="MyDevices_Column_State" xml:space="preserve"><value>Zustand</value></data>
+  <data name="MyDevices_State_Online" xml:space="preserve"><value>online</value></data>
+  <data name="MyDevices_State_Offline" xml:space="preserve"><value>offline</value></data>
+  <data name="MyDevices_State_InSession" xml:space="preserve"><value>in einer Sitzung</value></data>
+  <data name="MyDevices_Action_Connect" xml:space="preserve"><value>Verbinden</value></data>
+  <data name="MyDevices_Action_Join" xml:space="preserve"><value>Sitzung beitreten</value></data>
+  <data name="Devices_Error_NotAllowed" xml:space="preserve"><value>Sie haben keinen Zugriff auf dieses Gerät.</value></data>
+  <data name="Devices_Error_Offline" xml:space="preserve"><value>Das Gerät ist nicht online.</value></data>
+  <data name="Sessions_EndReason_device_disabled" xml:space="preserve"><value>Gerät deaktiviert oder entfernt</value></data>
   <data name="Devices_Title" xml:space="preserve"><value>Dauerhafte Geräte</value></data>
   <data name="Devices_Intro" xml:space="preserve"><value>Dauerhafte Geräte sind Computer mit installiertem Agent. Sie werden mit einem Registrierungstoken in eine Gruppe aufgenommen; Supporter erhalten Zugriff pro Gruppe.</value></data>
   <data name="Devices_List" xml:space="preserve"><value>Geräte</value></data>

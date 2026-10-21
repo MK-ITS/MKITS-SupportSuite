@@ -8,9 +8,10 @@
         <AuthorizeView>
             <Authorized>
                 <a href="/sessions">@L["Nav_Sessions"]</a>
+                <a href="/devices">@L["Nav_Devices"]</a>
                 <AuthorizeView Policy="@Policies.Admin" Context="adminContext">
                     <Authorized>
-                        <a href="/admin/devices">@L["Nav_Devices"]</a>
+                        <a href="/admin/devices">@L["Nav_DeviceAdmin"]</a>
                         <a href="/admin/users">@L["Nav_Users"]</a>
                         <a href="/admin/ip-bans">@L["Nav_IpBans"]</a>
                         <a href="/admin/audit">@L["Nav_Audit"]</a>
