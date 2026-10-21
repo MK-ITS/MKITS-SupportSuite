@@ -6,6 +6,8 @@ import { SessionStatus } from "./gen/mkits/v0/frame_pb";
 import { type SessionPayload, SessionPayloadSchema, SpecialKeyKind } from "./gen/mkits/v0/session_pb";
 import { RemoteDisplay } from "./display";
 import { FileTransfers } from "./files";
+import { RemoteTerminals } from "./terminal";
+import "@xterm/xterm/css/xterm.css";
 import { type SocketLike, ViewerSession } from "./session";
 
 /**
@@ -66,6 +68,13 @@ function start(): void {
   );
 
   const display = new RemoteDisplay(element<HTMLCanvasElement>("viewer-canvas"), (payload) => void session.send(payload));
+
+  const terminals = new RemoteTerminals(element<HTMLElement>("viewer-terminals"), (payload) => void session.send(payload), (key) => t(key));
+  element<HTMLButtonElement>("viewer-terminal-open").addEventListener("click", () => {
+    if (session.ready) {
+      terminals.open();
+    }
+  });
 
   const formatSize = (bytes: number) => (bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
   const progressItems = new Map<string, HTMLLIElement>();
@@ -150,6 +159,10 @@ function start(): void {
       case "fileDecision":
       case "fileCancel":
         void files.handle(payload);
+        break;
+      case "shellData":
+      case "shellExit":
+        terminals.handle(payload);
         break;
       case "clipboardText":
         lastRemoteClipboard = payload.body.value.text;

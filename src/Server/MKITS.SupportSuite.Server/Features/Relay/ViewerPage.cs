@@ -22,6 +22,14 @@ public static class ViewerPage
 {
     public const string Path = "/sessions/{sessionId:guid}/view";
 
+    /// <summary>
+    /// The default policy plus <c>style-src 'unsafe-inline'</c>: the terminal (xterm.js) creates &lt;style&gt; elements
+    /// at runtime. Scripts stay strictly same-origin, so this does not allow script injection.
+    /// </summary>
+    internal const string ContentSecurityPolicy =
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; " +
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
+
     /// <summary>Texts used by the viewer; keys are looked up in SharedResource (EN/DE).</summary>
     internal static readonly string[] TextKeys =
     [
@@ -29,6 +37,7 @@ public static class ViewerPage
         "Viewer_ClipboardDenied",
         "Viewer_FileOffered", "Viewer_FileAccept", "Viewer_FileDecline", "Viewer_FileDownload", "Viewer_FileFailed",
         "Viewer_FileOffering", "Viewer_FileSent", "Viewer_FileNotSent",
+        "Viewer_Terminal", "Viewer_TerminalClose", "Viewer_TerminalExited", "Viewer_TerminalRefused",
         "Viewer_Status_WAITING_FOR_AGENT", "Viewer_Status_WAITING_FOR_VIEWER", "Viewer_Status_AWAITING_CONSENT",
         "Viewer_Status_ACTIVE", "Viewer_Status_SUSPENDED", "Viewer_Status_ENDED",
         "Viewer_Error_CONSENT_DENIED", "Viewer_Error_SESSION_ENDED", "Viewer_Error_AUTH_FAILED", "Viewer_Error_RATE_LIMITED",
@@ -70,6 +79,7 @@ public static class ViewerPage
 
         // The page carries a one-time ticket: never cache it.
         context.Response.Headers.CacheControl = "no-store";
+        context.Items[Infrastructure.Security.SecurityHeadersMiddleware.PolicyOverrideKey] = ContentSecurityPolicy;
         return Results.Content(Render(sessionId, ticket, displayName, localizer), "text/html; charset=utf-8");
     }
 
@@ -91,6 +101,7 @@ public static class ViewerPage
             <meta name="referrer" content="no-referrer">
             <title>{T("Viewer_Title")}</title>
             <link rel="stylesheet" href="/css/app.css">
+            <link rel="stylesheet" href="/viewer/viewer.css">
             </head>
             <body class="viewer-page">
             <div id="viewer" data-session-id="{html.Encode(sessionId.ToString())}" data-ticket="{html.Encode(ticket)}" data-ws="/ws/viewer" data-supporter="{html.Encode(displayName)}">
@@ -105,11 +116,15 @@ public static class ViewerPage
                 <button type="button" class="secondary" id="viewer-clipboard-send">{T("Viewer_ClipboardSend")}</button>
                 <button type="button" class="secondary" id="viewer-clipboard-copy" hidden>{T("Viewer_ClipboardCopy")}</button>
                 <button type="button" class="secondary" id="viewer-file-send">{T("Viewer_FileSend")}</button>
+                <button type="button" class="secondary" id="viewer-terminal-open">{T("Viewer_Terminal")}</button>
                 <input type="file" id="viewer-file-input" hidden>
                 <button type="button" class="danger" id="viewer-end">{T("Sessions_Action_End")}</button>
               </header>
               <main class="viewer-main">
-                <canvas id="viewer-canvas" aria-label="{T("Viewer_ScreenLabel")}"></canvas>
+                <div class="viewer-stage">
+                  <canvas id="viewer-canvas" aria-label="{T("Viewer_ScreenLabel")}"></canvas>
+                  <section id="viewer-terminals" class="viewer-terminals" aria-label="{T("Viewer_Terminal")}" hidden></section>
+                </div>
                 <aside class="viewer-chat" aria-label="{T("Viewer_Chat")}">
                   <ol id="viewer-chat-log"></ol>
                   <form id="viewer-chat-form" autocomplete="off">

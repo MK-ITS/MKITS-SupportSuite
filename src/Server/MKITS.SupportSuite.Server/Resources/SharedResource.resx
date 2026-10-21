@@ -278,4 +278,8 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_FileOffering" xml:space="preserve"><value>Offering {0} to the customer …</value></data>
   <data name="Viewer_FileSent" xml:space="preserve"><value>Sent: {0}</value></data>
   <data name="Viewer_FileNotSent" xml:space="preserve"><value>Not sent (declined or failed): {0}</value></data>
+  <data name="Viewer_Terminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="Viewer_TerminalClose" xml:space="preserve"><value>Close</value></data>
+  <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell exited with code</value></data>
+  <data name="Viewer_TerminalRefused" xml:space="preserve"><value>The shell could not be started</value></data>
 </root>

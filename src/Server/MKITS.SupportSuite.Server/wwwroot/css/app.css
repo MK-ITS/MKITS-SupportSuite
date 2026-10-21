@@ -248,3 +248,10 @@ button.danger { background: var(--danger-text); color: #fff; border-color: var(-
 #viewer-chat-form button { margin-top: 0; }
 @media (max-width: 800px) { .viewer-chat { display: none; } }
 .file-offer button { margin: 0.25rem 0.25rem 0 0; }
+.viewer-stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.viewer-stage #viewer-canvas { flex: 1; min-height: 0; }
+.viewer-terminals { height: 40%; min-height: 12rem; display: flex; gap: 0.25rem; padding: 0.25rem; background: #111; overflow-x: auto; }
+.viewer-terminal { flex: 1; min-width: 20rem; display: flex; flex-direction: column; }
+.viewer-terminal-header { display: flex; justify-content: space-between; align-items: center; color: #ddd; font-size: 0.85rem; padding: 0 0.25rem 0.25rem; }
+.viewer-terminal-header button { margin-top: 0; padding: 0.1rem 0.5rem; }
+.viewer-terminal-host { flex: 1; min-height: 0; }

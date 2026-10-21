@@ -34,6 +34,16 @@ public sealed class ViewerPageTests
     }
 
     [Fact]
+    public void ContentSecurityPolicy_KeepsScriptsSameOrigin()
+    {
+        var directives = ViewerPage.ContentSecurityPolicy.Split(';', StringSplitOptions.TrimEntries);
+
+        Assert.Contains("script-src 'self'", directives);
+        Assert.Contains("object-src 'none'", directives);
+        Assert.Contains("frame-ancestors 'none'", directives);
+    }
+
+    [Fact]
     public async Task Anonymous_IsRedirectedToLogin()
     {
         using var factory = new MkitsWebApplicationFactory();

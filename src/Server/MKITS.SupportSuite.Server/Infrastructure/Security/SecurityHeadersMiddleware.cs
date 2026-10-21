@@ -17,16 +17,25 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; " +
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
 
+    /// <summary>
+    /// <see cref="HttpContext.Items"/> key: an endpoint may store a stricter or specific policy for its response
+    /// (used by the browser viewer page, see <c>ViewerPage</c>).
+    /// </summary>
+    public const string PolicyOverrideKey = "Mkits.ContentSecurityPolicy";
+
     public Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         context.Response.OnStarting(static state =>
         {
-            var headers = ((HttpContext)state).Response.Headers;
+            var httpContext = (HttpContext)state;
+            var headers = httpContext.Response.Headers;
             headers.XContentTypeOptions = "nosniff";
             headers.XFrameOptions = "DENY";
-            headers.ContentSecurityPolicy = ContentSecurityPolicy;
+            headers.ContentSecurityPolicy = httpContext.Items.TryGetValue(PolicyOverrideKey, out var policy) && policy is string custom
+                ? custom
+                : ContentSecurityPolicy;
             headers["Referrer-Policy"] = "no-referrer";
             headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
             headers["Cross-Origin-Opener-Policy"] = "same-origin";

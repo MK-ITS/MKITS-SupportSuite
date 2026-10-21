@@ -36,7 +36,7 @@
 | T2 | Session code guessing | 8-digit codes, 10-min validity, single use, hashed storage, failures counted by the IP ban service, rate limiting on code endpoints |
 | T3 | Client IP spoofing via headers | forwarded headers accepted only from known proxies; forward limit 1 by default |
 | T4 | Session hijacking (cookies) | `__Host-` cookies, `Secure`, `HttpOnly`, `SameSite=Strict`, short sliding expiration, re-authentication for sensitive admin actions, cookie invalidation on password/2FA change |
-| T5 | CSRF / clickjacking / XSS | antiforgery tokens on all state-changing forms, `Content-Security-Policy` without `unsafe-inline` scripts, `X-Frame-Options: DENY` / `frame-ancestors 'none'`, output encoding by Razor |
+| T5 | CSRF / clickjacking / XSS | antiforgery tokens on all state-changing forms, `Content-Security-Policy` without `unsafe-inline` scripts, `X-Frame-Options: DENY` / `frame-ancestors 'none'`, output encoding by Razor; the viewer page additionally allows inline *styles* (xterm.js), never inline scripts |
 | T6 | Unauthorized device access | per-group permissions checked server-side for every action (view, control, files, shell); viewer tickets are single-use, 60-s, bound to user + session |
 | T7 | Rogue agent enrollment | enrollment tokens: random 256 bit, hashed, expiry + max uses, revocable; enrolled devices must be approved by an Admin if the group requires it |
 | T8 | Device impersonation | device authenticates by ECDSA P-256 signature over a server nonce; private key stored with OS protection (Windows: DPAPI machine scope / CNG; Linux: root-only file 0600) |

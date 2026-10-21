@@ -28,7 +28,7 @@
 
 Server: {1}
 
-Der Supporter sieht Ihren Bildschirm und kann Maus und Tastatur verwenden sowie Dateien und die Zwischenablage austauschen. Sie können die Sitzung jederzeit beenden.</value></data>
+Der Supporter sieht Ihren Bildschirm und kann Maus und Tastatur verwenden, Dateien und die Zwischenablage austauschen sowie eine Kommandozeile (PowerShell / cmd) mit Ihren Benutzerrechten öffnen. Sie können die Sitzung jederzeit beenden.</value></data>
   <data name="Consent_Allow" xml:space="preserve"><value>Erlauben</value></data>
   <data name="Consent_Deny" xml:space="preserve"><value>Ablehnen</value></data>
   <data name="Connect_Title" xml:space="preserve"><value>Mit Fernwartung verbinden</value></data>

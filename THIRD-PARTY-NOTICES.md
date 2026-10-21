@@ -12,6 +12,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | Entity Framework Core + SQLite provider | server | MIT | https://github.com/dotnet/efcore |
 | Google.Protobuf | common (wire protocol), server, agents | BSD-3-Clause | https://github.com/protocolbuffers/protobuf |
 | @bufbuild/protobuf (Protobuf-ES runtime, bundled into viewer.js) | browser viewer | Apache-2.0 | https://github.com/bufbuild/protobuf-es |
+| xterm.js (@xterm/xterm, @xterm/addon-fit; bundled into viewer.js/viewer.css) | browser viewer terminal | MIT | https://github.com/xtermjs/xterm.js |
 | MailKit / MimeKit | server (SMTP notifications) | MIT | https://github.com/jstedfast/MailKit |
 | QRCoder | server (TOTP QR codes) | MIT | https://github.com/codebude/QRCoder |
 | SQLite (via SQLitePCLRaw bundle) | server | Public Domain (SQLite), Apache-2.0 (SQLitePCLRaw) | https://sqlite.org, https://github.com/ericsink/SQLitePCL.raw |
