@@ -206,7 +206,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 **→ M1: Windows ad-hoc remote support end-to-end (portal → download → consent → control + chat/file/clipboard/shell)**
 
 ### Phase 10 – Permanent connections (Admin)
-- [ ] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata
+- [~] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata – 10A-1: data model, DeviceService (groups, permissions, hashed enrollment tokens, enrollment, ECDSA device authentication), admin page `/admin/devices`; relay integration and online status follow in 10A-2
 - [ ] 10.2 Deployment package per group (MSI with enrollment token, WiX)
 - [ ] 10.3 Unattended access incl. reboot/reconnect, consent policy per group (ask / notify / silent)
 - [ ] 10.4 Signed agent auto-update
@@ -291,3 +291,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-21 | PRs #17/#18 merged. Phase 7C: file transfer both ways – agent core handler (T14 rules), Windows UI (confirm dialog, *Send file*), viewer (accept/decline, upload, download) with incremental SHA-256. |
 | 2026-10-21 | Phase 7D: remote shell – `ShellHandler` (agent core), ConPTY PowerShell/cmd (Windows), xterm.js terminals in the viewer; per-endpoint CSP override for the viewer page (inline styles for xterm only). |
 | 2026-10-21 | PR #20 merged. Phase 8B: elevated ad-hoc mode on Windows (ADR-0021) – UAC → temporary LocalSystem service → SYSTEM helper on the input desktop (secure desktop, lock screen, Ctrl+Alt+Del); client keeps the connection and forwards capture/input over a protected pipe; self-removal. |
+| 2026-10-21 | PR #21 merged. Phase 10A-1: permanent devices – data model (DeviceGroups, GroupAccess, Devices, EnrollmentTokens; migration AddDevices), `DeviceService` (groups, per-group permissions, hashed single-display enrollment tokens with atomic use counting, enrollment with P-256 key validation, ECDSA device authentication over the handshake nonce), admin page `/admin/devices`, audit events `group.*`, `enrollment_token.*`, `device.*`. |

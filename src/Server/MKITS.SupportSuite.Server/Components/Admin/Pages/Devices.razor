@@ -1,0 +1,392 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/admin/devices"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using MKITS.SupportSuite.Server.Components.Admin
+@using MKITS.SupportSuite.Server.Features.Devices
+@inject DeviceService DeviceService
+@inject UserAdministration Administration
+@inject TimeProvider Clock
+
+<PageTitle>@L["Devices_Title"]</PageTitle>
+
+<AuthorizeView Policy="@Policies.Admin">
+    <Authorized>
+        <section class="card wide">
+            <h1>@L["Devices_Title"]</h1>
+            <p>@L["Devices_Intro"]</p>
+            <StatusMessage Kind="success" Text="@_message" />
+            <StatusMessage Kind="error" Text="@_error" />
+
+            <h2>@L["Devices_List"]</h2>
+            @if (_devices.Count == 0)
+            {
+                <p>@L["Devices_None"]</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>@L["Devices_Column_Name"]</th>
+                            <th>@L["Devices_Column_Group"]</th>
+                            <th>@L["Devices_Column_System"]</th>
+                            <th>@L["Devices_Column_Status"]</th>
+                            <th>@L["Devices_Column_LastSeen"]</th>
+                            <th>@L["Common_Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var device in _devices)
+                        {
+                            <tr>
+                                <td>@device.Name</td>
+                                <td>
+                                    <select aria-label="@L["Devices_Column_Group"]" value="@device.GroupId" @onchange="e => MoveAsync(device, e.Value as string)">
+                                        @foreach (var group in _groups)
+                                        {
+                                            <option value="@group.Id" selected="@(group.Id == device.GroupId)">@group.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>@device.Platform @device.OsName @device.OsVersion<br /><small>@L["Devices_AgentVersion", device.AgentVersion ?? "?"]</small></td>
+                                <td>@L["Devices_Status_" + device.Status]</td>
+                                <td>@(device.LastSeenAt?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? L["Common_Never"])<br /><small>@device.LastIp</small></td>
+                                <td class="actions">
+                                    @if (device.Status == DeviceStatus.PendingApproval)
+                                    {
+                                        <button type="button" @onclick="() => RunAsync(() => DeviceService.ApproveAsync(_actorId, device.Id))">@L["Devices_Action_Approve"]</button>
+                                    }
+                                    <button type="button" class="secondary" @onclick="() => RunAsync(() => DeviceService.SetDisabledAsync(_actorId, device.Id, device.Status != DeviceStatus.Disabled))">
+                                        @(device.Status == DeviceStatus.Disabled ? L["Devices_Action_Enable"] : L["Devices_Action_Disable"])
+                                    </button>
+                                    @if (_confirmRemove == device.Id)
+                                    {
+                                        <button type="button" class="danger" @onclick="() => RunAsync(() => DeviceService.RemoveAsync(_actorId, device.Id))">@L["Devices_Action_RemoveConfirm"]</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="secondary" @onclick="() => _confirmRemove = device.Id">@L["Devices_Action_Remove"]</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            <h2>@L["Groups_Title"]</h2>
+            @if (_groups.Count == 0)
+            {
+                <p>@L["Groups_None"]</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>@L["Groups_Field_Name"]</th>
+                            <th>@L["Groups_Field_Consent"]</th>
+                            <th>@L["Groups_Field_Approval"]</th>
+                            <th>@L["Groups_Column_Devices"]</th>
+                            <th>@L["Common_Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in _groups)
+                        {
+                            <tr>
+                                <td>@group.Name<br /><small>@group.Description</small></td>
+                                <td>@L["Groups_Consent_" + group.ConsentPolicy]</td>
+                                <td>@(group.RequireEnrollmentApproval ? L["Common_Yes"] : L["Common_No"])</td>
+                                <td>@group.DeviceCount</td>
+                                <td class="actions">
+                                    <button type="button" class="secondary" @onclick="() => SelectAsync(group)">@L["Groups_Action_Manage"]</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @if (_selected is not null)
+            {
+                <h2>@L["Groups_Manage", _selected.Name]</h2>
+                <EditForm Model="_edit" OnSubmit="SaveGroupAsync" class="form grid" FormName="edit-group" Context="editContext">
+                    <GroupFields Model="_edit" Prefix="edit" />
+                    <button type="submit">@L["Common_Save"]</button>
+                </EditForm>
+                @if (_selected.DeviceCount == 0)
+                {
+                    <p><button type="button" class="danger" @onclick="DeleteGroupAsync">@L["Groups_Action_Delete"]</button></p>
+                }
+
+                <h3>@L["Groups_Permissions"]</h3>
+                <p>@L["Groups_PermissionsIntro"]</p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>@L["Field_DisplayName"]</th>
+                            @foreach (var flag in PermissionFlags)
+                            {
+                                <th>@L["Permission_" + flag]</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in _users)
+                        {
+                            var current = _permissions.GetValueOrDefault(user.Id);
+                            <tr>
+                                <td>@user.DisplayName <small>(@user.UserName)</small></td>
+                                @foreach (var flag in PermissionFlags)
+                                {
+                                    <td>
+                                        <input type="checkbox" aria-label="@L["Permission_" + flag]" checked="@current.HasFlag(flag)"
+                                               @onchange="e => TogglePermissionAsync(user.Id, flag, e.Value is true)" />
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <h3>@L["Tokens_Title"]</h3>
+                <p>@L["Tokens_Intro"]</p>
+                @if (_createdToken is not null)
+                {
+                    <div class="code-box" role="status">
+                        <p>@L["Tokens_ShownOnce"]</p>
+                        <p class="token-value" data-testid="enrollment-token">@_createdToken.Token</p>
+                        <p>@L["Tokens_ValidUntil", _createdToken.ExpiresAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)]</p>
+                    </div>
+                }
+                <EditForm Model="_newToken" OnSubmit="CreateTokenAsync" class="form grid" FormName="new-token" Context="tokenContext">
+                    <label for="token-label">@L["Tokens_Field_Label"]</label>
+                    <InputText id="token-label" @bind-Value="_newToken.Label" maxlength="100" />
+                    <label for="token-days">@L["Tokens_Field_Days"]</label>
+                    <InputNumber id="token-days" @bind-Value="_newToken.Days" min="1" max="365" />
+                    <label for="token-uses">@L["Tokens_Field_MaxUses"]</label>
+                    <InputNumber id="token-uses" @bind-Value="_newToken.MaxUses" min="1" max="10000" />
+                    <button type="submit">@L["Tokens_Create"]</button>
+                </EditForm>
+                @if (_tokens.Count > 0)
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>@L["Tokens_Field_Label"]</th>
+                                <th>@L["Tokens_Column_Created"]</th>
+                                <th>@L["Tokens_Column_Expires"]</th>
+                                <th>@L["Tokens_Column_Uses"]</th>
+                                <th>@L["Common_Actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var token in _tokens)
+                            {
+                                <tr>
+                                    <td>@token.Label</td>
+                                    <td>@token.CreatedAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)</td>
+                                    <td>@token.ExpiresAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)</td>
+                                    <td>@token.Uses / @token.MaxUses</td>
+                                    <td class="actions">
+                                        @if (token.Revoked)
+                                        {
+                                            @L["Tokens_Revoked"]
+                                        }
+                                        else if (token.ExpiresAt <= Clock.GetUtcNow() || token.Uses >= token.MaxUses)
+                                        {
+                                            @L["Tokens_Used"]
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="secondary" @onclick="() => RevokeTokenAsync(token.Id)">@L["Tokens_Action_Revoke"]</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+
+            <h2>@L["Groups_Create"]</h2>
+            <EditForm Model="_newGroup" OnSubmit="CreateGroupAsync" class="form grid" FormName="new-group" Context="newContext">
+                <GroupFields Model="_newGroup" Prefix="new" />
+                <button type="submit">@L["Groups_CreateSubmit"]</button>
+            </EditForm>
+        </section>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private static readonly DevicePermissions[] PermissionFlags =
+        [DevicePermissions.View, DevicePermissions.Control, DevicePermissions.Files, DevicePermissions.Shell, DevicePermissions.Clipboard];
+
+    private IReadOnlyList<DeviceSummary> _devices = [];
+    private IReadOnlyList<GroupSummary> _groups = [];
+    private IReadOnlyList<UserSummary> _users = [];
+    private IReadOnlyList<TokenSummary> _tokens = [];
+    private Dictionary<Guid, DevicePermissions> _permissions = [];
+    private GroupSummary? _selected;
+    private CreatedToken? _createdToken;
+    private Guid? _confirmRemove;
+    private Guid _actorId;
+    private string? _message;
+    private string? _error;
+    private GroupInput _newGroup = new();
+    private GroupInput _edit = new();
+    private TokenInput _newToken = new();
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationState;
+        _ = Guid.TryParse(state.User.FindFirstValue(ClaimTypes.NameIdentifier), out _actorId);
+        _users = await Administration.ListAsync();
+        await ReloadAsync();
+    }
+
+    private async Task CreateGroupAsync()
+    {
+        var (_, error) = await DeviceService.CreateGroupAsync(_actorId, _newGroup.Name, _newGroup.Description, _newGroup.ConsentPolicy, _newGroup.RequireApproval);
+        if (Done(error))
+        {
+            _newGroup = new();
+            await ReloadAsync();
+        }
+    }
+
+    private async Task SelectAsync(GroupSummary group)
+    {
+        _selected = group;
+        _createdToken = null;
+        _edit = new GroupInput
+        {
+            Name = group.Name,
+            Description = group.Description,
+            ConsentPolicy = group.ConsentPolicy,
+            RequireApproval = group.RequireEnrollmentApproval,
+        };
+        await ReloadGroupAsync();
+    }
+
+    private async Task SaveGroupAsync()
+    {
+        if (_selected is not null && Done(await DeviceService.UpdateGroupAsync(_actorId, _selected.Id, _edit.Name, _edit.Description, _edit.ConsentPolicy, _edit.RequireApproval)))
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task DeleteGroupAsync()
+    {
+        if (_selected is not null && Done(await DeviceService.DeleteGroupAsync(_actorId, _selected.Id)))
+        {
+            _selected = null;
+            await ReloadAsync();
+        }
+    }
+
+    private async Task TogglePermissionAsync(Guid userId, DevicePermissions flag, bool enabled)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var current = _permissions.GetValueOrDefault(userId);
+        var next = enabled ? current | flag : current & ~flag;
+        if (!enabled && flag == DevicePermissions.View)
+        {
+            next = DevicePermissions.None; // no access without viewing
+        }
+
+        if (Done(await DeviceService.SetPermissionAsync(_actorId, _selected.Id, userId, next)))
+        {
+            await ReloadGroupAsync();
+        }
+    }
+
+    private async Task CreateTokenAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _createdToken = await DeviceService.CreateTokenAsync(_actorId, _selected.Id, _newToken.Label, TimeSpan.FromDays(Math.Clamp(_newToken.Days, 1, 365)), _newToken.MaxUses);
+        if (Done(_createdToken is null ? DeviceService.ErrorNotFound : null))
+        {
+            _newToken = new();
+            await ReloadGroupAsync();
+        }
+    }
+
+    private async Task RevokeTokenAsync(Guid tokenId)
+    {
+        await DeviceService.RevokeTokenAsync(_actorId, tokenId);
+        _createdToken = null;
+        Done(null);
+        await ReloadGroupAsync();
+    }
+
+    private async Task MoveAsync(DeviceSummary device, string? value)
+    {
+        if (Guid.TryParse(value, out var groupId) && groupId != device.GroupId && Done(await DeviceService.MoveAsync(_actorId, device.Id, groupId)))
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task RunAsync(Func<Task<string?>> action)
+    {
+        _confirmRemove = null;
+        if (Done(await action()))
+        {
+            await ReloadAsync();
+        }
+    }
+
+    /// <summary>Shows the result; <paramref name="errorKey"/> is a resource key or null for success.</summary>
+    private bool Done(string? errorKey)
+    {
+        _message = errorKey is null ? L["Devices_Done"].Value : null;
+        _error = errorKey is null ? null : L[errorKey].Value;
+        return errorKey is null;
+    }
+
+    private async Task ReloadAsync()
+    {
+        _devices = await DeviceService.ListDevicesAsync(_actorId, isAdmin: true);
+        _groups = await DeviceService.ListGroupsAsync();
+        if (_selected is not null)
+        {
+            _selected = _groups.FirstOrDefault(g => g.Id == _selected.Id);
+            await ReloadGroupAsync();
+        }
+    }
+
+    private async Task ReloadGroupAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _permissions = (await DeviceService.ListPermissionsAsync(_selected.Id)).ToDictionary(p => p.UserId, p => p.Permissions);
+        _tokens = await DeviceService.ListTokensAsync(_selected.Id);
+    }
+
+    private sealed class TokenInput
+    {
+        public string? Label { get; set; }
+
+        public int Days { get; set; } = 7;
+
+        public int MaxUses { get; set; } = 1;
+    }
+}

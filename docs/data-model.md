@@ -6,7 +6,7 @@
 ## Entity overview
 
 ```
- User ─┬─< GroupPermission >── DeviceGroup ──< Device
+ User ─┬─< GroupAccess >──── DeviceGroup ──< Device
        │                           │
        │                           └──< EnrollmentToken
        ├─< SupportSession >── Device (optional)
@@ -32,7 +32,7 @@
 | IsDisabled | bool | disabled users cannot log in; active sessions are ended |
 | CreatedAt, LastLoginAt | DateTimeOffset | |
 
-### DeviceGroup
+### DeviceGroup *(table `DeviceGroups`, implemented in Phase 10A)*
 
 | Field | Type | Notes |
 |---|---|---|
@@ -40,15 +40,15 @@
 | Name | string | unique, e.g. customer name |
 | Description | string? | |
 | ConsentPolicy | enum `Ask`, `Notify`, `Silent` | ADR-0014 |
-| RecordingPolicy | enum `Off`, `Optional`, `Required` | ADR-0018 |
+| RecordingPolicy | enum `Off`, `Optional`, `Required` | ADR-0018 – added with recordings (Phase 13) |
 | RequireEnrollmentApproval | bool | new devices wait for Admin approval |
 
-### GroupPermission
+### GroupAccess *(table `GroupAccess`; named so because analyzer rule CA1711 forbids the suffix "Permission")*
 
 | Field | Type | Notes |
 |---|---|---|
-| UserId, GroupId | Guid | composite key |
-| Permissions | flags `View`, `Control`, `Files`, `Shell`, `Clipboard` | Admins implicitly have all |
+| UserId, GroupId | Guid | composite key; cascade-deleted with the user or group |
+| Permissions | flags `View`, `Control`, `Files`, `Shell`, `Clipboard` | Admins implicitly have all; every permission implies `View`; `None` removes the row |
 
 ### Device
 
@@ -57,7 +57,7 @@
 | Id | Guid | also the device id in the protocol |
 | GroupId | Guid | |
 | Name | string | defaults to machine name, editable |
-| Platform | enum `Windows`, `Linux`, `Android` | |
+| Platform | string `windows`, `linux`, `android` | |
 | OsName, OsVersion, AgentVersion | string | reported by the agent |
 | PublicKey | byte[] | ECDSA P-256 SubjectPublicKeyInfo |
 | Status | enum `PendingApproval`, `Active`, `Disabled` | |
@@ -73,9 +73,10 @@ Online/offline is **not** stored – it is derived from the live connection regi
 |---|---|---|
 | Id | Guid | |
 | GroupId | Guid | |
-| TokenHash | byte[] | SHA-256 of the 256-bit token |
-| ExpiresAt | DateTimeOffset | |
-| MaxUses, Uses | int | |
+| TokenHash | byte[] | SHA-256 of the 256-bit token (base64url, shown once); unique |
+| Label | string? | |
+| CreatedAt, ExpiresAt | DateTimeOffset | lifetime 1 hour … 365 days |
+| MaxUses, Uses | int | a use is consumed atomically on enrollment; invalid tokens count for the IP ban service |
 | CreatedByUserId | Guid | |
 | RevokedAt | DateTimeOffset? | |
 

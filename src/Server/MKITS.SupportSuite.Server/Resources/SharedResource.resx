@@ -282,4 +282,64 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_TerminalClose" xml:space="preserve"><value>Close</value></data>
   <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell exited with code</value></data>
   <data name="Viewer_TerminalRefused" xml:space="preserve"><value>The shell could not be started</value></data>
+  <data name="Nav_Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="Devices_Title" xml:space="preserve"><value>Permanent devices</value></data>
+  <data name="Devices_Intro" xml:space="preserve"><value>Permanent devices are computers with the installed agent. They are enrolled into a group with an enrollment token; supporters get access per group.</value></data>
+  <data name="Devices_List" xml:space="preserve"><value>Devices</value></data>
+  <data name="Devices_None" xml:space="preserve"><value>No devices enrolled yet.</value></data>
+  <data name="Devices_Done" xml:space="preserve"><value>Saved.</value></data>
+  <data name="Devices_Column_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Devices_Column_Group" xml:space="preserve"><value>Group</value></data>
+  <data name="Devices_Column_System" xml:space="preserve"><value>System</value></data>
+  <data name="Devices_Column_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Devices_Column_LastSeen" xml:space="preserve"><value>Last seen</value></data>
+  <data name="Devices_AgentVersion" xml:space="preserve"><value>Agent {0}</value></data>
+  <data name="Devices_Status_PendingApproval" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="Devices_Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Devices_Status_Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Devices_Action_Approve" xml:space="preserve"><value>Approve</value></data>
+  <data name="Devices_Action_Disable" xml:space="preserve"><value>Disable</value></data>
+  <data name="Devices_Action_Enable" xml:space="preserve"><value>Enable</value></data>
+  <data name="Devices_Action_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Devices_Action_RemoveConfirm" xml:space="preserve"><value>Really remove?</value></data>
+  <data name="Devices_Error_NameRequired" xml:space="preserve"><value>Please enter a name.</value></data>
+  <data name="Devices_Error_NameTaken" xml:space="preserve"><value>A group with this name already exists.</value></data>
+  <data name="Devices_Error_GroupNotEmpty" xml:space="preserve"><value>The group still contains devices. Move or remove them first.</value></data>
+  <data name="Devices_Error_NotFound" xml:space="preserve"><value>The entry no longer exists.</value></data>
+  <data name="Groups_Title" xml:space="preserve"><value>Groups</value></data>
+  <data name="Groups_None" xml:space="preserve"><value>No groups yet. Create one below.</value></data>
+  <data name="Groups_Column_Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="Groups_Field_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Groups_Field_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Groups_Field_Consent" xml:space="preserve"><value>Consent of the user at the device</value></data>
+  <data name="Groups_Field_Approval" xml:space="preserve"><value>New devices need approval</value></data>
+  <data name="Groups_Consent_Ask" xml:space="preserve"><value>Ask every time</value></data>
+  <data name="Groups_Consent_Notify" xml:space="preserve"><value>Notify only (visible banner)</value></data>
+  <data name="Groups_Consent_Silent" xml:space="preserve"><value>Silent (unattended servers only)</value></data>
+  <data name="Groups_Action_Manage" xml:space="preserve"><value>Manage</value></data>
+  <data name="Groups_Action_Delete" xml:space="preserve"><value>Delete group</value></data>
+  <data name="Groups_Manage" xml:space="preserve"><value>Group “{0}”</value></data>
+  <data name="Groups_Permissions" xml:space="preserve"><value>Permissions</value></data>
+  <data name="Groups_PermissionsIntro" xml:space="preserve"><value>Admins always have full access. Every permission includes viewing.</value></data>
+  <data name="Groups_Create" xml:space="preserve"><value>New group</value></data>
+  <data name="Groups_CreateSubmit" xml:space="preserve"><value>Create group</value></data>
+  <data name="Permission_View" xml:space="preserve"><value>View</value></data>
+  <data name="Permission_Control" xml:space="preserve"><value>Control</value></data>
+  <data name="Permission_Files" xml:space="preserve"><value>Files</value></data>
+  <data name="Permission_Shell" xml:space="preserve"><value>Shell</value></data>
+  <data name="Permission_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
+  <data name="Tokens_Title" xml:space="preserve"><value>Enrollment tokens</value></data>
+  <data name="Tokens_Intro" xml:space="preserve"><value>The agent installer needs an enrollment token to join this group. Treat tokens like passwords.</value></data>
+  <data name="Tokens_Field_Label" xml:space="preserve"><value>Label</value></data>
+  <data name="Tokens_Field_Days" xml:space="preserve"><value>Valid for (days)</value></data>
+  <data name="Tokens_Field_MaxUses" xml:space="preserve"><value>Number of devices</value></data>
+  <data name="Tokens_Create" xml:space="preserve"><value>Create token</value></data>
+  <data name="Tokens_ShownOnce" xml:space="preserve"><value>New enrollment token – it is only shown now:</value></data>
+  <data name="Tokens_ValidUntil" xml:space="preserve"><value>Valid until {0}.</value></data>
+  <data name="Tokens_Column_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Tokens_Column_Expires" xml:space="preserve"><value>Expires</value></data>
+  <data name="Tokens_Column_Uses" xml:space="preserve"><value>Used</value></data>
+  <data name="Tokens_Action_Revoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="Tokens_Revoked" xml:space="preserve"><value>revoked</value></data>
+  <data name="Tokens_Used" xml:space="preserve"><value>used up or expired</value></data>
 </root>

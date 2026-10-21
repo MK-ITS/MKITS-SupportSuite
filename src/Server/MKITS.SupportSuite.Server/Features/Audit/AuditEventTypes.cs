@@ -31,4 +31,18 @@ public static class AuditEventTypes
     public const string SessionSuspended = "session.suspended";
     public const string SessionResumed = "session.resumed";
     public const string SessionEnded = "session.ended";
+
+    public const string GroupCreated = "group.created";
+    public const string GroupChanged = "group.changed";
+    public const string GroupDeleted = "group.deleted";
+    public const string GroupPermissionChanged = "group.permission_changed";
+    public const string EnrollmentTokenCreated = "enrollment_token.created";
+    public const string EnrollmentTokenRevoked = "enrollment_token.revoked";
+
+    public const string DeviceEnrolled = "device.enrolled";
+    public const string DeviceApproved = "device.approved";
+    public const string DeviceChanged = "device.changed";
+    public const string DeviceDisabled = "device.disabled";
+    public const string DeviceEnabled = "device.enabled";
+    public const string DeviceRemoved = "device.removed";
 }

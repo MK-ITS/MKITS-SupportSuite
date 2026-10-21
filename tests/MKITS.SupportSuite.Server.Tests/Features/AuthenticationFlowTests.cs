@@ -137,6 +137,10 @@ public sealed class AuthenticationFlowTests
         Assert.Equal(HttpStatusCode.OK, users2.StatusCode);
         Assert.Contains(AdminUser, await users2.Content.ReadAsStringAsync(), StringComparison.Ordinal);
 
+        using var devices = await client.GetAsync(new Uri("/admin/devices", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, devices.StatusCode);
+        Assert.Contains("Permanent devices", await devices.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+
         // 5. The supporter page is accessible as well.
         using var sessions = await client.GetAsync(new Uri("/sessions", UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, sessions.StatusCode);
@@ -145,6 +149,7 @@ public sealed class AuthenticationFlowTests
 
     [Theory]
     [InlineData("/admin/users")]
+    [InlineData("/admin/devices")]
     [InlineData("/admin/ip-bans")]
     [InlineData("/admin/audit")]
     [InlineData("/admin/settings")]

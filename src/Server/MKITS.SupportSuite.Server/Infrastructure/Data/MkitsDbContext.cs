@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Sessions;
@@ -25,6 +26,14 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
     public DbSet<IpListEntry> IpListEntries => Set<IpListEntry>();
 
     public DbSet<SupportSession> Sessions => Set<SupportSession>();
+
+    public DbSet<DeviceGroup> DeviceGroups => Set<DeviceGroup>();
+
+    public DbSet<GroupAccess> GroupAccess => Set<GroupAccess>();
+
+    public DbSet<Device> Devices => Set<Device>();
+
+    public DbSet<EnrollmentToken> EnrollmentTokens => Set<EnrollmentToken>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -93,6 +102,50 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
             session.HasIndex(s => new { s.Status, s.CodeExpiresAt });
             session.HasIndex(s => new { s.OwnerUserId, s.CreatedAt });
             session.Ignore(s => s.IsEnded);
+        });
+
+        builder.Entity<DeviceGroup>(group =>
+        {
+            group.ToTable("DeviceGroups");
+            group.Property(g => g.Name).HasMaxLength(100).IsRequired();
+            group.Property(g => g.Description).HasMaxLength(500);
+            group.HasIndex(g => g.Name).IsUnique();
+        });
+
+        builder.Entity<GroupAccess>(permission =>
+        {
+            permission.ToTable("GroupAccess");
+            permission.HasKey(p => new { p.UserId, p.GroupId });
+            permission.HasOne<MkitsUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            permission.HasOne<DeviceGroup>().WithMany().HasForeignKey(p => p.GroupId).OnDelete(DeleteBehavior.Cascade);
+            permission.HasIndex(p => p.GroupId);
+        });
+
+        builder.Entity<Device>(device =>
+        {
+            device.ToTable("Devices");
+            device.Property(d => d.Name).HasMaxLength(100).IsRequired();
+            device.Property(d => d.Platform).HasMaxLength(20).IsRequired();
+            device.Property(d => d.OsName).HasMaxLength(100);
+            device.Property(d => d.OsVersion).HasMaxLength(100);
+            device.Property(d => d.AgentVersion).HasMaxLength(50);
+            device.Property(d => d.PublicKey).HasMaxLength(200).IsRequired();
+            device.Property(d => d.LastIp).HasMaxLength(64);
+            device.Property(d => d.Notes).HasMaxLength(1000);
+            device.HasOne<DeviceGroup>().WithMany().HasForeignKey(d => d.GroupId).OnDelete(DeleteBehavior.Restrict);
+            device.HasIndex(d => new { d.GroupId, d.Name });
+            device.HasIndex(d => d.Status);
+        });
+
+        builder.Entity<EnrollmentToken>(token =>
+        {
+            token.ToTable("EnrollmentTokens");
+            token.Property(t => t.TokenHash).HasMaxLength(32).IsRequired();
+            token.Property(t => t.Label).HasMaxLength(100);
+            token.HasOne<DeviceGroup>().WithMany().HasForeignKey(t => t.GroupId).OnDelete(DeleteBehavior.Cascade);
+            token.HasOne<MkitsUser>().WithMany().HasForeignKey(t => t.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            token.HasIndex(t => t.TokenHash).IsUnique();
+            token.HasIndex(t => t.GroupId);
         });
     }
 }

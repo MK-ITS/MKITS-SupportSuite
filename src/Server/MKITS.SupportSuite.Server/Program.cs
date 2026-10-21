@@ -4,6 +4,7 @@
 using MKITS.SupportSuite.Server.Components;
 using MKITS.SupportSuite.Server.Endpoints;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Downloads;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.IpBans;
@@ -23,6 +24,7 @@ builder.Services
     .AddMkitsIpBans(builder.Configuration)
     .AddMkitsNotifications(builder.Configuration)
     .AddMkitsSessions(builder.Configuration)
+    .AddMkitsDevices()
     .AddMkitsRelay()
     .AddMkitsDownloads()
     .AddMkitsIdentity(builder.Environment);

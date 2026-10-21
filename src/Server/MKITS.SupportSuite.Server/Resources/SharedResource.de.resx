@@ -282,4 +282,64 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Viewer_TerminalClose" xml:space="preserve"><value>Schließen</value></data>
   <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell beendet mit Code</value></data>
   <data name="Viewer_TerminalRefused" xml:space="preserve"><value>Die Shell konnte nicht gestartet werden</value></data>
+  <data name="Nav_Devices" xml:space="preserve"><value>Geräte</value></data>
+  <data name="Devices_Title" xml:space="preserve"><value>Dauerhafte Geräte</value></data>
+  <data name="Devices_Intro" xml:space="preserve"><value>Dauerhafte Geräte sind Computer mit installiertem Agent. Sie werden mit einem Registrierungstoken in eine Gruppe aufgenommen; Supporter erhalten Zugriff pro Gruppe.</value></data>
+  <data name="Devices_List" xml:space="preserve"><value>Geräte</value></data>
+  <data name="Devices_None" xml:space="preserve"><value>Noch keine Geräte registriert.</value></data>
+  <data name="Devices_Done" xml:space="preserve"><value>Gespeichert.</value></data>
+  <data name="Devices_Column_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Devices_Column_Group" xml:space="preserve"><value>Gruppe</value></data>
+  <data name="Devices_Column_System" xml:space="preserve"><value>System</value></data>
+  <data name="Devices_Column_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Devices_Column_LastSeen" xml:space="preserve"><value>Zuletzt gesehen</value></data>
+  <data name="Devices_AgentVersion" xml:space="preserve"><value>Agent {0}</value></data>
+  <data name="Devices_Status_PendingApproval" xml:space="preserve"><value>Wartet auf Freigabe</value></data>
+  <data name="Devices_Status_Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Devices_Status_Disabled" xml:space="preserve"><value>Deaktiviert</value></data>
+  <data name="Devices_Action_Approve" xml:space="preserve"><value>Freigeben</value></data>
+  <data name="Devices_Action_Disable" xml:space="preserve"><value>Deaktivieren</value></data>
+  <data name="Devices_Action_Enable" xml:space="preserve"><value>Aktivieren</value></data>
+  <data name="Devices_Action_Remove" xml:space="preserve"><value>Entfernen</value></data>
+  <data name="Devices_Action_RemoveConfirm" xml:space="preserve"><value>Wirklich entfernen?</value></data>
+  <data name="Devices_Error_NameRequired" xml:space="preserve"><value>Bitte geben Sie einen Namen ein.</value></data>
+  <data name="Devices_Error_NameTaken" xml:space="preserve"><value>Eine Gruppe mit diesem Namen existiert bereits.</value></data>
+  <data name="Devices_Error_GroupNotEmpty" xml:space="preserve"><value>Die Gruppe enthält noch Geräte. Verschieben oder entfernen Sie diese zuerst.</value></data>
+  <data name="Devices_Error_NotFound" xml:space="preserve"><value>Der Eintrag existiert nicht mehr.</value></data>
+  <data name="Groups_Title" xml:space="preserve"><value>Gruppen</value></data>
+  <data name="Groups_None" xml:space="preserve"><value>Noch keine Gruppen. Legen Sie unten eine an.</value></data>
+  <data name="Groups_Column_Devices" xml:space="preserve"><value>Geräte</value></data>
+  <data name="Groups_Field_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Groups_Field_Description" xml:space="preserve"><value>Beschreibung</value></data>
+  <data name="Groups_Field_Consent" xml:space="preserve"><value>Zustimmung des Benutzers am Gerät</value></data>
+  <data name="Groups_Field_Approval" xml:space="preserve"><value>Neue Geräte benötigen Freigabe</value></data>
+  <data name="Groups_Consent_Ask" xml:space="preserve"><value>Jedes Mal fragen</value></data>
+  <data name="Groups_Consent_Notify" xml:space="preserve"><value>Nur benachrichtigen (sichtbarer Hinweis)</value></data>
+  <data name="Groups_Consent_Silent" xml:space="preserve"><value>Still (nur für unbeaufsichtigte Server)</value></data>
+  <data name="Groups_Action_Manage" xml:space="preserve"><value>Verwalten</value></data>
+  <data name="Groups_Action_Delete" xml:space="preserve"><value>Gruppe löschen</value></data>
+  <data name="Groups_Manage" xml:space="preserve"><value>Gruppe „{0}“</value></data>
+  <data name="Groups_Permissions" xml:space="preserve"><value>Berechtigungen</value></data>
+  <data name="Groups_PermissionsIntro" xml:space="preserve"><value>Admins haben immer vollen Zugriff. Jede Berechtigung schließt das Ansehen ein.</value></data>
+  <data name="Groups_Create" xml:space="preserve"><value>Neue Gruppe</value></data>
+  <data name="Groups_CreateSubmit" xml:space="preserve"><value>Gruppe anlegen</value></data>
+  <data name="Permission_View" xml:space="preserve"><value>Ansehen</value></data>
+  <data name="Permission_Control" xml:space="preserve"><value>Steuern</value></data>
+  <data name="Permission_Files" xml:space="preserve"><value>Dateien</value></data>
+  <data name="Permission_Shell" xml:space="preserve"><value>Shell</value></data>
+  <data name="Permission_Clipboard" xml:space="preserve"><value>Zwischenablage</value></data>
+  <data name="Tokens_Title" xml:space="preserve"><value>Registrierungstokens</value></data>
+  <data name="Tokens_Intro" xml:space="preserve"><value>Der Agent-Installer benötigt ein Registrierungstoken, um dieser Gruppe beizutreten. Behandeln Sie Tokens wie Passwörter.</value></data>
+  <data name="Tokens_Field_Label" xml:space="preserve"><value>Bezeichnung</value></data>
+  <data name="Tokens_Field_Days" xml:space="preserve"><value>Gültig für (Tage)</value></data>
+  <data name="Tokens_Field_MaxUses" xml:space="preserve"><value>Anzahl Geräte</value></data>
+  <data name="Tokens_Create" xml:space="preserve"><value>Token erstellen</value></data>
+  <data name="Tokens_ShownOnce" xml:space="preserve"><value>Neues Registrierungstoken – es wird nur jetzt angezeigt:</value></data>
+  <data name="Tokens_ValidUntil" xml:space="preserve"><value>Gültig bis {0}.</value></data>
+  <data name="Tokens_Column_Created" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Tokens_Column_Expires" xml:space="preserve"><value>Läuft ab</value></data>
+  <data name="Tokens_Column_Uses" xml:space="preserve"><value>Verwendet</value></data>
+  <data name="Tokens_Action_Revoke" xml:space="preserve"><value>Widerrufen</value></data>
+  <data name="Tokens_Revoked" xml:space="preserve"><value>widerrufen</value></data>
+  <data name="Tokens_Used" xml:space="preserve"><value>aufgebraucht oder abgelaufen</value></data>
 </root>
