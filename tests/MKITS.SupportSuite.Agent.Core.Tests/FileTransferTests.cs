@@ -155,6 +155,40 @@ public sealed class FileTransferTests : IDisposable
         Assert.Equal(SHA256.HashData(content), complete.Sha256.ToByteArray());
     }
 
+    [Theory]
+    [InlineData("x/../../evil")]
+    [InlineData("..\\..\\x")]
+    [InlineData("a b")]
+    public async Task Receive_TransferIdWithPathCharacters_IsRefused(string transferId)
+    {
+        await OfferAsync(transferId, "x.bin", 10);
+
+        Assert.False(Decision(transferId));
+        Assert.Equal(0, _ui.Questions);
+    }
+
+    [Fact]
+    public async Task Send_ToAllViewers_OnlyAcceptingViewersGetTheContent()
+    {
+        Directory.CreateDirectory(_directory);
+        var path = Path.Combine(_directory, "a.txt");
+        await File.WriteAllTextAsync(path, "content");
+        _context.Viewers.Add("v2");
+
+        var sending = _handler.SendFileAsync(_context, null, path, CancellationToken.None);
+        var offer = await WaitForAsync(SessionPayload.BodyOneofCase.FileOffer);
+        var transferId = offer.FileOffer.TransferId;
+        Assert.Equal(2, _context.Sent.Count(s => s.Payload.BodyCase == SessionPayload.BodyOneofCase.FileOffer));
+
+        // v2 cannot answer for v1.
+        await _handler.HandleAsync(_context, "v2", new SessionPayload { FileDecision = new FileDecision { TransferId = transferId, Accepted = false } }, CancellationToken.None);
+        await _handler.HandleAsync(_context, "v1", new SessionPayload { FileDecision = new FileDecision { TransferId = transferId, Accepted = true } }, CancellationToken.None);
+
+        Assert.True(await sending);
+        Assert.All(_context.Sent.Where(s => s.Payload.BodyCase is SessionPayload.BodyOneofCase.FileChunk or SessionPayload.BodyOneofCase.FileComplete),
+            s => Assert.Equal("v1", s.ViewerId));
+    }
+
     [Fact]
     public async Task Send_Declined_SendsNoData()
     {

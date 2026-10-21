@@ -102,6 +102,11 @@ function start(): void {
       item.append(link);
       chatLog.append(item);
       link.click();
+      // Release the (possibly large) blob once the browser had time to start the download.
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        link.removeAttribute("href");
+      }, 60_000);
     },
     progress: (name, done, total) => {
       let item = progressItems.get(name);

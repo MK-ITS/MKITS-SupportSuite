@@ -76,14 +76,15 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
                     ui.OnTransferFailed(cancelled.FileName, "cancelled");
                 }
 
-                if (_pendingDecisions.TryRemove(payload.FileCancel.TransferId, out var waiting))
+                if (_pendingDecisions.TryRemove(Key(viewerId, payload.FileCancel.TransferId), out var waiting))
                 {
                     waiting.TrySetResult(false);
                 }
 
                 break;
             case SessionPayload.BodyOneofCase.FileDecision:
-                if (_pendingDecisions.TryRemove(payload.FileDecision.TransferId, out var decision))
+                // Only the viewer that was asked can answer for itself.
+                if (_pendingDecisions.TryRemove(Key(viewerId, payload.FileDecision.TransferId), out var decision))
                 {
                     decision.TrySetResult(payload.FileDecision.Accepted);
                 }
@@ -106,8 +107,9 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
     }
 
     /// <summary>
-    /// Sends a local file chosen by the end user to one viewer or all viewers. Each viewer must accept it first.
-    /// Returns <c>false</c> if nobody accepted or the transfer failed.
+    /// Sends a local file chosen by the end user to one viewer, or to every ready viewer when <paramref name="viewerId"/>
+    /// is <c>null</c>. Each viewer decides on its own; the content is sent only to viewers that accepted.
+    /// Returns <c>true</c> if at least one viewer received the file.
     /// </summary>
     public async Task<bool> SendFileAsync(ISessionContext context, string? viewerId, string path, CancellationToken cancellationToken)
     {
@@ -115,39 +117,65 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
         ArgumentException.ThrowIfNullOrEmpty(path);
 
         var info = new FileInfo(path);
-        if (!info.Exists || info.Length > MaxFileSize)
+        var targets = viewerId is null ? context.ReadyViewerIds.ToList() : [viewerId];
+        if (!info.Exists || info.Length > MaxFileSize || targets.Count == 0)
         {
             return false;
         }
 
         var transferId = Guid.NewGuid().ToString("N");
-        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _pendingDecisions[transferId] = decision;
-
-        await context.SendAsync(viewerId, new SessionPayload
-        {
-            FileOffer = new FileOffer { TransferId = transferId, Name = SanitizeFileName(info.Name), Size = (ulong)info.Length },
-        }, cancellationToken).ConfigureAwait(false);
-
-        bool accepted;
+        var decisions = targets.ToDictionary(t => t, t => RegisterDecision(t, transferId), StringComparer.Ordinal);
         try
         {
-            accepted = await decision.Task.WaitAsync(DecisionTimeout, _timeProvider, cancellationToken).ConfigureAwait(false);
-        }
-        catch (TimeoutException)
-        {
-            accepted = false;
+            var offer = new SessionPayload
+            {
+                FileOffer = new FileOffer { TransferId = transferId, Name = SanitizeFileName(info.Name), Size = (ulong)info.Length },
+            };
+            foreach (var target in targets)
+            {
+                await context.SendAsync(target, offer, cancellationToken).ConfigureAwait(false);
+            }
+
+            var sent = false;
+            foreach (var (target, decision) in decisions)
+            {
+                bool accepted;
+                try
+                {
+                    accepted = await decision.Task.WaitAsync(DecisionTimeout, _timeProvider, cancellationToken).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    accepted = false;
+                }
+
+                if (accepted)
+                {
+                    await StreamFileAsync(context, target, transferId, path, cancellationToken).ConfigureAwait(false);
+                    sent = true;
+                }
+            }
+
+            return sent;
         }
         finally
         {
-            _pendingDecisions.TryRemove(transferId, out _);
+            foreach (var target in targets)
+            {
+                _pendingDecisions.TryRemove(Key(target, transferId), out _);
+            }
         }
+    }
 
-        if (!accepted)
-        {
-            return false;
-        }
+    private TaskCompletionSource<bool> RegisterDecision(string viewerId, string transferId)
+    {
+        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingDecisions[Key(viewerId, transferId)] = decision;
+        return decision;
+    }
 
+    private static async Task StreamFileAsync(ISessionContext context, string viewerId, string transferId, string path, CancellationToken cancellationToken)
+    {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var buffer = new byte[ChunkSize];
         var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, ChunkSize, useAsync: true);
@@ -170,7 +198,6 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
         {
             FileComplete = new FileComplete { TransferId = transferId, Sha256 = ByteString.CopyFrom(hash.GetHashAndReset()) },
         }, cancellationToken).ConfigureAwait(false);
-        return true;
     }
 
     /// <summary>
@@ -220,7 +247,7 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
     {
         var key = Key(viewerId, offer.TransferId);
         var name = SanitizeFileName(offer.Name);
-        if (string.IsNullOrEmpty(offer.TransferId) || offer.TransferId.Length > 64 || _incoming.ContainsKey(key)
+        if (!IsValidTransferId(offer.TransferId) || _incoming.ContainsKey(key)
             || offer.Size > MaxFileSize || _incoming.Count >= MaxConcurrentIncoming)
         {
             await DecideAsync(context, viewerId, offer.TransferId, accepted: false, cancellationToken).ConfigureAwait(false);
@@ -232,7 +259,8 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
         {
             var directory = ui.DownloadDirectory;
             Directory.CreateDirectory(directory);
-            var partPath = Path.Combine(directory, $"{name}.{offer.TransferId[..Math.Min(8, offer.TransferId.Length)]}{PartSuffix}");
+            // The temporary name never contains peer-supplied characters beyond the sanitized file name.
+            var partPath = Path.Combine(directory, $"{name}.{Guid.NewGuid():N}{PartSuffix}");
             var stream = new FileStream(partPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, ChunkSize, useAsync: true);
             _incoming[key] = new Incoming(name, (long)offer.Size, partPath, stream, directory);
         }
@@ -301,6 +329,10 @@ public sealed class FileTransferHandler(IFileTransferUi ui, TimeProvider? timePr
         _incoming.TryRemove(Key(viewerId, transferId), out transfer!);
 
     private static string Key(string viewerId, string transferId) => viewerId + "/" + transferId;
+
+    /// <summary>Transfer ids are opaque tokens: 1–64 letters, digits, '-' or '_'.</summary>
+    internal static bool IsValidTransferId(string? transferId) =>
+        !string.IsNullOrEmpty(transferId) && transferId.Length <= 64 && transferId.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
 
     /// <summary><c>name.ext</c>, then <c>name (1).ext</c>, <c>name (2).ext</c>, … – never overwrites.</summary>
     internal static string UniquePath(string directory, string fileName)

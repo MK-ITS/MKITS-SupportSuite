@@ -55,4 +55,7 @@ public interface ISessionContext
 {
     /// <summary>Sends to one viewer, or to all viewers with an established key when <paramref name="viewerId"/> is <c>null</c>.</summary>
     Task SendAsync(string? viewerId, Common.Protocol.V0.SessionPayload payload, CancellationToken cancellationToken);
+
+    /// <summary>Viewers that finished the key exchange (can receive payloads right now).</summary>
+    IReadOnlyCollection<string> ReadyViewerIds { get; }
 }
