@@ -1,0 +1,124 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@page "/devices"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Policies.Supporter)]
+@using System.Security.Claims
+@using MKITS.SupportSuite.Server.Features.Devices
+@using MKITS.SupportSuite.Server.Features.Relay
+@inject DeviceService DeviceService
+@inject DeviceSessionLauncher Launcher
+@inject SessionHub Hub
+@inject IAuthorizationService AuthorizationService
+@inject NavigationManager Navigation
+
+<PageTitle>@L["MyDevices_Title"]</PageTitle>
+
+<section class="card wide">
+    <h1>@L["MyDevices_Title"]</h1>
+    <p>@L["MyDevices_Intro"]</p>
+    <StatusMessage Kind="error" Text="@_error" />
+
+    <div class="toolbar">
+        <label for="device-filter">@L["MyDevices_Filter"]</label>
+        <input id="device-filter" type="search" @bind="_filter" @bind:event="oninput" />
+        <label><input type="checkbox" @bind="_onlineOnly" /> @L["MyDevices_OnlineOnly"]</label>
+        <button type="button" class="secondary" @onclick="ReloadAsync">@L["Sessions_Refresh"]</button>
+    </div>
+
+    @if (Visible.Count == 0)
+    {
+        <p class="hint">@L["MyDevices_None"]</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>@L["Devices_Column_Name"]</th>
+                    <th>@L["Devices_Column_Group"]</th>
+                    <th>@L["Devices_Column_System"]</th>
+                    <th>@L["MyDevices_Column_State"]</th>
+                    <th>@L["Devices_Column_LastSeen"]</th>
+                    <th>@L["Common_Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var device in Visible)
+                {
+                    var online = Hub.IsDeviceOnline(device.Id);
+                    var inSession = Hub.GetDeviceSessionId(device.Id) is not null;
+                    <tr data-testid="device-row">
+                        <td>@device.Name</td>
+                        <td>@device.GroupName</td>
+                        <td>@device.OsName @device.OsVersion</td>
+                        <td>
+                            <span class="badge @(online ? "badge-online" : "badge-offline")">
+                                @(device.Status != DeviceStatus.Active ? L["Devices_Status_" + device.Status] : inSession ? L["MyDevices_State_InSession"] : online ? L["MyDevices_State_Online"] : L["MyDevices_State_Offline"])
+                            </span>
+                        </td>
+                        <td>@(device.LastSeenAt?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? L["Common_Never"])</td>
+                        <td class="actions">
+                            @if (online && device.Status == DeviceStatus.Active)
+                            {
+                                <button type="button" disabled="@_busy" @onclick="() => ConnectAsync(device.Id)">
+                                    @(inSession ? L["MyDevices_Action_Join"] : L["MyDevices_Action_Connect"])
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<DeviceSummary> _devices = [];
+    private Guid _userId;
+    private bool _isAdmin;
+    private bool _busy;
+    private bool _onlineOnly;
+    private string? _filter;
+    private string? _error;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
+    private List<DeviceSummary> Visible => _devices
+        .Where(d => !_onlineOnly || Hub.IsDeviceOnline(d.Id))
+        .Where(d => string.IsNullOrWhiteSpace(_filter)
+            || d.Name.Contains(_filter.Trim(), StringComparison.OrdinalIgnoreCase)
+            || d.GroupName.Contains(_filter.Trim(), StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthenticationState).User;
+        _ = Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out _userId);
+        _isAdmin = (await AuthorizationService.AuthorizeAsync(user, Policies.Admin)).Succeeded;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() => _devices = await DeviceService.ListDevicesAsync(_userId, _isAdmin);
+
+    private async Task ConnectAsync(Guid deviceId)
+    {
+        _busy = true;
+        try
+        {
+            var (sessionId, errorKey) = await Launcher.OpenAsync(_userId, _isAdmin, deviceId);
+            if (sessionId is { } id)
+            {
+                Navigation.NavigateTo($"/sessions/{id}/view", forceLoad: true);
+                return;
+            }
+
+            _error = L[errorKey ?? "Error_Generic"].Value;
+            await ReloadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

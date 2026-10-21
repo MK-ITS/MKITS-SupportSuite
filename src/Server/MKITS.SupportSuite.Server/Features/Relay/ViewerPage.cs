@@ -45,7 +45,7 @@ public static class ViewerPage
         "Sessions_EndReason_code_expired", "Sessions_EndReason_revoked", "Sessions_EndReason_ended_by_supporter",
         "Sessions_EndReason_ended_by_customer", "Sessions_EndReason_consent_denied", "Sessions_EndReason_consent_timeout",
         "Sessions_EndReason_no_viewer", "Sessions_EndReason_connection_lost", "Sessions_EndReason_max_duration",
-        "Sessions_EndReason_server_restart",
+        "Sessions_EndReason_server_restart", "Sessions_EndReason_device_disabled",
     ];
 
     public static IEndpointRouteBuilder MapViewerPage(this IEndpointRouteBuilder endpoints)

@@ -75,11 +75,15 @@ message AdHocCode {
   MachineInfo machine = 2;
 }
 
+// Permanent device; AuthResult is followed by idle presence until a SessionAssigned arrives.
 message DeviceSignature {
   string device_id = 1;
   bytes signature = 2;            // ECDSA P-256 / SHA-256 over HelloAck.nonce
 }
 
+// Registers a new device. On success AuthResult.peer_id is the new device id and the server closes the
+// connection; the agent stores the id and reconnects with DeviceSignature (pending devices are refused with
+// NOT_AUTHORIZED until an Admin approved them).
 message Enrollment {
   string token = 1;
   bytes device_public_key = 2;    // SubjectPublicKeyInfo (DER), ECDSA P-256
@@ -117,6 +121,8 @@ enum ConsentPolicy {
   CONSENT_POLICY_SILENT = 3;
 }
 
+// Ad-hoc agents get it right after AuthResult; permanent devices whenever a supporter opens a session
+// (the device connection stays open and returns to idle presence after the session ended).
 message SessionAssigned {
   string session_id = 1;
   ConsentPolicy consent_policy = 2;
@@ -157,6 +163,7 @@ message ViewerJoined {
   string session_id = 1;
   string viewer_id = 2;
   string display_name = 3;
+  repeated string permissions = 4; // what this viewer may do: "view", "control", "files", "shell", "clipboard". Since 0.3
 }
 
 message ViewerLeft {

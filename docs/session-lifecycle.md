@@ -88,3 +88,10 @@ A session ends when:
 - an Admin disables the device, group or user involved.
 
 On end, the ad-hoc client removes its temporary service (if elevated) and exits; permanent agents return to idle presence.
+
+## 7. Permanent device sessions
+
+- A supporter opens an online device on `/devices` (requires a permission on the device's group; Admins have all). If the device is already in a session, the supporter **joins** it as an additional viewer; otherwise a new `Permanent` session is created and bound to the device's presence connection right away (`WaitingForAgent` is skipped).
+- Consent follows the group policy (*ask* / *notify* / *silent*, ADR-0014). Consent decisions – including automatic ones (`policy_notify`, `policy_silent`) – are audited.
+- A device session without any viewer ends after `DeviceSessionIdleTimeout` (default **2 min**, reason `no_viewer`); the device stays online.
+- Disabling or removing a device ends its session (reason `device_disabled`) and closes its connection. Moving a device to another group takes effect for new sessions; permissions are checked whenever a viewer ticket is issued.

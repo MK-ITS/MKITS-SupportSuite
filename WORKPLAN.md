@@ -206,9 +206,9 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 **→ M1: Windows ad-hoc remote support end-to-end (portal → download → consent → control + chat/file/clipboard/shell)**
 
 ### Phase 10 – Permanent connections (Admin)
-- [~] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata – 10A-1: data model, DeviceService (groups, permissions, hashed enrollment tokens, enrollment, ECDSA device authentication), admin page `/admin/devices`; relay integration and online status follow in 10A-2
+- [~] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata – 10A-1: data model, DeviceService (groups, permissions, hashed enrollment tokens, enrollment, ECDSA device authentication), admin page `/admin/devices`; 10A-2: enrollment and device-key authentication on the relay, online presence, supporter page `/devices`
 - [ ] 10.2 Deployment package per group (MSI with enrollment token, WiX)
-- [ ] 10.3 Unattended access incl. reboot/reconnect, consent policy per group (ask / notify / silent)
+- [~] 10.3 Unattended access incl. reboot/reconnect, consent policy per group (ask / notify / silent) – server side done in 10A-2 (permanent sessions on the presence connection, rebind after reconnect, policies, per-channel permission enforcement); agent permanent mode and Windows service follow in 10A-3/10B
 - [ ] 10.4 Signed agent auto-update
 
 **→ M2: permanent Windows devices**
@@ -292,3 +292,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-21 | Phase 7D: remote shell – `ShellHandler` (agent core), ConPTY PowerShell/cmd (Windows), xterm.js terminals in the viewer; per-endpoint CSP override for the viewer page (inline styles for xterm only). |
 | 2026-10-21 | PR #20 merged. Phase 8B: elevated ad-hoc mode on Windows (ADR-0021) – UAC → temporary LocalSystem service → SYSTEM helper on the input desktop (secure desktop, lock screen, Ctrl+Alt+Del); client keeps the connection and forwards capture/input over a protected pipe; self-removal. |
 | 2026-10-21 | PR #21 merged. Phase 10A-1: permanent devices – data model (DeviceGroups, GroupAccess, Devices, EnrollmentTokens; migration AddDevices), `DeviceService` (groups, per-group permissions, hashed single-display enrollment tokens with atomic use counting, enrollment with P-256 key validation, ECDSA device authentication over the handshake nonce), admin page `/admin/devices`, audit events `group.*`, `enrollment_token.*`, `device.*`. |
+| 2026-10-21 | PR #22 merged. Phase 10A-2: permanent devices on the relay – enrollment and ECDSA device authentication, idle presence (connection outlives sessions), `DeviceSessionLauncher` (create or join a device session), consent policies ask/notify/silent, per-viewer channel permissions enforced by the relay, device disable/remove ends sessions and disconnects; protocol 0.3 (`ViewerJoined.permissions`); supporter page `/devices`. |

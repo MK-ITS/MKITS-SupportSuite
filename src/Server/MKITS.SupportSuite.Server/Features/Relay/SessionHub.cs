@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Server.Features.Audit;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Sessions;
 using SessionOptions = MKITS.SupportSuite.Server.Features.Sessions.SessionOptions;
 using SessionStatus = MKITS.SupportSuite.Server.Features.Sessions.SessionStatus;
@@ -16,10 +17,20 @@ using WireStatus = MKITS.SupportSuite.Common.Protocol.V0.SessionStatus;
 
 namespace MKITS.SupportSuite.Server.Features.Relay;
 
+/// <summary>An online permanent device: its connection stays open between sessions (idle presence).</summary>
+public sealed class DeviceConnection(DeviceFacts facts, PeerConnection connection)
+{
+    public DeviceFacts Facts { get; } = facts;
+
+    public PeerConnection Connection { get; } = connection;
+}
+
 /// <summary>
 /// The session broker (docs/session-lifecycle.md §3, docs/protocol.md §4–5): attaches authenticated peers to
 /// sessions, drives the state machine (consent, suspend/resume, timeouts), and routes session-plane frames.
-/// The server never decrypts <c>SessionData</c>; it only reads the routing header.
+/// It also keeps the presence of permanent devices, whose connection outlives their sessions.
+/// The server never decrypts <c>SessionData</c>; it only reads the routing header – including the channel, which
+/// is enough to enforce the viewers' permissions (the agent rejects payloads that do not match their channel).
 /// </summary>
 public sealed partial class SessionHub : IDisposable
 {
@@ -29,24 +40,32 @@ public sealed partial class SessionHub : IDisposable
     internal static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(30);
     internal static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromSeconds(90);
 
-    private static readonly string[] RequestedPermissions = ["view", "control", "files", "shell"];
-
     private readonly ConcurrentDictionary<Guid, LiveSession> _sessions = new();
     private readonly ConcurrentDictionary<string, LiveSession> _sessionByPeer = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<Guid, DeviceConnection> _devices = new();
+    private readonly ConcurrentDictionary<string, Guid> _deviceByPeer = new(StringComparer.Ordinal);
+
+    /// <summary>Serializes starting device sessions, so one device never gets two sessions at once.</summary>
+    private readonly SemaphoreSlim _deviceSessionGate = new(1, 1);
     private readonly SessionService _sessionService;
+    private readonly DeviceService _deviceService;
     private readonly IOptionsMonitor<SessionOptions> _options;
     private readonly IAuditLog _auditLog;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SessionHub> _logger;
 
-    public SessionHub(SessionService sessionService, IOptionsMonitor<SessionOptions> options, IAuditLog auditLog, TimeProvider timeProvider, ILogger<SessionHub> logger)
+    public SessionHub(
+        SessionService sessionService, DeviceService deviceService, IOptionsMonitor<SessionOptions> options, IAuditLog auditLog,
+        TimeProvider timeProvider, ILogger<SessionHub> logger)
     {
         _sessionService = sessionService;
+        _deviceService = deviceService;
         _options = options;
         _auditLog = auditLog;
         _timeProvider = timeProvider;
         _logger = logger;
         _sessionService.SessionEnded += OnSessionEndedInDatabase;
+        _deviceService.DeviceChanged += OnDeviceChanged;
     }
 
     /// <summary>Number of sessions with at least one connected peer.</summary>
@@ -54,6 +73,116 @@ public sealed partial class SessionHub : IDisposable
 
     /// <summary>Live status of a session as seen by the relay (for tests and the supporter UI).</summary>
     public SessionStatus? GetLiveStatus(Guid sessionId) => _sessions.TryGetValue(sessionId, out var live) ? live.Status : null;
+
+    /// <summary>Whether the permanent device has a connection right now.</summary>
+    public bool IsDeviceOnline(Guid deviceId) => _devices.ContainsKey(deviceId);
+
+    /// <summary>The session the device is in (also while it is reconnecting), or <c>null</c> when it is idle.</summary>
+    public Guid? GetDeviceSessionId(Guid deviceId) => FindDeviceSession(deviceId)?.Id;
+
+    // ------------------------------------------------------------------ permanent devices
+
+    /// <summary>
+    /// Registers an authenticated permanent device (idle presence) and sends <c>AuthResult</c>. A previous connection
+    /// of the same device is dropped. If the device was in a session that is still waiting for it (it lost its
+    /// connection), it is bound to that session again – the signature proves it is the same device.
+    /// </summary>
+    public async Task<bool> AttachDeviceAsync(PeerConnection agent, DeviceFacts facts, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        ArgumentNullException.ThrowIfNull(facts);
+
+        DeviceConnection? previous;
+        await _deviceSessionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            _deviceByPeer[agent.Id] = facts.Id;
+            previous = _devices.TryGetValue(facts.Id, out var old) ? old : null;
+            _devices[facts.Id] = new DeviceConnection(facts, agent);
+            agent.Send(new Frame { AuthResult = new AuthResult { Ok = true, PeerId = agent.Id } });
+            LogDeviceOnline(_logger, facts.Id);
+
+            if (FindDeviceSession(facts.Id) is { } live)
+            {
+                await live.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    if (!live.IsEnded)
+                    {
+                        if (live.Agent is { } stale)
+                        {
+                            _sessionByPeer.TryRemove(stale.Id, out _);
+                            live.Agent = null;
+                        }
+
+                        await ConnectAgentLockedAsync(live, agent, resumed: true, sendAuthResult: false, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    live.Gate.Release();
+                }
+            }
+        }
+        finally
+        {
+            _deviceSessionGate.Release();
+        }
+
+        if (previous is not null)
+        {
+            _deviceByPeer.TryRemove(previous.Connection.Id, out _);
+            previous.Connection.Abort();
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Binds the online, idle device to a new permanent session created by <see cref="DeviceSessionLauncher"/>.
+    /// Returns <c>false</c> if the device is offline or already in a session.
+    /// </summary>
+    public async Task<bool> StartDeviceSessionAsync(Guid sessionId, Guid deviceId, string operatorName, CancellationToken cancellationToken)
+    {
+        var facts = await _sessionService.GetFactsAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        if (facts is null || facts.Status == SessionStatus.Ended)
+        {
+            return false;
+        }
+
+        await _deviceSessionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!_devices.TryGetValue(deviceId, out var device) || FindDeviceSession(deviceId) is not null)
+            {
+                return false;
+            }
+
+            var live = new LiveSession(facts.Id, SessionKind.Permanent, facts.OwnerUserId, facts.Status, _timeProvider.GetUtcNow())
+            {
+                DeviceId = deviceId,
+                ConsentPolicy = device.Facts.ConsentPolicy,
+                OperatorName = operatorName,
+            };
+
+            await live.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                _sessions[live.Id] = live;
+                await ConnectAgentLockedAsync(live, device.Connection, resumed: false, sendAuthResult: false, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                live.Gate.Release();
+            }
+
+            return true;
+        }
+        finally
+        {
+            _deviceSessionGate.Release();
+        }
+    }
 
     // ------------------------------------------------------------------ attach
 
@@ -83,7 +212,7 @@ public sealed partial class SessionHub : IDisposable
             }
 
             live.OperatorName = operatorName ?? live.OperatorName;
-            await ConnectAgentLockedAsync(live, agent, resumed: false, cancellationToken).ConfigureAwait(false);
+            await ConnectAgentLockedAsync(live, agent, resumed: false, sendAuthResult: true, cancellationToken).ConfigureAwait(false);
             return true;
         }
         finally
@@ -123,7 +252,7 @@ public sealed partial class SessionHub : IDisposable
                 return false;
             }
 
-            await ConnectAgentLockedAsync(live, agent, resumed: true, cancellationToken).ConfigureAwait(false);
+            await ConnectAgentLockedAsync(live, agent, resumed: true, sendAuthResult: true, cancellationToken).ConfigureAwait(false);
             return true;
         }
         finally
@@ -146,7 +275,23 @@ public sealed partial class SessionHub : IDisposable
             return false;
         }
 
-        var live = _sessions.GetOrAdd(grant.SessionId, _ => new LiveSession(facts.Id, facts.Kind, facts.OwnerUserId, facts.Status, _timeProvider.GetUtcNow()));
+        // Permanent sessions exist live only while the device is bound to them (created by StartDeviceSessionAsync).
+        LiveSession? live;
+        if (facts.Kind == SessionKind.Permanent)
+        {
+            live = _sessions.TryGetValue(grant.SessionId, out var existing) ? existing : null;
+        }
+        else
+        {
+            live = _sessions.GetOrAdd(grant.SessionId, _ => new LiveSession(facts.Id, facts.Kind, facts.OwnerUserId, facts.Status, _timeProvider.GetUtcNow()));
+        }
+
+        if (live is null)
+        {
+            viewer.Send(ErrorFrame(ErrorCodes.SessionEnded, "session ended"));
+            return false;
+        }
+
         await live.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -162,7 +307,7 @@ public sealed partial class SessionHub : IDisposable
                 return false;
             }
 
-            var peer = new ViewerPeer(viewer, grant.UserId, displayName);
+            var peer = new ViewerPeer(viewer, grant.UserId, displayName, grant.Permissions);
             live.Viewers[viewer.Id] = peer;
             _sessionByPeer[viewer.Id] = live;
 
@@ -173,7 +318,7 @@ public sealed partial class SessionHub : IDisposable
 
             if (live.Agent is { } agent && live.Status != SessionStatus.Suspended)
             {
-                agent.Send(new Frame { ViewerJoined = new ViewerJoined { SessionId = live.WireId, ViewerId = viewer.Id, DisplayName = displayName } });
+                agent.Send(ViewerJoinedFrame(live, peer));
                 await RequestConsentLockedAsync(live, peer, cancellationToken).ConfigureAwait(false);
             }
 
@@ -195,6 +340,12 @@ public sealed partial class SessionHub : IDisposable
 
         if (!_sessionByPeer.TryGetValue(from.Id, out var live))
         {
+            // Idle device: only the heartbeat matters (any frame refreshes it).
+            if (frame.BodyCase == Frame.BodyOneofCase.Ping && _deviceByPeer.ContainsKey(from.Id))
+            {
+                from.Send(new Frame { Pong = new Pong { TimestampMs = frame.Ping.TimestampMs } });
+            }
+
             return;
         }
 
@@ -232,6 +383,13 @@ public sealed partial class SessionHub : IDisposable
     public async Task DetachAsync(PeerConnection peer)
     {
         ArgumentNullException.ThrowIfNull(peer);
+
+        if (_deviceByPeer.TryRemove(peer.Id, out var deviceId)
+            && _devices.TryGetValue(deviceId, out var device) && ReferenceEquals(device.Connection, peer))
+        {
+            _devices.TryRemove(new KeyValuePair<Guid, DeviceConnection>(deviceId, device));
+            LogDeviceOffline(_logger, deviceId);
+        }
 
         if (!_sessionByPeer.TryRemove(peer.Id, out var live))
         {
@@ -313,7 +471,8 @@ public sealed partial class SessionHub : IDisposable
                 {
                     endReason = SessionEndReasons.ConnectionLost;
                 }
-                else if (live.Status == SessionStatus.WaitingForViewer && live.Agent is not null && now - live.StatusSince >= settings.ViewerWaitTimeout)
+                else if (live.Status == SessionStatus.WaitingForViewer && live.Agent is not null
+                    && now - live.StatusSince >= (live.Kind == SessionKind.Permanent ? settings.DeviceSessionIdleTimeout : settings.ViewerWaitTimeout))
                 {
                     endReason = SessionEndReasons.NoViewer;
                 }
@@ -325,16 +484,7 @@ public sealed partial class SessionHub : IDisposable
 
             foreach (var peer in peers)
             {
-                if (now - peer.LastReceived > HeartbeatTimeout)
-                {
-                    LogHeartbeatTimeout(_logger, peer.Role, live.Id);
-                    peer.Abort();
-                }
-                else if (now - peer.LastPingSent >= HeartbeatInterval)
-                {
-                    peer.LastPingSent = now;
-                    peer.Send(new Frame { Ping = new Ping { TimestampMs = (ulong)now.ToUnixTimeMilliseconds() } });
-                }
+                Heartbeat(peer, now, live.Id);
             }
 
             if (endReason is not null)
@@ -350,28 +500,60 @@ public sealed partial class SessionHub : IDisposable
         }
     }
 
-    public void Dispose() => _sessionService.SessionEnded -= OnSessionEndedInDatabase;
+    /// <summary>Heartbeat for devices that are online but in no session (those in a session are handled above).</summary>
+    public void TickIdleDevices()
+    {
+        var now = _timeProvider.GetUtcNow();
+        foreach (var device in _devices.Values)
+        {
+            if (!_sessionByPeer.ContainsKey(device.Connection.Id))
+            {
+                Heartbeat(device.Connection, now, null);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _sessionService.SessionEnded -= OnSessionEndedInDatabase;
+        _deviceService.DeviceChanged -= OnDeviceChanged;
+        _deviceSessionGate.Dispose();
+    }
 
     // ------------------------------------------------------------------ internals
 
-    private async Task ConnectAgentLockedAsync(LiveSession live, PeerConnection agent, bool resumed, CancellationToken cancellationToken)
+    /// <summary>
+    /// Binds the agent to the session. <c>sendAuthResult</c> is <c>true</c> for ad-hoc agents (AuthResult with a
+    /// fresh resume token); permanent devices got their AuthResult when they came online and re-authenticate with
+    /// their key after a connection loss.
+    /// </summary>
+    private async Task ConnectAgentLockedAsync(LiveSession live, PeerConnection agent, bool resumed, bool sendAuthResult, CancellationToken cancellationToken)
     {
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        live.ResumeTokenHash = HashToken(token);
         live.Agent = agent;
         _sessionByPeer[agent.Id] = live;
 
-        agent.Send(new Frame { AuthResult = new AuthResult { Ok = true, PeerId = agent.Id, ResumeToken = token } });
+        if (sendAuthResult)
+        {
+            var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            live.ResumeTokenHash = HashToken(token);
+            agent.Send(new Frame { AuthResult = new AuthResult { Ok = true, PeerId = agent.Id, ResumeToken = token } });
+        }
+
         agent.Send(new Frame
         {
             SessionAssigned = new SessionAssigned
             {
                 SessionId = live.WireId,
-                ConsentPolicy = ConsentPolicy.Ask, // ad-hoc: always ask (ADR-0014); permanent policies follow in Phase 10
+                ConsentPolicy = (ConsentPolicy)(int)live.ConsentPolicy, // ad-hoc: always Ask; permanent: the device group policy (ADR-0014). Enum values match the wire enum.
                 Recording = false,
                 OperatorName = live.OperatorName ?? string.Empty,
             },
         });
+
+        if (!resumed && live.Kind == SessionKind.Permanent)
+        {
+            await AuditAsync(live, AuditEventTypes.SessionAgentConnected, AuditActorType.Device, live.DeviceId?.ToString(), agent, cancellationToken).ConfigureAwait(false);
+        }
 
         if (resumed)
         {
@@ -381,7 +563,7 @@ public sealed partial class SessionHub : IDisposable
         // Tell the agent who is already there; granted viewers continue, all others are asked.
         foreach (var viewer in live.Viewers.Values)
         {
-            agent.Send(new Frame { ViewerJoined = new ViewerJoined { SessionId = live.WireId, ViewerId = viewer.Connection.Id, DisplayName = viewer.DisplayName } });
+            agent.Send(ViewerJoinedFrame(live, viewer));
         }
 
         var target = live.GrantedViewers.IsEmpty ? SessionStatus.WaitingForViewer : SessionStatus.Active;
@@ -405,6 +587,13 @@ public sealed partial class SessionHub : IDisposable
 
     private async Task RequestConsentLockedAsync(LiveSession live, ViewerPeer viewer, CancellationToken cancellationToken)
     {
+        if (live.ConsentPolicy != DeviceConsentPolicy.Ask)
+        {
+            // Notify / silent (permanent devices only): no question; the agent shows the banner for "notify".
+            await GrantLockedAsync(live, viewer, live.ConsentPolicy == DeviceConsentPolicy.Notify ? "policy_notify" : "policy_silent", cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         viewer.Consent = ViewerConsent.Requested;
         viewer.ConsentRequestedAt = _timeProvider.GetUtcNow();
 
@@ -420,7 +609,7 @@ public sealed partial class SessionHub : IDisposable
                 SessionId = live.WireId,
                 ViewerId = viewer.Connection.Id,
                 SupporterDisplayName = viewer.DisplayName,
-                RequestedPermissions = { RequestedPermissions },
+                RequestedPermissions = { DeviceService.PermissionNames(viewer.Permissions) },
             },
         });
     }
@@ -441,30 +630,36 @@ public sealed partial class SessionHub : IDisposable
                 return;
             }
 
-            viewer.Consent = ViewerConsent.Granted;
-            live.RefreshGrantedViewers();
-            await AuditConsentAsync(live, viewer, "granted", cancellationToken).ConfigureAwait(false);
-
-            if (live.Status != SessionStatus.Active)
-            {
-                await SetStatusLockedAsync(live, SessionStatus.Active, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                viewer.Connection.Send(StateFrame(live));
-            }
-
-            if (!live.WasStarted)
-            {
-                live.WasStarted = true;
-                await _auditLog.WriteAsync(new AuditEntry(
-                    AuditEventTypes.SessionStarted, AuditActorType.System, TargetType: "session", TargetId: live.WireId,
-                    Details: new Dictionary<string, string?> { ["recording"] = "false" }), cancellationToken).ConfigureAwait(false);
-            }
+            await GrantLockedAsync(live, viewer, "granted", cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             live.Gate.Release();
+        }
+    }
+
+    /// <summary>Lets the viewer onto the data plane (consent given or not required by the policy).</summary>
+    private async Task GrantLockedAsync(LiveSession live, ViewerPeer viewer, string auditResult, CancellationToken cancellationToken)
+    {
+        viewer.Consent = ViewerConsent.Granted;
+        live.RefreshGrantedViewers();
+        await AuditConsentAsync(live, viewer, auditResult, cancellationToken).ConfigureAwait(false);
+
+        if (live.Status != SessionStatus.Active)
+        {
+            await SetStatusLockedAsync(live, SessionStatus.Active, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            viewer.Connection.Send(StateFrame(live));
+        }
+
+        if (!live.WasStarted)
+        {
+            live.WasStarted = true;
+            await _auditLog.WriteAsync(new AuditEntry(
+                AuditEventTypes.SessionStarted, AuditActorType.System, TargetType: "session", TargetId: live.WireId,
+                Details: new Dictionary<string, string?> { ["recording"] = "false", ["consent_policy"] = live.ConsentPolicy.ToString() }), cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -517,10 +712,13 @@ public sealed partial class SessionHub : IDisposable
         }
 
         var droppable = data.Channel == (uint)Channel.Video;
+        var required = RequiredPermission(data.Channel);
         if (from.Role == PeerRole.Viewer)
         {
-            // Viewers may only talk once the customer agreed; input only from the controlling viewer.
-            if (!live.GrantedViewers.ContainsKey(from.Id) || (data.Channel == (uint)Channel.Input && live.ControllerViewerId != from.Id))
+            // Viewers may only talk once the customer agreed, only on channels they have the permission for,
+            // and input only from the controlling viewer.
+            if (!live.GrantedViewers.TryGetValue(from.Id, out var sender) || !sender.Permissions.HasFlag(required)
+                || (data.Channel == (uint)Channel.Input && live.ControllerViewerId != from.Id))
             {
                 return;
             }
@@ -538,7 +736,7 @@ public sealed partial class SessionHub : IDisposable
         if (string.IsNullOrEmpty(data.ViewerId))
         {
             var frame = new Frame { SessionData = data };
-            foreach (var viewer in granted.Values)
+            foreach (var viewer in granted.Values.Where(v => v.Permissions.HasFlag(required)))
             {
                 if (viewer.Connection.Send(frame, droppable))
                 {
@@ -546,11 +744,26 @@ public sealed partial class SessionHub : IDisposable
                 }
             }
         }
-        else if (granted.TryGetValue(data.ViewerId, out var target) && target.Connection.Send(new Frame { SessionData = data }, droppable))
+        else if (granted.TryGetValue(data.ViewerId, out var target) && target.Permissions.HasFlag(required)
+            && target.Connection.Send(new Frame { SessionData = data }, droppable))
         {
             live.AddRelayedBytes(data.Ciphertext.Length);
         }
     }
+
+    /// <summary>
+    /// Permission a viewer needs to send or receive on a channel. Unknown channels need all permissions, so a newer
+    /// agent can never open a side door for restricted viewers.
+    /// </summary>
+    internal static DevicePermissions RequiredPermission(uint channel) => (Channel)channel switch
+    {
+        Channel.Video or Channel.Display or Channel.Chat => DevicePermissions.View,
+        Channel.Input => DevicePermissions.Control,
+        Channel.Clipboard => DevicePermissions.Clipboard,
+        Channel.File => DevicePermissions.Files,
+        Channel.Shell => DevicePermissions.Shell,
+        _ => DevicePermissions.All,
+    };
 
     private static void RouteKeyExchange(LiveSession live, PeerConnection from, KeyExchange exchange)
     {
@@ -607,8 +820,11 @@ public sealed partial class SessionHub : IDisposable
         foreach (var peer in live.Peers().ToList())
         {
             peer.Send(ended);
-            peer.Complete();
             _sessionByPeer.TryRemove(peer.Id, out _);
+            if (!_deviceByPeer.ContainsKey(peer.Id))
+            {
+                peer.Complete(); // permanent devices stay connected (idle presence)
+            }
         }
 
         live.Agent = null;
@@ -648,6 +864,70 @@ public sealed partial class SessionHub : IDisposable
             // shutting down
         }
     }
+
+    /// <summary>An Admin disabled, removed or moved a device: end its session and, unless it is still active, disconnect it.</summary>
+    private void OnDeviceChanged(object? sender, DeviceChangedEventArgs e) => _ = ReevaluateDeviceAsync(e.DeviceId);
+
+    private async Task ReevaluateDeviceAsync(Guid deviceId)
+    {
+        try
+        {
+            var facts = await _deviceService.GetFactsAsync(deviceId).ConfigureAwait(false);
+            if (facts is { Status: DeviceStatus.Active })
+            {
+                // Moved to another group: new sessions use the new policy; permissions are checked on every join.
+                if (_devices.TryGetValue(deviceId, out var current))
+                {
+                    _devices.TryUpdate(deviceId, new DeviceConnection(facts, current.Connection), current);
+                }
+
+                return;
+            }
+
+            if (FindDeviceSession(deviceId) is { } live)
+            {
+                await EndAsync(live, SessionEndReasons.DeviceDisabled, AuditActorType.System, null, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            if (_devices.TryGetValue(deviceId, out var device))
+            {
+                device.Connection.Send(ErrorFrame(ErrorCodes.NotAuthorized, "device disabled or removed"));
+                device.Connection.Complete();
+            }
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or OperationCanceledException)
+        {
+            // shutting down
+        }
+    }
+
+    private LiveSession? FindDeviceSession(Guid deviceId) =>
+        _sessions.Values.FirstOrDefault(s => s.DeviceId == deviceId && !s.IsEnded);
+
+    private void Heartbeat(PeerConnection peer, DateTimeOffset now, Guid? sessionId)
+    {
+        if (now - peer.LastReceived > HeartbeatTimeout)
+        {
+            LogHeartbeatTimeout(_logger, peer.Role, sessionId);
+            peer.Abort();
+        }
+        else if (now - peer.LastPingSent >= HeartbeatInterval)
+        {
+            peer.LastPingSent = now;
+            peer.Send(new Frame { Ping = new Ping { TimestampMs = (ulong)now.ToUnixTimeMilliseconds() } });
+        }
+    }
+
+    private static Frame ViewerJoinedFrame(LiveSession live, ViewerPeer viewer) => new()
+    {
+        ViewerJoined = new ViewerJoined
+        {
+            SessionId = live.WireId,
+            ViewerId = viewer.Connection.Id,
+            DisplayName = viewer.DisplayName,
+            Permissions = { DeviceService.PermissionNames(viewer.Permissions) },
+        },
+    };
 
     private async Task SetStatusLockedAsync(LiveSession live, SessionStatus status, CancellationToken cancellationToken)
     {
@@ -695,5 +975,11 @@ public sealed partial class SessionHub : IDisposable
     private static partial void LogIgnoredFrame(ILogger logger, Frame.BodyOneofCase frame, PeerRole role);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{Role} of session {SessionId} timed out (no heartbeat)")]
-    private static partial void LogHeartbeatTimeout(ILogger logger, PeerRole role, Guid sessionId);
+    private static partial void LogHeartbeatTimeout(ILogger logger, PeerRole role, Guid? sessionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Device {DeviceId} is online")]
+    private static partial void LogDeviceOnline(ILogger logger, Guid deviceId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Device {DeviceId} went offline")]
+    private static partial void LogDeviceOffline(ILogger logger, Guid deviceId);
 }

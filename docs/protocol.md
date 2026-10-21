@@ -1,6 +1,6 @@
 # Wire protocol
 
-> Status: **implemented on the server (Phase 5)**, protocol version **0.2**. Normative schema: [`proto/mkits/v0/`](../proto/mkits/v0/).
+> Status: **implemented on the server (Phase 5, permanent devices Phase 10)**, protocol version **0.3**. Normative schema: [`proto/mkits/v0/`](../proto/mkits/v0/).
 > Versioning rules: [`ProtocolVersion`](../src/Common/MKITS.SupportSuite.Common/Protocol/ProtocolVersion.cs). Serialization decision: ADR-0017. Encryption: ADR-0018.
 
 ## 1. Transport
@@ -49,6 +49,13 @@ peer                                   server
 | `Resume` | agent after a connection loss | `session_id` + the one-time `AuthResult.resume_token` of its previous connection (while the session is *Suspended*, or while the server still holds the old connection – that one is then dropped) |
 
 `AuthResult.resume_token` (agents only) is replaced on every successful (re)connect; the server stores only its hash.
+
+**Permanent devices** (Phase 10):
+
+1. *Enrollment* – the agent creates an ECDSA P-256 key pair (the private key never leaves the device) and sends `Enrollment{token, device_public_key, machine}`. On success `AuthResult.peer_id` is the new **device id** and the server closes the connection. Invalid tokens count for the IP ban service.
+2. *Authentication* – on every connection the agent signs `HelloAck.nonce` (ECDSA P-256 / SHA-256, IEEE P1363 `r‖s`) and sends `DeviceSignature{device_id, signature}`. Devices awaiting approval get `NOT_AUTHORIZED`, disabled or unknown devices `AUTH_FAILED`. Bad signatures of known devices count for the IP ban service; unknown device ids do not (a removed device that keeps retrying must not ban the customer's network).
+3. *Presence* – after `AuthResult` the connection stays open and idle (heartbeat only). When a supporter opens the device, the server sends `SessionAssigned{session_id, consent_policy, operator_name}` over this connection; after `SessionState{ENDED}` the device returns to idle. A newer connection of the same device replaces the older one.
+4. *Connection loss during a session* – the session is *Suspended*; when the device authenticates again within the grace period it is bound to the session again (`SessionAssigned` with the same id, viewers re-key). No resume token is needed: the signature proves it is the same device.
 Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within 30 s after `HelloAck`.
 
 ## 4. Control messages (excerpt)
@@ -83,6 +90,8 @@ Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within
 - `SessionData` from the agent with an empty `viewer_id` goes to all granted viewers, otherwise to that viewer only.
 - Channel `INPUT` is accepted only from the controlling viewer (the first granted viewer; explicit hand-over follows with the viewer UI).
 - At most 5 viewers per session.
+- **Permissions** (permanent devices, per device group): a viewer may only send *and* receive on channels it has the permission for – `VIDEO`/`DISPLAY`/`CHAT`: *view*, `INPUT`: *control*, `CLIPBOARD`: *clipboard*, `FILE`: *files*, `SHELL`: *shell*; unknown channels need all permissions. The relay only needs the plaintext channel header for this; the agent rejects payloads that do not match their channel, so a viewer cannot smuggle a payload through another channel. The controlling viewer is the first granted viewer with *control*. Ad-hoc sessions grant all permissions to the owner and Admins. `ViewerJoined.permissions` and `ConsentRequest.requested_permissions` tell the agent what a viewer may do.
+- **Consent policy** (`SessionAssigned.consent_policy`): *ask* → `ConsentRequest` per viewer; *notify* → no question, the agent shows a visible banner; *silent* → no question, no banner. Ad-hoc sessions always ask.
 
 **Flow control (video):** the viewer acknowledges every frame with `FrameAck{sequence}`. The agent keeps at most **N = 3** unacknowledged frames in flight and skips capture otherwise; after a skip it sends the next frame as a keyframe if the gap exceeded 1 s. The relay additionally drops video frames (never other channels) for a peer whose send queue exceeds 4 MiB, and disconnects a peer whose queue exceeds 16 MiB (it cannot keep up).
 
@@ -111,5 +120,5 @@ P-256 is chosen over X25519 because it is available in WebCrypto in all supporte
 
 - Unknown fields are ignored (Protobuf default) – allows adding fields in minor versions.
 - Unknown message types and channels are ignored and logged at debug level.
-- Version history: **0.1** initial schema; **0.2** adds `Authenticate.resume`, `AuthResult.resume_token`, `ConsentRequest.viewer_id`, `ConsentResponse.viewer_id`.
+- Version history: **0.1** initial schema; **0.2** adds `Authenticate.resume`, `AuthResult.resume_token`, `ConsentRequest.viewer_id`, `ConsentResponse.viewer_id`; **0.3** adds `ViewerJoined.permissions` and implements enrollment, device signatures and presence on the server.
 - Peers announce optional features in `Hello.capabilities` (e.g. `video.h264`, `video.jpeg`, `shell.conpty`, `clipboard.files`); features are only used if both sides announce them.

@@ -215,6 +215,9 @@ dl.settings dd { margin: 0; }
 }
 
 /* ---- devices ---- */
+.badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--border); }
+.badge-online { background: var(--success-bg); color: var(--success-text); }
+.badge-offline { color: var(--muted); }
 .token-value {
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
   font-size: 1.1rem;
