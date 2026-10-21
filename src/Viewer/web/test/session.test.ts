@@ -37,6 +37,14 @@ class FakeSocket implements SocketLike {
 
 const flush = () => new Promise((r) => setTimeout(r, 20));
 
+/** Waits until the condition holds – WebCrypto key generation can take a while on slow CI runners. */
+async function until(condition: () => boolean, timeoutMs = 5000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!condition() && Date.now() < deadline) {
+    await flush();
+  }
+}
+
 /** The agent side of the key agreement, implemented independently with WebCrypto. */
 async function agentKeys(viewerSpki: Uint8Array) {
   const pair = await subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
@@ -75,19 +83,19 @@ describe("ViewerSession", () => {
     expect(socket.sent[0]?.body.case === "hello" && socket.sent[0].body.value.role).toBe(PeerRole.VIEWER);
 
     socket.deliver({ body: { case: "helloAck", value: { heartbeatSeconds: 30 } } });
-    await flush();
+    await until(() => socket.sent.length > 1);
     const auth = socket.sent[1];
     expect(auth?.body.case === "authenticate" && auth.body.value.method.case === "viewerTicket" && auth.body.value.method.value.ticket).toBe("ticket-123");
 
     socket.deliver({ body: { case: "sessionState", value: { sessionId: SESSION_ID, status: SessionStatus.ACTIVE } } });
-    await flush();
+    await until(() => socket.sent.length > 2);
     const exchange = socket.sent[2];
     expect(exchange?.body.case).toBe("keyExchange");
     const viewerSpki = exchange?.body.case === "keyExchange" ? exchange.body.value.ephemeralPublicKey : new Uint8Array();
 
     const agent = await agentKeys(viewerSpki);
     socket.deliver({ body: { case: "keyExchange", value: { sessionId: SESSION_ID, ephemeralPublicKey: agent.spki } } });
-    await flush();
+    await until(() => session.ready);
     expect(session.ready).toBe(true);
     expect(securityCode).toMatch(/^\d{3} \d{3}$/);
 
@@ -97,7 +105,8 @@ describe("ViewerSession", () => {
     socket.deliver({ body: { case: "sessionData", value: { sessionId: SESSION_ID, channel: Channel.CHAT, sequence: 1n, ciphertext } } });
     // replay is dropped
     socket.deliver({ body: { case: "sessionData", value: { sessionId: SESSION_ID, channel: Channel.CHAT, sequence: 1n, ciphertext } } });
-    await flush();
+    await until(() => received.length > 0);
+    await flush(); // give a (wrongly accepted) replay the chance to arrive
     expect(received).toEqual(["hi supporter"]);
 
     // viewer → agent
