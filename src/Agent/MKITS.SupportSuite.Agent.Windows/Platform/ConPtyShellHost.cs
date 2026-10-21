@@ -85,6 +85,10 @@ internal sealed class ConPtyShell : IShellProcess
             var startupInfo = new StartupInfoEx { AttributeList = attributeList };
             startupInfo.StartupInfo.Cb = Marshal.SizeOf<StartupInfoEx>();
 
+            // Without this, a child would inherit our own (possibly redirected) standard handles and bypass the
+            // pseudo console; with the flag and null handles it uses the pseudo console for input and output.
+            startupInfo.StartupInfo.Flags = StartfUseStdHandles;
+
             // CreateProcessW may modify the command line buffer: pass a mutable, NUL-terminated copy.
             var commandBuffer = (commandLine + '\0').ToCharArray();
             if (!CreateProcess(null, commandBuffer, 0, 0, false, ExtendedStartupInfoPresent | CreateUnicodeEnvironment, 0,

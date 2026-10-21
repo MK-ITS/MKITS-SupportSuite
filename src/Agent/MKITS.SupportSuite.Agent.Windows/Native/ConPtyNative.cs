@@ -13,6 +13,7 @@ internal static partial class ConPtyNative
     internal const uint CreateUnicodeEnvironment = 0x00000400;
     internal static readonly nint ProcThreadAttributePseudoConsole = 0x00020016;
     internal const uint Infinite = 0xFFFFFFFF;
+    internal const int StartfUseStdHandles = 0x00000100;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Coord
