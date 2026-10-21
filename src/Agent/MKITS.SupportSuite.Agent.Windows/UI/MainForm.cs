@@ -20,6 +20,8 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
     private readonly ListBox _chatLog = new() { Height = 140, Width = 380, HorizontalScrollbar = true };
     private readonly TextBox _chatInput = new() { Width = 300 };
     private readonly Button _send = new() { Text = UiText.Get("Chat_Send"), AutoSize = true };
+    private readonly Button _elevate = new() { Text = UiText.Get("Elevate_Button"), AutoSize = true };
+    private readonly Label _elevationState = new() { AutoSize = true, MaximumSize = new Size(380, 0) };
     private readonly Button _sendFile = new() { Text = UiText.Get("File_Send"), AutoSize = true, Enabled = false };
     private readonly Button _end = new() { Text = UiText.Get("EndSession"), AutoSize = true, BackColor = Color.Firebrick, ForeColor = Color.White };
     private readonly System.Windows.Forms.Timer _clipboardTimer = new() { Interval = 1000 };
@@ -31,6 +33,9 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
     private ShellHandler? _shells;
     private ClipboardHandler? _clipboard;
     private GdiScreenSourceHolder? _screen;
+    private Platform.SwitchableScreenSource? _screenSource;
+    private Platform.SwitchableInputInjector? _inputInjector;
+    private Elevation.HelperClient? _helper;
     private bool _ended;
 
     public MainForm(AgentSessionOptions options)
@@ -58,6 +63,8 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         layout.Controls.Add(_chatLog);
         layout.Controls.Add(chatRow);
         layout.Controls.Add(_sendFile);
+        layout.Controls.Add(_elevate);
+        layout.Controls.Add(_elevationState);
         layout.Controls.Add(_end);
         Controls.Add(layout);
 
@@ -65,6 +72,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         _send.Click += async (_, _) => await SendChatAsync();
         _end.Click += async (_, _) => await EndAsync();
         _sendFile.Click += async (_, _) => await SendFileAsync();
+        _elevate.Click += async (_, _) => await ElevateAsync();
         _clipboardTimer.Tick += async (_, _) => await PollClipboardAsync();
     }
 
@@ -99,6 +107,8 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
 
         if (status == AgentStatus.Ended)
         {
+            _helper?.Shutdown();
+            _elevate.Enabled = false;
             _ended = true;
             _end.Enabled = false;
             _send.Enabled = false;
@@ -188,8 +198,10 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         _files = new FileTransferHandler(this);
         _shells = new ShellHandler(new Platform.ConPtyShellHost());
         _clipboard = new ClipboardHandler(this);
-        var streamer = new ScreenStreamer(_screen.Source);
-        var input = new InputHandler(new Platform.SendInputInjector(), _screen.Source);
+        _screenSource = new Platform.SwitchableScreenSource(_screen.Source);
+        _inputInjector = new Platform.SwitchableInputInjector(new Platform.SendInputInjector());
+        var streamer = new ScreenStreamer(_screenSource);
+        var input = new InputHandler(_inputInjector, _screenSource);
 
         _session = new AgentSession(_options, new Core.Connection.ClientWebSocketConnector(), this, [streamer, input, _clipboard, _chat, _files, _shells]);
         try
@@ -234,6 +246,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         {
             _closing.Cancel();
             _clipboardTimer.Dispose();
+            _helper?.Dispose();
             _screen?.Dispose();
             _closing.Dispose();
         }
@@ -262,6 +275,39 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         _chatInput.Clear();
         ShowMessage(UiText.Get("Chat_You"), text, DateTimeOffset.Now);
         await _chat.SendAsync(_session, Environment.UserName, text, _closing.Token);
+    }
+
+    /// <summary>
+    /// "Restart with administrator rights" (ADR-0021): UAC prompt on this computer, then capture and input run through
+    /// the privileged helper (secure desktop, UAC prompts, lock screen, Ctrl+Alt+Del). The session continues.
+    /// </summary>
+    private async Task ElevateAsync()
+    {
+        _elevate.Enabled = false;
+        _elevationState.Text = UiText.Get("Elevate_Waiting");
+        var helper = await Elevation.HelperClient.ElevateAsync(_closing.Token);
+        if (helper is null || _screenSource is null || _inputInjector is null)
+        {
+            _elevationState.Text = UiText.Get("Elevate_Failed");
+            _elevate.Enabled = !_ended;
+            return;
+        }
+
+        _helper = helper;
+        helper.Disconnected += (_, _) => OnUi(() =>
+        {
+            _screenSource.Current = _screen!.Source;
+            _inputInjector.Current = new Platform.SendInputInjector();
+            _elevationState.Text = UiText.Get("Elevate_Lost");
+            _elevate.Enabled = !_ended;
+        });
+        _screenSource.Current = helper;
+        _inputInjector.Current = helper;
+        _elevationState.Text = UiText.Get("Elevate_Active");
+        if (_session is not null && _chat is not null)
+        {
+            await _chat.SendAsync(_session, UiText.Get("App_Title"), UiText.Get("Elevate_ChatNotice"), _closing.Token);
+        }
     }
 
     private async Task SendFileAsync()

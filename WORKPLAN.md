@@ -192,9 +192,9 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback) – GDI capture, multi-monitor done (`GdiScreenSource`); DXGI open
 - [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; H.264 open
 - [~] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen done; Ctrl+Alt+Del needs the service (8.4)
-- [ ] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching
+- [~] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching – elevated ad-hoc mode (ADR-0021): temporary service, SYSTEM helper following the input desktop, SendSAS, helper restart on console switch; permanent service follows in Phase 10
 - [~] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated – ConPTY with user rights done (`ConPtyShellHost`); elevated shell needs the service (8.4)
-- [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" open
+- [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" done (ADR-0021)
 
 ### Phase 9 – Browser viewer
 - [~] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling) done; WebCodecs/H.264 follows with the agent encoder
@@ -290,3 +290,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-20 | PR #16 merged. Phase 9A: browser viewer (TypeScript, Protobuf-ES, WebCrypto) with viewer page `/sessions/{id}/view` (one-time ticket, no inline script), screen/input/chat/clipboard/special keys; shared E2E test vector checked by C# and TypeScript; server re-announces ACTIVE after an agent resume (viewers re-key); CI and Docker build the viewer bundle. |
 | 2026-10-21 | PRs #17/#18 merged. Phase 7C: file transfer both ways – agent core handler (T14 rules), Windows UI (confirm dialog, *Send file*), viewer (accept/decline, upload, download) with incremental SHA-256. |
 | 2026-10-21 | Phase 7D: remote shell – `ShellHandler` (agent core), ConPTY PowerShell/cmd (Windows), xterm.js terminals in the viewer; per-endpoint CSP override for the viewer page (inline styles for xterm only). |
+| 2026-10-21 | PR #20 merged. Phase 8B: elevated ad-hoc mode on Windows (ADR-0021) – UAC → temporary LocalSystem service → SYSTEM helper on the input desktop (secure desktop, lock screen, Ctrl+Alt+Del); client keeps the connection and forwards capture/input over a protected pipe; self-removal. |

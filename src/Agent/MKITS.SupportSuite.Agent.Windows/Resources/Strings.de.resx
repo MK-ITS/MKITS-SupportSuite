@@ -49,4 +49,10 @@ Datei annehmen?</value></data>
   <data name="File_Offered" xml:space="preserve"><value>Biete Datei {0} an …</value></data>
   <data name="File_Sent" xml:space="preserve"><value>Datei gesendet: {0}</value></data>
   <data name="File_NotSent" xml:space="preserve"><value>Datei nicht gesendet (abgelehnt oder fehlgeschlagen): {0}</value></data>
+  <data name="Elevate_Button" xml:space="preserve"><value>Mit Administratorrechten neu starten</value></data>
+  <data name="Elevate_Waiting" xml:space="preserve"><value>Bitte bestätigen Sie die Windows-Abfrage (UAC) …</value></data>
+  <data name="Elevate_Failed" xml:space="preserve"><value>Administratorrechte wurden nicht erteilt. Die Sitzung läuft ohne sie weiter.</value></data>
+  <data name="Elevate_Active" xml:space="preserve"><value>Administratormodus: Der Supporter kann auch Windows-Sicherheitsabfragen und den Sperrbildschirm sehen und bedienen. Er endet mit der Sitzung.</value></data>
+  <data name="Elevate_Lost" xml:space="preserve"><value>Administratormodus beendet.</value></data>
+  <data name="Elevate_ChatNotice" xml:space="preserve"><value>Der Kunde hat den Administratormodus aktiviert (UAC-Abfragen, Sperrbildschirm, Strg+Alt+Entf).</value></data>
 </root>
