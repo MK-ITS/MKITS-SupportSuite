@@ -60,6 +60,10 @@ internal static partial class AgentInstaller
             Configure("description", AgentPaths.ServiceName, "Permanent remote maintenance connection to " + parsed.Server.Host);
             Configure("failure", AgentPaths.ServiceName, "reset=", "86400", "actions=", "restart/10000/restart/30000/restart/60000");
 
+            // Recovery also for stops with a non-zero exit code (the service reports internal failures that way); terminal
+            // problems such as an invalid token stop with exit code 0 and stay stopped.
+            Configure("failureflag", AgentPaths.ServiceName, "1");
+
             using var controller = new ServiceController(AgentPaths.ServiceName);
             controller.Start();
             controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));

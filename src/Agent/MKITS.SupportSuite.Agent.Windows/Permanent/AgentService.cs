@@ -71,8 +71,7 @@ internal sealed class AgentService : ServiceBase
             if (config is null || AgentConfig.ParseServer(config.ServerUri) is not { } server)
             {
                 AgentLog.Write("no valid configuration – reinstall the agent with --install");
-                ExitCode = 2;
-                Stop();
+                StopForGood();
                 return;
             }
 
@@ -103,16 +102,25 @@ internal sealed class AgentService : ServiceBase
             if (result != DeviceAgentStopReason.Cancelled)
             {
                 AgentLog.Write($"agent stopped: {result} – reinstall with a valid enrollment token");
-                ExitCode = 3;
-                Stop();
+                StopForGood();
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             AgentLog.Write($"agent failed: {ex.GetType().Name}: {ex.Message}");
             ExitCode = 1;
-            Stop(); // the service recovery settings restart it
+            Stop(); // non-zero exit code: the recovery actions (failureflag) restart the service
         }
+    }
+
+    /// <summary>
+    /// Stops without triggering the recovery actions (exit code 0): retrying cannot help (invalid token, no
+    /// configuration) and would hammer the server – and invalid tokens count for its IP ban.
+    /// </summary>
+    private void StopForGood()
+    {
+        ExitCode = 0;
+        Stop();
     }
 
     /// <summary>Removes the enrollment token from the configuration as soon as the identity is stored.</summary>
