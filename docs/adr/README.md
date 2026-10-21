@@ -29,3 +29,4 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0019](0019-ad-hoc-client-configuration.md) | Ad-hoc client receives server address and code via file name | Accepted |
 | [ADR-0020](0020-web-ui-blazor.md) | Blazor Web App for the server UI | Accepted |
 | [ADR-0021](0021-windows-elevated-ad-hoc.md) | Elevated ad-hoc mode on Windows (temporary service + SYSTEM helper) | Accepted |
+| [ADR-0022](0022-windows-permanent-agent.md) | Permanent Windows agent (service + on-demand helper) | Accepted |

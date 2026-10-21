@@ -31,6 +31,18 @@ Server: {1}
 Der Supporter sieht Ihren Bildschirm und kann Maus und Tastatur verwenden, Dateien und die Zwischenablage austauschen sowie eine Kommandozeile (PowerShell / cmd) mit Ihren Benutzerrechten öffnen. Sie können die Sitzung jederzeit beenden.</value></data>
   <data name="Consent_Allow" xml:space="preserve"><value>Erlauben</value></data>
   <data name="Consent_Deny" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="Service_Consent_Text" xml:space="preserve"><value>{0} möchte sich zur Fernwartung mit diesem Computer verbinden.
+
+Server: {1}
+Berechtigungen: {2}
+
+Verbindung erlauben?</value></data>
+  <data name="Service_Notify_Text" xml:space="preserve"><value>{0} ist jetzt zur Fernwartung mit diesem Computer verbunden (Organisation: {1}).</value></data>
+  <data name="Permission_view" xml:space="preserve"><value>Bildschirm ansehen</value></data>
+  <data name="Permission_control" xml:space="preserve"><value>Maus und Tastatur verwenden</value></data>
+  <data name="Permission_files" xml:space="preserve"><value>Dateien übertragen</value></data>
+  <data name="Permission_shell" xml:space="preserve"><value>Kommandozeile</value></data>
+  <data name="Permission_clipboard" xml:space="preserve"><value>Zwischenablage</value></data>
   <data name="Connect_Title" xml:space="preserve"><value>Mit Fernwartung verbinden</value></data>
   <data name="Connect_Server" xml:space="preserve"><value>Serveradresse</value></data>
   <data name="Connect_Code" xml:space="preserve"><value>Sitzungscode</value></data>

@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) MK-ITSolutions and contributors
 
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.ServiceProcess;
-using MKITS.SupportSuite.Agent.Windows.Native;
 using static MKITS.SupportSuite.Agent.Windows.Native.ServiceNative;
 
 namespace MKITS.SupportSuite.Agent.Windows.Elevation;
@@ -103,86 +100,11 @@ internal sealed class AdHocService(ElevatedSessionConfig config) : ServiceBase
         }
     }
 
-    /// <summary>SYSTEM token, moved into the console session, starts <c>--helper</c> on the interactive desktop.</summary>
-    private Process? StartHelperInConsoleSession()
-    {
-        var sessionId = WTSGetActiveConsoleSessionId();
-        if (sessionId == 0xFFFFFFFF)
-        {
-            return null; // no console session (e.g. during a session switch)
-        }
+    /// <summary>Starts <c>--helper</c> as SYSTEM on the interactive desktop of the console session.</summary>
+    private Process? StartHelperInConsoleSession() =>
+        Platform.ConsoleSessionLauncher.Start(ElevatedSessionConfig.ExecutableFor(config.Id), $"--helper {config.Id}")?.Process;
 
-        if (!OpenProcessToken(Process.GetCurrentProcess().Handle, TokenAllAccess, out var own))
-        {
-            return null;
-        }
-
-        using (own)
-        {
-            if (!DuplicateTokenEx(own, MaximumAllowed, 0, SecurityImpersonation, TokenPrimary, out var token))
-            {
-                return null;
-            }
-
-            using (token)
-            {
-                if (!SetTokenInformation(token, TokenSessionIdClass, ref sessionId, sizeof(uint)))
-                {
-                    return null;
-                }
-
-                var desktop = Marshal.StringToHGlobalUni("winsta0\\default");
-                try
-                {
-                    var startup = new ConPtyNative.StartupInfo { Cb = Marshal.SizeOf<ConPtyNative.StartupInfo>(), Desktop = desktop };
-                    var exe = ElevatedSessionConfig.ExecutableFor(config.Id);
-                    var commandLine = $"\"{exe}\" --helper {config.Id}\0".ToCharArray();
-                    if (!CreateProcessAsUser(token, exe, commandLine, 0, 0, false, CreateUnicodeEnvironment | CreateNoWindow, 0,
-                            Path.GetDirectoryName(exe), ref startup, out var info))
-                    {
-                        throw new Win32Exception(Marshal.GetLastPInvokeError());
-                    }
-
-                    _ = ConPtyNative.CloseHandle(info.Thread);
-                    _ = ConPtyNative.CloseHandle(info.Process);
-                    return Process.GetProcessById(info.ProcessId);
-                }
-                catch (Exception ex) when (ex is Win32Exception or ArgumentException)
-                {
-                    return null;
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(desktop);
-                }
-            }
-        }
-    }
-
-    /// <summary>Ctrl+Alt+Del requests from the helper (SYSTEM only).</summary>
-    private async Task ServeSasAsync(CancellationToken cancellationToken)
-    {
-        var security = new PipeSecurity();
-        security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), PipeAccessRights.FullControl, AccessControlType.Allow));
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                using var pipe = NamedPipeServerStreamAcl.Create(SasClient.PipeName(config.Id), PipeDirection.In, 1, PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous, 0, 0, security);
-                await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-                var buffer = new byte[1];
-                if (await pipe.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) == 1)
-                {
-                    SendSAS(false);
-                }
-            }
-            catch (IOException)
-            {
-                // client disconnected early – wait for the next request
-            }
-        }
-    }
+    private Task ServeSasAsync(CancellationToken cancellationToken) => SasServer.ServeAsync(config.Id, cancellationToken);
 
     /// <summary>Marks the service for deletion and removes the copied files (the running EXE is deleted at the next reboot).</summary>
     private void Uninstall()
@@ -214,6 +136,34 @@ internal sealed class AdHocService(ElevatedSessionConfig config) : ServiceBase
         }
 
         _ = MoveFileEx(directory, null, MoveFileDelayUntilReboot);
+    }
+}
+
+/// <summary>Raises Ctrl+Alt+Del for a helper (SendSAS only works from a LocalSystem service). The pipe is SYSTEM-only.</summary>
+internal static class SasServer
+{
+    public static async Task ServeAsync(string id, CancellationToken cancellationToken)
+    {
+        var security = new PipeSecurity();
+        security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), PipeAccessRights.FullControl, AccessControlType.Allow));
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var pipe = NamedPipeServerStreamAcl.Create(SasClient.PipeName(id), PipeDirection.In, 1, PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous, 0, 0, security);
+                await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+                var buffer = new byte[1];
+                if (await pipe.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) == 1)
+                {
+                    SendSAS(false);
+                }
+            }
+            catch (IOException)
+            {
+                // client disconnected early – wait for the next request
+            }
+        }
     }
 }
 

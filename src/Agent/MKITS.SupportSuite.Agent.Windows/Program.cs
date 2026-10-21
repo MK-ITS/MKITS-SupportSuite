@@ -12,6 +12,7 @@ namespace MKITS.SupportSuite.Agent.Windows;
 /// <summary>
 /// Portable ad-hoc client: <c>MKITS-Support_&lt;host&gt;_&lt;code&gt;.exe</c> (ADR-0019). Server and code come from the
 /// file name; if it was renamed, a dialog asks for them. Developers can pass <c>--server &lt;url&gt; --code &lt;code&gt;</c>.
+/// The same EXE is the permanent agent (ADR-0022): <c>--install</c>, <c>--uninstall</c>, <c>--agent-service</c>.
 /// </summary>
 internal static class Program
 {
@@ -27,6 +28,16 @@ internal static class Program
                 return Elevation.AdHocService.Run(args[1]);
             case "--helper" when args.Length > 1:
                 return Elevation.PrivilegedHelper.Run(args[1]);
+
+            // Permanent agent (ADR-0022).
+            case "--install":
+                return Permanent.AgentInstaller.Install(args);
+            case "--uninstall":
+                return Permanent.AgentInstaller.Uninstall();
+            case "--agent-service":
+                return Permanent.AgentService.Run();
+            case "--agent-helper" when args.Length > 1:
+                return Elevation.PrivilegedHelper.RunForAgent(args[1]);
             default:
                 break;
         }

@@ -14,6 +14,9 @@ public static class PortalEndpoints
 {
     public const string DownloadPath = "/portal/download";
 
+    /// <summary>The Windows client as installable agent (<c>MKITS-Agent.exe</c>) for Admins (ADR-0022).</summary>
+    public const string AgentDownloadPath = "/admin/downloads/windows-agent";
+
     public static IServiceCollection AddMkitsDownloads(this IServiceCollection services)
     {
         services.AddSingleton<ClientCatalog>();
@@ -27,6 +30,18 @@ public static class PortalEndpoints
         // POST (not GET): the code must not end up in proxy access logs or the browser history.
         // Antiforgery is validated automatically for form-bound minimal API endpoints.
         endpoints.MapPost(DownloadPath, DownloadAsync);
+
+        // Same binary; the file name carries no code, so the installed agent never mistakes itself for an ad-hoc client.
+        endpoints.MapGet(AgentDownloadPath, (HttpContext context, ClientCatalog catalog) =>
+        {
+            if (catalog.Get(ClientPlatform.WindowsX64) is not { } client)
+            {
+                return Results.NotFound();
+            }
+
+            context.Response.Headers.CacheControl = "no-store";
+            return Results.File(client.FullPath, "application/octet-stream", "MKITS-Agent.exe");
+        }).RequireAuthorization(Identity.Policies.Admin);
         return endpoints;
     }
 

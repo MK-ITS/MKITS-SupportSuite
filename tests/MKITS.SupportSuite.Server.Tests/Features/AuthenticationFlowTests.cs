@@ -155,6 +155,7 @@ public sealed class AuthenticationFlowTests
     [InlineData("/admin/settings")]
     [InlineData("/sessions")]
     [InlineData("/devices")]
+    [InlineData("/admin/downloads/windows-agent")]
     public async Task ProtectedPage_Anonymous_RedirectsToLogin(string path)
     {
         using var factory = new MkitsWebApplicationFactory();
