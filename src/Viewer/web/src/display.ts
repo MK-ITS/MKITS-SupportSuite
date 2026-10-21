@@ -52,6 +52,7 @@ export class RemoteDisplay {
   private monitorId = 0;
   private lastMove = 0;
   private pendingMove: SessionPayload | null = null;
+  private moveScheduled = false;
   private drawing = Promise.resolve();
   private readonly context: CanvasRenderingContext2D;
 
@@ -111,8 +112,13 @@ export class RemoteDisplay {
       const now = performance.now();
       if (now - this.lastMove >= 16) {
         this.flushMove(now);
-      } else {
-        requestAnimationFrame(() => this.flushMove(performance.now()));
+      } else if (!this.moveScheduled) {
+        // One pending frame callback at a time; it sends the latest position.
+        this.moveScheduled = true;
+        requestAnimationFrame(() => {
+          this.moveScheduled = false;
+          this.flushMove(performance.now());
+        });
       }
     });
     canvas.addEventListener("pointerdown", (e) => {

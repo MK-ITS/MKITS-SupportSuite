@@ -74,7 +74,7 @@ public static class ViewerPage
     internal static string Render(Guid sessionId, string ticket, string displayName, IStringLocalizer localizer)
     {
         var html = HtmlEncoder.Default;
-        string T(string key) => html.Encode(localizer[key]);
+        string T(string key) => html.Encode(localizer[key].Value);
 
         // System.Text.Json escapes <, >, & and quotes by default, so the block cannot break out of its <script> element.
         var texts = JsonSerializer.Serialize(TextKeys.ToDictionary(k => k, k => localizer[k].Value));

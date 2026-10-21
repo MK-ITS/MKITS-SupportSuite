@@ -43,7 +43,7 @@ function start(): void {
   const session = new ViewerSession(
     {
       status: (s, endReason) => {
-        setStatus(t(`Viewer_Status_${SessionStatus[s]}`, SessionStatus[s]) + (endReason ? ` (${t(`Viewer_EndReason_${endReason}`, endReason)})` : ""));
+        setStatus(t(`Viewer_Status_${SessionStatus[s]}`, SessionStatus[s]) + (endReason ? ` (${t(`Sessions_EndReason_${endReason}`, endReason)})` : ""));
         root.dataset.status = SessionStatus[s];
       },
       securityCode: (value) => {
