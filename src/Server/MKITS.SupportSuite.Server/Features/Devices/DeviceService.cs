@@ -154,8 +154,9 @@ public sealed class DeviceService(
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         return await db.GroupAccess.AsNoTracking()
             .Where(p => p.GroupId == groupId)
-            .Join(db.Users, p => p.UserId, u => u.Id, (p, u) => new GroupPermissionSummary(u.Id, u.DisplayName, u.UserName ?? string.Empty, p.Permissions))
-            .OrderBy(p => p.DisplayName)
+            .Join(db.Users, p => p.UserId, u => u.Id, (p, u) => new { u.Id, u.DisplayName, u.UserName, p.Permissions })
+            .OrderBy(r => r.DisplayName)
+            .Select(r => new GroupPermissionSummary(r.Id, r.DisplayName, r.UserName ?? string.Empty, r.Permissions))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
 
