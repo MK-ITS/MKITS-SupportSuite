@@ -1,0 +1,24 @@
+{
+  "name": "mkits-viewer-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MKITS-SupportSuite browser viewer (supporter side): WebSocket client, E2E crypto (WebCrypto), screen, input, chat.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "generate": "buf generate ../../../proto",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run generate && tsc --noEmit && esbuild src/main.ts --bundle --format=esm --target=es2022 --minify --sourcemap --outfile=../../Server/MKITS.SupportSuite.Server/wwwroot/viewer/viewer.js",
+    "test": "npm run generate && vitest run"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.16.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "1.74.0",
+    "@bufbuild/protoc-gen-es": "2.16.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

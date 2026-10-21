@@ -385,6 +385,16 @@ public sealed partial class SessionHub : IDisposable
         }
 
         var target = live.GrantedViewers.IsEmpty ? SessionStatus.WaitingForViewer : SessionStatus.Active;
+        if (resumed && target == live.Status)
+        {
+            // The agent lost its keys with the old connection: viewers must see "Active" again to re-key.
+            var state = StateFrame(live);
+            foreach (var viewer in live.GrantedViewers.Values)
+            {
+                viewer.Connection.Send(state);
+            }
+        }
+
         await SetStatusLockedAsync(live, target, cancellationToken).ConfigureAwait(false);
 
         foreach (var viewer in live.Viewers.Values.Where(v => v.Consent == ViewerConsent.NotAsked).ToList())

@@ -21,7 +21,22 @@ public enum E2ERole
 /// </summary>
 public sealed class E2EKeyPair : IDisposable
 {
-    private readonly ECDiffieHellman _key = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+    private readonly ECDiffieHellman _key;
+
+    public E2EKeyPair()
+        : this(ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+    {
+    }
+
+    private E2EKeyPair(ECDiffieHellman key) => _key = key;
+
+    /// <summary>Test vectors only: a key pair from a fixed PKCS#8 private key.</summary>
+    internal static E2EKeyPair FromPkcs8(byte[] pkcs8)
+    {
+        var key = ECDiffieHellman.Create();
+        key.ImportPkcs8PrivateKey(pkcs8, out _);
+        return new E2EKeyPair(key);
+    }
 
     /// <summary>SubjectPublicKeyInfo (DER) – the value sent in <c>KeyExchange.ephemeral_public_key</c>.</summary>
     public byte[] PublicKey => _key.ExportSubjectPublicKeyInfo();

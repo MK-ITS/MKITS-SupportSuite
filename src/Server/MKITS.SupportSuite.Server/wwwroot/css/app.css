@@ -226,3 +226,24 @@ dl.settings dd { margin: 0; }
 .download button { margin-top: 0; }
 .steps { padding-left: 1.25rem; }
 .steps li { margin: 0.35rem 0; }
+
+/* ---- browser viewer (/sessions/{id}/view) ---- */
+.viewer-page { margin: 0; height: 100vh; overflow: hidden; }
+#viewer { display: flex; flex-direction: column; height: 100vh; }
+.viewer-toolbar {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+  padding: 0.5rem 0.75rem; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.viewer-toolbar button, .viewer-toolbar select { margin-top: 0; }
+#viewer-status { font-weight: 600; margin-right: auto; }
+.security-code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 0.15rem 0.5rem; border-radius: var(--radius); background: var(--info-bg); color: var(--info-text); }
+button.danger { background: var(--danger-text); color: #fff; border-color: var(--danger-text); }
+.viewer-main { flex: 1; display: flex; min-height: 0; }
+#viewer-canvas { flex: 1; min-width: 0; width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; cursor: default; }
+#viewer-canvas:focus { box-shadow: inset 0 0 0 2px var(--primary); }
+.viewer-chat { width: 18rem; display: flex; flex-direction: column; border-left: 1px solid var(--border); background: var(--surface); }
+#viewer-chat-log { flex: 1; overflow-y: auto; margin: 0; padding: 0.5rem 0.75rem; list-style: none; word-break: break-word; }
+#viewer-chat-form { display: flex; gap: 0.25rem; padding: 0.5rem; border-top: 1px solid var(--border); }
+#viewer-chat-form input { flex: 1; min-width: 0; }
+#viewer-chat-form button { margin-top: 0; }
+@media (max-width: 800px) { .viewer-chat { display: none; } }

@@ -86,6 +86,7 @@
                         <td>
                             @if (session.Status != SessionStatus.Ended && (session.OwnerUserId == _userId || _isAdmin))
                             {
+                                <a class="button" href="/sessions/@session.Id/view" target="_blank" rel="noopener">@L["Sessions_Action_Open"]</a>
                                 <button type="button" class="secondary" @onclick="() => EndAsync(session.Id)">
                                     @(session.Status == SessionStatus.WaitingForAgent ? L["Sessions_Action_Revoke"] : L["Sessions_Action_End"])
                                 </button>
