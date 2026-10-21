@@ -544,7 +544,7 @@ public sealed partial class SessionHub : IDisposable
             SessionAssigned = new SessionAssigned
             {
                 SessionId = live.WireId,
-                ConsentPolicy = (ConsentPolicy)(int)live.ConsentPolicy, // ad-hoc: always Ask (ADR-0014)
+                ConsentPolicy = (ConsentPolicy)(int)live.ConsentPolicy, // ad-hoc: always Ask; permanent: the device group policy (ADR-0014). Enum values match the wire enum.
                 Recording = false,
                 OperatorName = live.OperatorName ?? string.Empty,
             },
