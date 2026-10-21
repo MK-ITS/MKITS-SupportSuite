@@ -27,7 +27,7 @@ public static class ViewerPage
     /// at runtime. Scripts stay strictly same-origin, so this does not allow script injection.
     /// </summary>
     internal const string ContentSecurityPolicy =
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; " +
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; " +
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
 
     /// <summary>Texts used by the viewer; keys are looked up in SharedResource (EN/DE).</summary>

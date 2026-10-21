@@ -30,6 +30,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | TypeScript | browser viewer build | Apache-2.0 | https://github.com/microsoft/TypeScript |
 | esbuild | browser viewer bundling | MIT | https://github.com/evanw/esbuild |
 | Vitest | browser viewer tests | MIT | https://github.com/vitest-dev/vitest |
+| happy-dom | browser viewer tests (DOM) | MIT | https://github.com/capricorn86/happy-dom |
 
 ## Planned (to be confirmed when added)
 
