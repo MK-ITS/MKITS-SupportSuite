@@ -107,7 +107,7 @@ Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within
 2. Both derive `shared = ECDH(own_private, peer_public)` and run **HKDF-SHA256** with `salt = session_id` and `info = "mkits/v0/e2e" || agent_pub || viewer_pub` to obtain two 256-bit keys: `key_agent_to_viewer`, `key_viewer_to_agent`.
 3. Each `SessionData` payload is encrypted with **AES-256-GCM**. Nonce (96 bit) = `channel (32 bit) || sequence (64 bit)`; sequence numbers are per direction and channel and must strictly increase (replay protection). Associated data = `session_id || channel || sequence`.
 4. **Fingerprint (SAS):** both sides display a 6-digit code derived from `SHA-256(transcript)`. Supporter and customer can compare it by phone to rule out a man-in-the-middle by a compromised server.
-5. **Permanent agents** additionally sign their ephemeral key with their long-term device key; the viewer verifies it against the device key registered at enrollment.
+5. **Permanent agents** additionally sign their ephemeral key with their long-term device key (`KeyExchange.device_signature`, ECDSA P-256 / SHA-256, IEEE P1363); the viewer verifies it against the device key registered at enrollment (the viewer page embeds it as `data-device-key`) and refuses the session plane with `DEVICE_SIGNATURE_INVALID` otherwise. This binds the E2E keys to the enrolled device – a relay that swaps keys is detected as long as the server that stored the device key was not compromised at enrollment time.
 6. Rekeying: a new key exchange is performed every 2^32 frames per direction or 24 h, whichever comes first.
 
 P-256 is chosen over X25519 because it is available in WebCrypto in all supported browsers, in .NET on every platform and on Android 10+.

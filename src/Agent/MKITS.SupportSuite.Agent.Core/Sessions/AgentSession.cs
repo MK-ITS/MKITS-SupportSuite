@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) MK-ITSolutions and contributors
 
-using System.Collections.Concurrent;
-using Google.Protobuf;
 using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Common;
-using MKITS.SupportSuite.Common.Crypto;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
 
@@ -21,23 +18,20 @@ public sealed record AgentSessionResult(string? EndReason, string? ErrorCode)
 
 /// <summary>
 /// One ad-hoc support session from the agent's point of view (docs/protocol.md, docs/session-lifecycle.md):
-/// handshake and authentication, consent dialog, end-to-end key exchange per supporter, decrypting and dispatching
-/// session-plane payloads to the channel handlers, and resuming after a short connection loss.
+/// handshake and authentication with the session code and resuming after a short connection loss. The session
+/// itself (consent, keys, payloads) is handled by <see cref="SessionEngine"/>.
 /// </summary>
 public sealed class AgentSession : ISessionContext, IAsyncDisposable
 {
     private readonly AgentSessionOptions _options;
     private readonly IWebSocketConnector _connector;
     private readonly IAgentUserInterface _ui;
-    private readonly IReadOnlyList<ISessionChannelHandler> _handlers;
+    private readonly SessionEngine _engine;
     private readonly TimeProvider _timeProvider;
-    private readonly ConcurrentDictionary<string, ViewerState> _viewers = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _stop = new();
     private readonly TaskCompletionSource _endedByServer = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private FrameSocket? _socket;
-    private string? _sessionId;
     private string? _resumeToken;
-    private string _operatorName = string.Empty;
     private string? _endReason;
 
     public AgentSession(
@@ -55,12 +49,12 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         _options = options;
         _connector = connector;
         _ui = ui;
-        _handlers = handlers.ToList();
+        _engine = new SessionEngine(ui, handlers.ToList(), options.ServerUri.Host);
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <summary>Server-assigned session id (after authentication).</summary>
-    public string? SessionId => _sessionId;
+    public string? SessionId => _engine.SessionId;
 
     /// <summary>
     /// Connects, authenticates with the code and runs until the session ends, the user ends it
@@ -90,7 +84,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
             }
 
             // Connection lost: keys are bound to the old connection's viewers; the server will re-announce them.
-            ResetViewers();
+            _engine.ResetViewers();
             _ui.OnStatusChanged(AgentStatus.Reconnecting, null);
             var error = await ReconnectAsync(token).ConfigureAwait(false);
             if (error is not null)
@@ -108,11 +102,11 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
     public async Task EndAsync()
     {
         _endReason ??= "ended_by_customer";
-        if (_socket is { } socket && _sessionId is not null)
+        if (_socket is { } socket && _engine.SessionId is { } sessionId)
         {
             try
             {
-                await socket.SendAsync(new Frame { EndSession = new EndSession { SessionId = _sessionId, Reason = "ended_by_customer" } }, CancellationToken.None).ConfigureAwait(false);
+                await socket.SendAsync(new Frame { EndSession = new EndSession { SessionId = sessionId, Reason = "ended_by_customer" } }, CancellationToken.None).ConfigureAwait(false);
                 await _endedByServer.Task.WaitAsync(TimeSpan.FromSeconds(5), _timeProvider).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is System.Net.WebSockets.WebSocketException or IOException or ObjectDisposedException or InvalidOperationException or TimeoutException)
@@ -125,50 +119,11 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public IReadOnlyCollection<string> ReadyViewerIds => _viewers.Values.Where(v => v.Cipher is not null).Select(v => v.Id).ToList();
+    public IReadOnlyCollection<string> ReadyViewerIds => _engine.ReadyViewerIds;
 
     /// <inheritdoc />
-    public async Task SendAsync(string? viewerId, SessionPayload payload, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(payload);
-
-        var socket = _socket;
-        if (socket is null || _sessionId is null)
-        {
-            return;
-        }
-
-        var channel = (uint)PayloadChannels.For(payload);
-        var plaintext = payload.ToByteArray();
-        var targets = viewerId is null
-            ? _viewers.Values.Where(v => v.Cipher is not null).ToList()
-            : _viewers.TryGetValue(viewerId, out var one) && one.Cipher is not null ? [one] : [];
-
-        foreach (var viewer in targets)
-        {
-            // Encrypt and send under the viewer's lock: sequence numbers must reach the wire in order.
-            await viewer.SendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                var (sequence, ciphertext) = viewer.Cipher!.Encrypt(channel, plaintext);
-                await socket.SendAsync(new Frame
-                {
-                    SessionData = new SessionData
-                    {
-                        SessionId = _sessionId,
-                        ViewerId = viewer.Id,
-                        Channel = channel,
-                        Sequence = sequence,
-                        Ciphertext = ByteString.CopyFrom(ciphertext),
-                    },
-                }, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                viewer.SendLock.Release();
-            }
-        }
-    }
+    public Task SendAsync(string? viewerId, SessionPayload payload, CancellationToken cancellationToken) =>
+        _engine.SendAsync(viewerId, payload, cancellationToken);
 
     public async ValueTask DisposeAsync()
     {
@@ -178,7 +133,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
             await socket.DisposeAsync().ConfigureAwait(false);
         }
 
-        ResetViewers();
+        _engine.ResetViewers();
         _stop.Dispose();
     }
 
@@ -218,7 +173,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         }
 
         var authenticate = resume
-            ? new Authenticate { Resume = new Resume { SessionId = _sessionId, Token = _resumeToken } }
+            ? new Authenticate { Resume = new Resume { SessionId = _engine.SessionId, Token = _resumeToken } }
             : new Authenticate { AdHocCode = new AdHocCode { Code = _options.Code, Machine = _options.Machine } };
         await socket.SendAsync(new Frame { Authenticate = authenticate }, cancellationToken).ConfigureAwait(false);
 
@@ -230,6 +185,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         }
 
         _resumeToken = result.AuthResult.ResumeToken;
+        _engine.Attach(socket);
         var previous = Interlocked.Exchange(ref _socket, socket);
         if (previous is not null)
         {
@@ -241,7 +197,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
 
     private async Task<string?> ReconnectAsync(CancellationToken cancellationToken)
     {
-        if (_sessionId is null || _resumeToken is null)
+        if (_engine.SessionId is null || _resumeToken is null)
         {
             return ErrorCodes.AuthFailed; // lost before the session was assigned – a resume can never succeed
         }
@@ -293,43 +249,20 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
                 return _endReason is not null;
             }
 
+            string? ended = null;
+            if (await _engine.HandleAsync(frame, cancellationToken, reason => ended = reason).ConfigureAwait(false))
+            {
+                if (ended is not null)
+                {
+                    _endReason = ended;
+                    return true;
+                }
+
+                continue;
+            }
+
             switch (frame.BodyCase)
             {
-                case Frame.BodyOneofCase.SessionAssigned:
-                    _sessionId = frame.SessionAssigned.SessionId;
-                    _operatorName = frame.SessionAssigned.OperatorName;
-                    _ui.OnStatusChanged(AgentStatus.WaitingForSupporter, _operatorName);
-                    break;
-                case Frame.BodyOneofCase.SessionState:
-                    if (OnSessionState(frame.SessionState))
-                    {
-                        return true;
-                    }
-
-                    break;
-                case Frame.BodyOneofCase.ViewerJoined:
-                    _viewers[frame.ViewerJoined.ViewerId] = new ViewerState(frame.ViewerJoined.ViewerId, frame.ViewerJoined.DisplayName);
-                    PublishSupporters();
-                    break;
-                case Frame.BodyOneofCase.ViewerLeft:
-                    if (_viewers.TryRemove(frame.ViewerLeft.ViewerId, out var left))
-                    {
-                        NotifyViewerGone(left.Id);
-                        left.Dispose();
-                    }
-
-                    PublishSupporters();
-                    break;
-                case Frame.BodyOneofCase.ConsentRequest:
-                    // Do not block the receive loop while the dialog is open.
-                    _ = AskConsentAsync(frame.ConsentRequest, cancellationToken);
-                    break;
-                case Frame.BodyOneofCase.KeyExchange:
-                    await OnKeyExchangeAsync(frame.KeyExchange, cancellationToken).ConfigureAwait(false);
-                    break;
-                case Frame.BodyOneofCase.SessionData:
-                    await OnSessionDataAsync(frame.SessionData, cancellationToken).ConfigureAwait(false);
-                    break;
                 case Frame.BodyOneofCase.Ping:
                     await socket.SendAsync(new Frame { Pong = new Pong { TimestampMs = frame.Ping.TimestampMs } }, cancellationToken).ConfigureAwait(false);
                     break;
@@ -342,171 +275,5 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         }
 
         return true;
-    }
-
-    /// <summary>Returns <c>true</c> when the session ended.</summary>
-    private bool OnSessionState(SessionState state)
-    {
-        switch (state.Status)
-        {
-            case SessionStatus.WaitingForViewer:
-                _ui.OnStatusChanged(AgentStatus.WaitingForSupporter, _operatorName);
-                break;
-            case SessionStatus.AwaitingConsent:
-                _ui.OnStatusChanged(AgentStatus.AwaitingConsent, null);
-                break;
-            case SessionStatus.Active:
-                _ui.OnStatusChanged(AgentStatus.Active, null);
-                break;
-            case SessionStatus.Ended:
-                _endReason = string.IsNullOrEmpty(state.EndReason) ? "ended" : state.EndReason;
-                return true;
-            default:
-                break;
-        }
-
-        return false;
-    }
-
-    private async Task AskConsentAsync(ConsentRequest request, CancellationToken cancellationToken)
-    {
-        bool granted;
-        try
-        {
-            granted = await _ui.RequestConsentAsync(
-                new ConsentPrompt(_options.ServerUri.Host, _operatorName, request.SupporterDisplayName, request.RequestedPermissions.ToList()),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-
-        if (_socket is { } socket)
-        {
-            try
-            {
-                await socket.SendAsync(new Frame
-                {
-                    ConsentResponse = new ConsentResponse { SessionId = request.SessionId, ViewerId = request.ViewerId, Granted = granted },
-                }, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is System.Net.WebSockets.WebSocketException or IOException or OperationCanceledException or ObjectDisposedException)
-            {
-                // connection lost; the server asks again after a resume
-            }
-        }
-    }
-
-    /// <summary>The viewer starts the key exchange; the agent answers with its own ephemeral key.</summary>
-    private async Task OnKeyExchangeAsync(KeyExchange exchange, CancellationToken cancellationToken)
-    {
-        if (_sessionId is null || !_viewers.TryGetValue(exchange.ViewerId, out var viewer))
-        {
-            return;
-        }
-
-        using var own = new E2EKeyPair();
-        var viewerKey = exchange.EphemeralPublicKey.ToByteArray();
-        SessionCipher cipher;
-        try
-        {
-            cipher = SessionCrypto.Establish(E2ERole.Agent, own, _sessionId, own.PublicKey, viewerKey);
-        }
-        catch (System.Security.Cryptography.CryptographicException)
-        {
-            return; // invalid key from the viewer – no session plane for it
-        }
-
-        viewer.ReplaceCipher(cipher);
-        await _socket!.SendAsync(new Frame
-        {
-            KeyExchange = new KeyExchange { SessionId = _sessionId, ViewerId = viewer.Id, EphemeralPublicKey = ByteString.CopyFrom(own.PublicKey) },
-        }, cancellationToken).ConfigureAwait(false);
-
-        _ui.OnSecurityCode(viewer.DisplayName, SessionCrypto.ComputeSecurityCode(_sessionId, own.PublicKey, viewerKey));
-
-        foreach (var handler in _handlers)
-        {
-            await handler.OnViewerReadyAsync(this, viewer.Id, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private async Task OnSessionDataAsync(SessionData data, CancellationToken cancellationToken)
-    {
-        if (!_viewers.TryGetValue(data.ViewerId, out var viewer) || viewer.Cipher is not { } cipher)
-        {
-            return;
-        }
-
-        var plaintext = cipher.Decrypt(data.Channel, data.Sequence, data.Ciphertext.Span);
-        if (plaintext is null)
-        {
-            return; // forged, replayed or for an old key
-        }
-
-        SessionPayload payload;
-        try
-        {
-            payload = SessionPayload.Parser.ParseFrom(plaintext);
-        }
-        catch (InvalidProtocolBufferException)
-        {
-            return;
-        }
-
-        if (!PayloadChannels.Matches(data.Channel, payload))
-        {
-            return;
-        }
-
-        foreach (var handler in _handlers)
-        {
-            await handler.HandleAsync(this, viewer.Id, payload, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private void PublishSupporters() => _ui.OnSupportersChanged(_viewers.Values.Select(v => v.DisplayName).ToList());
-
-    private void NotifyViewerGone(string viewerId)
-    {
-        foreach (var handler in _handlers)
-        {
-            handler.OnViewerGone(viewerId);
-        }
-    }
-
-    private void ResetViewers()
-    {
-        foreach (var viewer in _viewers.Values)
-        {
-            NotifyViewerGone(viewer.Id);
-            viewer.Dispose();
-        }
-
-        _viewers.Clear();
-        PublishSupporters();
-    }
-
-    /// <summary>One connected supporter and its end-to-end cipher.</summary>
-    private sealed class ViewerState(string id, string displayName) : IDisposable
-    {
-        private SessionCipher? _cipher;
-
-        public string Id { get; } = id;
-
-        public string DisplayName { get; } = displayName;
-
-        public SemaphoreSlim SendLock { get; } = new(1, 1);
-
-        public SessionCipher? Cipher => Volatile.Read(ref _cipher);
-
-        public void ReplaceCipher(SessionCipher cipher) => Interlocked.Exchange(ref _cipher, cipher)?.Dispose();
-
-        public void Dispose()
-        {
-            Interlocked.Exchange(ref _cipher, null)?.Dispose();
-            SendLock.Dispose();
-        }
     }
 }

@@ -755,15 +755,7 @@ public sealed partial class SessionHub : IDisposable
     /// Permission a viewer needs to send or receive on a channel. Unknown channels need all permissions, so a newer
     /// agent can never open a side door for restricted viewers.
     /// </summary>
-    internal static DevicePermissions RequiredPermission(uint channel) => (Channel)channel switch
-    {
-        Channel.Video or Channel.Display or Channel.Chat => DevicePermissions.View,
-        Channel.Input => DevicePermissions.Control,
-        Channel.Clipboard => DevicePermissions.Clipboard,
-        Channel.File => DevicePermissions.Files,
-        Channel.Shell => DevicePermissions.Shell,
-        _ => DevicePermissions.All,
-    };
+    internal static DevicePermissions RequiredPermission(uint channel) => (DevicePermissions)(int)ChannelPermissions.Required(channel);
 
     private static void RouteKeyExchange(LiveSession live, PeerConnection from, KeyExchange exchange)
     {

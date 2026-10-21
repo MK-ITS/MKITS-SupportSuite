@@ -12,6 +12,12 @@ public enum AgentStatus
     Active,
     Reconnecting,
     Ended,
+
+    /// <summary>Permanent device: online, no session.</summary>
+    Idle,
+
+    /// <summary>Permanent device: enrolled, waiting for an Admin to approve it.</summary>
+    PendingApproval,
 }
 
 /// <summary>Everything the end user needs to decide whether to allow a supporter.</summary>
@@ -33,6 +39,14 @@ public interface IAgentUserInterface
 
     /// <summary>The end-to-end security code for a supporter (to compare on the phone).</summary>
     void OnSecurityCode(string supporterDisplayName, string securityCode);
+
+    /// <summary>
+    /// A session started. <paramref name="policy"/> decides what the user sees: <c>Ask</c> → consent dialogs,
+    /// <c>Notify</c> → a visible banner while supporters are connected, <c>Silent</c> → nothing (permanent devices only).
+    /// </summary>
+    void OnSessionAssigned(string operatorName, Common.Protocol.V0.ConsentPolicy policy)
+    {
+    }
 }
 
 /// <summary>Handles decrypted session-plane payloads of the channels it is responsible for.</summary>
