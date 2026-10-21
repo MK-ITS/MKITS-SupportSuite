@@ -293,6 +293,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
             return;
         }
 
+        _helper?.Dispose(); // a previous, disconnected helper
         _helper = helper;
         helper.Disconnected += (_, _) => OnUi(() =>
         {
