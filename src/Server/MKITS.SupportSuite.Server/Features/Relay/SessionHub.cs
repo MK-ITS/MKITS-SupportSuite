@@ -522,10 +522,11 @@ public sealed partial class SessionHub : IDisposable
 
     // ------------------------------------------------------------------ internals
 
-    /// <param name="sendAuthResult">
-    /// <c>true</c> for ad-hoc agents (AuthResult with a fresh resume token); permanent devices got their AuthResult
-    /// when they came online and re-authenticate with their key after a connection loss.
-    /// </param>
+    /// <summary>
+    /// Binds the agent to the session. <c>sendAuthResult</c> is <c>true</c> for ad-hoc agents (AuthResult with a
+    /// fresh resume token); permanent devices got their AuthResult when they came online and re-authenticate with
+    /// their key after a connection loss.
+    /// </summary>
     private async Task ConnectAgentLockedAsync(LiveSession live, PeerConnection agent, bool resumed, bool sendAuthResult, CancellationToken cancellationToken)
     {
         live.Agent = agent;
