@@ -254,7 +254,7 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
     [LibraryImport("kernel32.dll", SetLastError = true)]
     private static partial nint OpenProcess(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, uint processId);
 
-    [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", SetLastError = true)]
+    [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool QueryFullProcessImageName(nint process, uint flags, [Out] char[] buffer, ref int size);
 }

@@ -237,7 +237,7 @@ internal static class SasClient
             pipe.Connect(2000);
             pipe.WriteByte(1);
         }
-        catch (Exception ex) when (ex is IOException or TimeoutException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or System.TimeoutException or UnauthorizedAccessException)
         {
             // the service is not reachable – nothing else can raise the SAS
         }
