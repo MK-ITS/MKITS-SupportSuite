@@ -107,7 +107,7 @@ public sealed class ShellHandler(IShellHost host) : ISessionChannelHandler, IAsy
     private async Task OpenAsync(ISessionContext context, string viewerId, ShellOpen open, CancellationToken cancellationToken)
     {
         var shellId = open.ShellId;
-        var type = string.IsNullOrEmpty(open.Type) ? host.AvailableShells.FirstOrDefault() : open.Type;
+        var type = string.IsNullOrEmpty(open.Type) ? (host.AvailableShells.Count > 0 ? host.AvailableShells[0] : null) : open.Type;
         var key = Key(viewerId, shellId);
         var perViewer = _shells.Keys.Count(k => k.StartsWith(viewerId + "/", StringComparison.Ordinal));
 
