@@ -13,6 +13,10 @@ public sealed class RecordingContext : ISessionContext
 {
     public ConcurrentQueue<(string? ViewerId, SessionPayload Payload)> Sent { get; } = new();
 
+    public List<string> Viewers { get; } = ["v1"];
+
+    public IReadOnlyCollection<string> ReadyViewerIds => Viewers;
+
     public Task SendAsync(string? viewerId, SessionPayload payload, CancellationToken cancellationToken)
     {
         Sent.Enqueue((viewerId, payload));

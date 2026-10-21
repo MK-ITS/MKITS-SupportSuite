@@ -5,6 +5,7 @@ import { create } from "@bufbuild/protobuf";
 import { SessionStatus } from "./gen/mkits/v0/frame_pb";
 import { type SessionPayload, SessionPayloadSchema, SpecialKeyKind } from "./gen/mkits/v0/session_pb";
 import { RemoteDisplay } from "./display";
+import { FileTransfers } from "./files";
 import { type SocketLike, ViewerSession } from "./session";
 
 /**
@@ -66,6 +67,62 @@ function start(): void {
 
   const display = new RemoteDisplay(element<HTMLCanvasElement>("viewer-canvas"), (payload) => void session.send(payload));
 
+  const formatSize = (bytes: number) => (bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
+  const progressItems = new Map<string, HTMLLIElement>();
+  const files = new FileTransfers((payload) => session.send(payload), {
+    confirm: (name, size) => new Promise<boolean>((resolve) => {
+      const item = document.createElement("li");
+      item.className = "file-offer";
+      item.append(document.createTextNode(t("Viewer_FileOffered").replace("{0}", name).replace("{1}", formatSize(size)) + " "));
+      const accept = document.createElement("button");
+      accept.type = "button";
+      accept.textContent = t("Viewer_FileAccept");
+      const decline = document.createElement("button");
+      decline.type = "button";
+      decline.className = "secondary";
+      decline.textContent = t("Viewer_FileDecline");
+      const answer = (value: boolean) => {
+        accept.disabled = true;
+        decline.disabled = true;
+        resolve(value);
+      };
+      accept.addEventListener("click", () => answer(true));
+      decline.addEventListener("click", () => answer(false));
+      item.append(accept, decline);
+      chatLog.append(item);
+      item.scrollIntoView({ block: "end" });
+    }),
+    received: (name, data) => {
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name;
+      link.textContent = t("Viewer_FileDownload").replace("{0}", name);
+      const item = document.createElement("li");
+      item.append(link);
+      chatLog.append(item);
+      link.click();
+      // Release the (possibly large) blob once the browser had time to start the download.
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        link.removeAttribute("href");
+      }, 60_000);
+    },
+    progress: (name, done, total) => {
+      let item = progressItems.get(name);
+      if (!item) {
+        item = document.createElement("li");
+        progressItems.set(name, item);
+        chatLog.append(item);
+      }
+      item.textContent = `${name}: ${Math.floor((done / Math.max(1, total)) * 100)} %`;
+      if (done >= total) {
+        progressItems.delete(name);
+      }
+    },
+    failed: (name, reason) => addChat("⚠", t("Viewer_FileFailed").replace("{0}", name) + ` (${reason})`),
+  });
+
   const onPayload = (payload: SessionPayload) => {
     switch (payload.body.case) {
       case "videoFrame":
@@ -86,6 +143,13 @@ function start(): void {
       }
       case "chatMessage":
         addChat(payload.body.value.author, payload.body.value.text);
+        break;
+      case "fileOffer":
+      case "fileChunk":
+      case "fileComplete":
+      case "fileDecision":
+      case "fileCancel":
+        void files.handle(payload);
         break;
       case "clipboardText":
         lastRemoteClipboard = payload.body.value.text;
@@ -140,6 +204,19 @@ function start(): void {
         setStatus(t("Viewer_ClipboardDenied"));
       }
     }
+  });
+
+  const fileInput = element<HTMLInputElement>("viewer-file-input");
+  element<HTMLButtonElement>("viewer-file-send").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    if (!file || !session.ready) {
+      return;
+    }
+    addChat(t("Viewer_ChatYou"), t("Viewer_FileOffering").replace("{0}", file.name));
+    const sent = await files.upload(file);
+    addChat(t("Viewer_ChatYou"), t(sent ? "Viewer_FileSent" : "Viewer_FileNotSent").replace("{0}", file.name));
   });
 
   chatForm.addEventListener("submit", (e) => {

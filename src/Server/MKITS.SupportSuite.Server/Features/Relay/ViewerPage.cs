@@ -27,6 +27,8 @@ public static class ViewerPage
     [
         "Viewer_Connecting", "Viewer_Closed", "Viewer_SecurityCode", "Viewer_Monitor", "Viewer_Primary", "Viewer_ChatYou",
         "Viewer_ClipboardDenied",
+        "Viewer_FileOffered", "Viewer_FileAccept", "Viewer_FileDecline", "Viewer_FileDownload", "Viewer_FileFailed",
+        "Viewer_FileOffering", "Viewer_FileSent", "Viewer_FileNotSent",
         "Viewer_Status_WAITING_FOR_AGENT", "Viewer_Status_WAITING_FOR_VIEWER", "Viewer_Status_AWAITING_CONSENT",
         "Viewer_Status_ACTIVE", "Viewer_Status_SUSPENDED", "Viewer_Status_ENDED",
         "Viewer_Error_CONSENT_DENIED", "Viewer_Error_SESSION_ENDED", "Viewer_Error_AUTH_FAILED", "Viewer_Error_RATE_LIMITED",
@@ -102,6 +104,8 @@ public static class ViewerPage
                 <button type="button" class="secondary" data-special="ALT_TAB">Alt+Tab</button>
                 <button type="button" class="secondary" id="viewer-clipboard-send">{T("Viewer_ClipboardSend")}</button>
                 <button type="button" class="secondary" id="viewer-clipboard-copy" hidden>{T("Viewer_ClipboardCopy")}</button>
+                <button type="button" class="secondary" id="viewer-file-send">{T("Viewer_FileSend")}</button>
+                <input type="file" id="viewer-file-input" hidden>
                 <button type="button" class="danger" id="viewer-end">{T("Sessions_Action_End")}</button>
               </header>
               <main class="viewer-main">

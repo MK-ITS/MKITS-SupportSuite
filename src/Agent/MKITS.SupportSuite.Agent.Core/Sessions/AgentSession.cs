@@ -125,6 +125,9 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public IReadOnlyCollection<string> ReadyViewerIds => _viewers.Values.Where(v => v.Cipher is not null).Select(v => v.Id).ToList();
+
+    /// <inheritdoc />
     public async Task SendAsync(string? viewerId, SessionPayload payload, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(payload);

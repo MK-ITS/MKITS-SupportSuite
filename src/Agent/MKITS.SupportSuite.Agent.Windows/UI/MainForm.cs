@@ -12,7 +12,7 @@ namespace MKITS.SupportSuite.Agent.Windows.UI;
 /// status, connected supporters, security code, chat and the end button. Implements the user-facing contracts
 /// of the agent core; calls from background threads are marshalled to the UI thread.
 /// </summary>
-internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, IClipboard
+internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, IClipboard, IFileTransferUi
 {
     private readonly Label _status = new() { AutoSize = true, MaximumSize = new Size(380, 0), Font = new Font(SystemFonts.MessageBoxFont ?? DefaultFont, FontStyle.Bold) };
     private readonly Label _supporters = new() { AutoSize = true, MaximumSize = new Size(380, 0) };
@@ -20,12 +20,14 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
     private readonly ListBox _chatLog = new() { Height = 140, Width = 380, HorizontalScrollbar = true };
     private readonly TextBox _chatInput = new() { Width = 300 };
     private readonly Button _send = new() { Text = UiText.Get("Chat_Send"), AutoSize = true };
+    private readonly Button _sendFile = new() { Text = UiText.Get("File_Send"), AutoSize = true, Enabled = false };
     private readonly Button _end = new() { Text = UiText.Get("EndSession"), AutoSize = true, BackColor = Color.Firebrick, ForeColor = Color.White };
     private readonly System.Windows.Forms.Timer _clipboardTimer = new() { Interval = 1000 };
     private readonly AgentSessionOptions _options;
     private readonly CancellationTokenSource _closing = new();
     private AgentSession? _session;
     private ChatHandler? _chat;
+    private FileTransferHandler? _files;
     private ClipboardHandler? _clipboard;
     private GdiScreenSourceHolder? _screen;
     private bool _ended;
@@ -54,12 +56,14 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         layout.Controls.Add(_securityCode);
         layout.Controls.Add(_chatLog);
         layout.Controls.Add(chatRow);
+        layout.Controls.Add(_sendFile);
         layout.Controls.Add(_end);
         Controls.Add(layout);
 
         AcceptButton = _send;
         _send.Click += async (_, _) => await SendChatAsync();
         _end.Click += async (_, _) => await EndAsync();
+        _sendFile.Click += async (_, _) => await SendFileAsync();
         _clipboardTimer.Tick += async (_, _) => await PollClipboardAsync();
     }
 
@@ -103,6 +107,8 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         {
             _clipboardTimer.Start();
         }
+
+        _sendFile.Enabled = status == AgentStatus.Active;
     });
 
     public void OnSupportersChanged(IReadOnlyList<string> displayNames) => OnUi(() =>
@@ -140,6 +146,33 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         }
     });
 
+    // ------------------------------------------------------------------ IFileTransferUi
+
+    public string DownloadDirectory =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+    public Task<bool> ConfirmIncomingAsync(string fileName, long size, CancellationToken cancellationToken)
+    {
+        var result = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        OnUi(() =>
+        {
+            var answer = MessageBox.Show(
+                this,
+                UiText.Format("File_Confirm_Text", fileName, FormatSize(size), DownloadDirectory),
+                UiText.Get("File_Confirm_Title"),
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2); // "No" is the default
+            result.TrySetResult(answer == DialogResult.Yes);
+        });
+        return result.Task;
+    }
+
+    public void OnFileReceived(string path) => ShowMessage(UiText.Get("App_Title"), UiText.Format("File_Received", path), DateTimeOffset.Now);
+
+    public void OnTransferFailed(string fileName, string reason) =>
+        ShowMessage(UiText.Get("App_Title"), UiText.Format("File_Failed", fileName), DateTimeOffset.Now);
+
     // ------------------------------------------------------------------ lifecycle
 
     protected override async void OnShown(EventArgs e)
@@ -151,11 +184,12 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
 
         _screen = new GdiScreenSourceHolder();
         _chat = new ChatHandler(this);
+        _files = new FileTransferHandler(this);
         _clipboard = new ClipboardHandler(this);
         var streamer = new ScreenStreamer(_screen.Source);
         var input = new InputHandler(new Platform.SendInputInjector(), _screen.Source);
 
-        _session = new AgentSession(_options, new Core.Connection.ClientWebSocketConnector(), this, [streamer, input, _clipboard, _chat]);
+        _session = new AgentSession(_options, new Core.Connection.ClientWebSocketConnector(), this, [streamer, input, _clipboard, _chat, _files]);
         try
         {
             var result = await _session.RunAsync(_closing.Token);
@@ -226,6 +260,31 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         ShowMessage(UiText.Get("Chat_You"), text, DateTimeOffset.Now);
         await _chat.SendAsync(_session, Environment.UserName, text, _closing.Token);
     }
+
+    private async Task SendFileAsync()
+    {
+        if (_session is null || _files is null)
+        {
+            return;
+        }
+
+        using var dialog = new OpenFileDialog { CheckFileExists = true, Multiselect = false };
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var name = Path.GetFileName(dialog.FileName);
+        ShowMessage(UiText.Get("Chat_You"), UiText.Format("File_Offered", name), DateTimeOffset.Now);
+        var sent = await _files.SendFileAsync(_session, null, dialog.FileName, _closing.Token);
+        ShowMessage(UiText.Get("App_Title"), UiText.Format(sent ? "File_Sent" : "File_NotSent", name), DateTimeOffset.Now);
+    }
+
+    private static string FormatSize(long bytes) => bytes switch
+    {
+        < 1024 * 1024 => string.Format(CultureInfo.CurrentCulture, "{0:0.#} KB", bytes / 1024d),
+        _ => string.Format(CultureInfo.CurrentCulture, "{0:0.#} MB", bytes / 1024d / 1024d),
+    };
 
     private async Task PollClipboardAsync()
     {
