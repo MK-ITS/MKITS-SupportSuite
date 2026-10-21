@@ -247,3 +247,4 @@ button.danger { background: var(--danger-text); color: #fff; border-color: var(-
 #viewer-chat-form input { flex: 1; min-width: 0; }
 #viewer-chat-form button { margin-top: 0; }
 @media (max-width: 800px) { .viewer-chat { display: none; } }
+.file-offer button { margin: 0.25rem 0.25rem 0 0; }

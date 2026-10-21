@@ -269,4 +269,13 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Viewer_Error_AUTH_FAILED" xml:space="preserve"><value>Das Viewer-Ticket ist nicht mehr gültig. Bitte laden Sie die Seite neu.</value></data>
   <data name="Viewer_Error_RATE_LIMITED" xml:space="preserve"><value>Mit dieser Sitzung sind zu viele Supporter verbunden.</value></data>
   <data name="Viewer_Error_KEY_EXCHANGE_FAILED" xml:space="preserve"><value>Die verschlüsselte Verbindung konnte nicht aufgebaut werden.</value></data>
+  <data name="Viewer_FileSend" xml:space="preserve"><value>Datei senden</value></data>
+  <data name="Viewer_FileOffered" xml:space="preserve"><value>Der Kunde sendet „{0}“ ({1}).</value></data>
+  <data name="Viewer_FileAccept" xml:space="preserve"><value>Annehmen</value></data>
+  <data name="Viewer_FileDecline" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="Viewer_FileDownload" xml:space="preserve"><value>{0} speichern</value></data>
+  <data name="Viewer_FileFailed" xml:space="preserve"><value>Dateiübertragung fehlgeschlagen: {0}</value></data>
+  <data name="Viewer_FileOffering" xml:space="preserve"><value>Biete {0} dem Kunden an …</value></data>
+  <data name="Viewer_FileSent" xml:space="preserve"><value>Gesendet: {0}</value></data>
+  <data name="Viewer_FileNotSent" xml:space="preserve"><value>Nicht gesendet (abgelehnt oder fehlgeschlagen): {0}</value></data>
 </root>

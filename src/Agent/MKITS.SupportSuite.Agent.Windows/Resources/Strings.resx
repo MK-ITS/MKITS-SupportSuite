@@ -37,4 +37,16 @@ The supporter will see your screen and can use mouse and keyboard, exchange file
   <data name="Connect_Ok" xml:space="preserve"><value>Connect</value></data>
   <data name="Connect_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Connect_Invalid" xml:space="preserve"><value>Please enter a valid server address (e.g. support.example.com) and the code from your supporter.</value></data>
+  <data name="File_Send" xml:space="preserve"><value>Send file …</value></data>
+  <data name="File_Confirm_Title" xml:space="preserve"><value>Receive file?</value></data>
+  <data name="File_Confirm_Text" xml:space="preserve"><value>Your supporter wants to send you the file “{0}” ({1}).
+
+It will be saved in {2}. It is not opened automatically.
+
+Accept the file?</value></data>
+  <data name="File_Received" xml:space="preserve"><value>File saved: {0}</value></data>
+  <data name="File_Failed" xml:space="preserve"><value>File transfer failed: {0}</value></data>
+  <data name="File_Offered" xml:space="preserve"><value>Offering file {0} …</value></data>
+  <data name="File_Sent" xml:space="preserve"><value>File sent: {0}</value></data>
+  <data name="File_NotSent" xml:space="preserve"><value>File not sent (declined or failed): {0}</value></data>
 </root>

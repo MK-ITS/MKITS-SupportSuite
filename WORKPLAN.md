@@ -186,7 +186,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto – `AgentSession` (handshake, code/resume auth, consent callback, key exchange per viewer, encrypted dispatch, reconnect) done, tested end-to-end against the relay
 - [ ] 7.2 Configuration, logging, ad-hoc vs. permanent mode
 - [~] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY) – `IScreenSource`, `IInputInjector`, `IClipboard`, `IChatPresenter` done; file system and shell follow
-- [~] 7.4 Chat, file transfer, clipboard, remote shell implementations – `ScreenStreamer` (flow control, change detection, per-viewer fps/monitor), `InputHandler` (coordinate mapping, stuck-key release), `ClipboardHandler`, `ChatHandler` done; file transfer and shell follow
+- [~] 7.4 Chat, file transfer, clipboard, remote shell implementations – `ScreenStreamer` (flow control, change detection, per-viewer fps/monitor), `InputHandler` (coordinate mapping, stuck-key release), `ClipboardHandler`, `ChatHandler`, `FileTransferHandler` (consent per file, sanitized names, in-order chunks, SHA-256, no overwrite) done; shell follows
 
 ### Phase 8 – Windows agent
 - [~] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback) – GDI capture, multi-monitor done (`GdiScreenSource`); DXGI open
@@ -200,7 +200,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling) done; WebCodecs/H.264 follows with the agent encoder
 - [x] 9.2 Mouse/keyboard mapping, special key toolbar – pointer (throttled moves, buttons, wheel), physical keys (`KeyboardEvent.code`), Ctrl+Alt+Del / Win / Alt+Tab
 - [~] 9.3 Multi-monitor, scaling, quality settings – monitor selection, fit-to-window, default quality; quality UI open
-- [~] 9.4 Chat, file transfer, clipboard, terminal (xterm.js) – chat and clipboard (buttons, browser permission) done; file transfer and terminal open
+- [~] 9.4 Chat, file transfer, clipboard, terminal (xterm.js) – chat, clipboard (buttons, browser permission) and file transfer both ways (incremental SHA-256) done; terminal open
 - [x] 9.5 E2E crypto via WebCrypto – `src/Viewer/web/src/crypto.ts`, byte-compatible with C# (shared test vector `proto/testvectors/e2e-v0.json`)
 
 **→ M1: Windows ad-hoc remote support end-to-end (portal → download → consent → control + chat/file/clipboard/shell)**
@@ -288,3 +288,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-20 | PRs #13–#15 merged. Phase 7B: agent feature handlers (screen streaming, input, clipboard, chat) with platform abstractions and viewer lifecycle hooks; new test project Agent.Core.Tests. |
 | 2026-10-20 | Phase 8A: Windows portable client – WinForms UI (consent, status, supporters, security code, chat, end), GDI/JPEG capture, SendInput (scan codes, Unicode), clipboard; `ScanCodes` in Agent.Core; CI publishes the unsigned EXE as artifact. |
 | 2026-10-20 | PRs #16/#17 merged. Phase 9A: browser viewer (TypeScript, Protobuf-ES, WebCrypto) with viewer page `/sessions/{id}/view` (one-time ticket, no inline script), screen/input/chat/clipboard/special keys; shared E2E test vector checked by C# and TypeScript; server re-announces ACTIVE after an agent resume (viewers re-key); CI and Docker build the viewer bundle. |
+| 2026-10-21 | PRs #17/#18 merged. Phase 7C: file transfer both ways – agent core handler (T14 rules), Windows UI (confirm dialog, *Send file*), viewer (accept/decline, upload, download) with incremental SHA-256. |

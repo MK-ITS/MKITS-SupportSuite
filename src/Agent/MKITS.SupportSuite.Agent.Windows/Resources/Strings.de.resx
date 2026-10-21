@@ -37,4 +37,16 @@ Der Supporter sieht Ihren Bildschirm und kann Maus und Tastatur verwenden sowie 
   <data name="Connect_Ok" xml:space="preserve"><value>Verbinden</value></data>
   <data name="Connect_Cancel" xml:space="preserve"><value>Abbrechen</value></data>
   <data name="Connect_Invalid" xml:space="preserve"><value>Bitte geben Sie eine gültige Serveradresse (z. B. support.example.com) und den Code Ihres Supporters ein.</value></data>
+  <data name="File_Send" xml:space="preserve"><value>Datei senden …</value></data>
+  <data name="File_Confirm_Title" xml:space="preserve"><value>Datei empfangen?</value></data>
+  <data name="File_Confirm_Text" xml:space="preserve"><value>Ihr Supporter möchte Ihnen die Datei „{0}“ ({1}) senden.
+
+Sie wird in {2} gespeichert und nicht automatisch geöffnet.
+
+Datei annehmen?</value></data>
+  <data name="File_Received" xml:space="preserve"><value>Datei gespeichert: {0}</value></data>
+  <data name="File_Failed" xml:space="preserve"><value>Dateiübertragung fehlgeschlagen: {0}</value></data>
+  <data name="File_Offered" xml:space="preserve"><value>Biete Datei {0} an …</value></data>
+  <data name="File_Sent" xml:space="preserve"><value>Datei gesendet: {0}</value></data>
+  <data name="File_NotSent" xml:space="preserve"><value>Datei nicht gesendet (abgelehnt oder fehlgeschlagen): {0}</value></data>
 </root>
