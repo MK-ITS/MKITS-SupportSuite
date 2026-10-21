@@ -29,7 +29,7 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
 
     public DbSet<DeviceGroup> DeviceGroups => Set<DeviceGroup>();
 
-    public DbSet<GroupPermission> GroupPermissions => Set<GroupPermission>();
+    public DbSet<GroupAccess> GroupAccess => Set<GroupAccess>();
 
     public DbSet<Device> Devices => Set<Device>();
 
@@ -112,9 +112,9 @@ public sealed class MkitsDbContext(DbContextOptions<MkitsDbContext> options)
             group.HasIndex(g => g.Name).IsUnique();
         });
 
-        builder.Entity<GroupPermission>(permission =>
+        builder.Entity<GroupAccess>(permission =>
         {
-            permission.ToTable("GroupPermissions");
+            permission.ToTable("GroupAccess");
             permission.HasKey(p => new { p.UserId, p.GroupId });
             permission.HasOne<MkitsUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             permission.HasOne<DeviceGroup>().WithMany().HasForeignKey(p => p.GroupId).OnDelete(DeleteBehavior.Cascade);

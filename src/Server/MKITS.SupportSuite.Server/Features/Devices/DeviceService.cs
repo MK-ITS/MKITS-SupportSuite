@@ -140,7 +140,7 @@ public sealed class DeviceService(
         }
 
         await db.EnrollmentTokens.Where(t => t.GroupId == groupId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
-        await db.GroupPermissions.Where(p => p.GroupId == groupId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+        await db.GroupAccess.Where(p => p.GroupId == groupId).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
         db.DeviceGroups.Remove(group);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditEventTypes.GroupDeleted, actorId, "group", groupId, new() { ["name"] = group.Name }, cancellationToken).ConfigureAwait(false);
@@ -152,7 +152,7 @@ public sealed class DeviceService(
     public async Task<IReadOnlyList<GroupPermissionSummary>> ListPermissionsAsync(Guid groupId, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        return await db.GroupPermissions.AsNoTracking()
+        return await db.GroupAccess.AsNoTracking()
             .Where(p => p.GroupId == groupId)
             .Join(db.Users, p => p.UserId, u => u.Id, (p, u) => new GroupPermissionSummary(u.Id, u.DisplayName, u.UserName ?? string.Empty, p.Permissions))
             .OrderBy(p => p.DisplayName)
@@ -175,17 +175,17 @@ public sealed class DeviceService(
             return ErrorNotFound;
         }
 
-        var existing = await db.GroupPermissions.FirstOrDefaultAsync(p => p.GroupId == groupId && p.UserId == userId, cancellationToken).ConfigureAwait(false);
+        var existing = await db.GroupAccess.FirstOrDefaultAsync(p => p.GroupId == groupId && p.UserId == userId, cancellationToken).ConfigureAwait(false);
         if (permissions == DevicePermissions.None)
         {
             if (existing is not null)
             {
-                db.GroupPermissions.Remove(existing);
+                db.GroupAccess.Remove(existing);
             }
         }
         else if (existing is null)
         {
-            db.GroupPermissions.Add(new GroupPermission { GroupId = groupId, UserId = userId, Permissions = permissions });
+            db.GroupAccess.Add(new GroupAccess { GroupId = groupId, UserId = userId, Permissions = permissions });
         }
         else
         {
@@ -376,9 +376,9 @@ public sealed class DeviceService(
             .OrderBy(r => r.GroupName).ThenBy(r => r.Device.Name)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var permissions = isAdmin
+        Dictionary<Guid, DevicePermissions> permissions = isAdmin
             ? []
-            : await db.GroupPermissions.AsNoTracking().Where(p => p.UserId == userId)
+            : await db.GroupAccess.AsNoTracking().Where(p => p.UserId == userId)
                 .ToDictionaryAsync(p => p.GroupId, p => p.Permissions, cancellationToken).ConfigureAwait(false);
 
         return rows
@@ -406,7 +406,7 @@ public sealed class DeviceService(
             return DevicePermissions.All;
         }
 
-        return await db.GroupPermissions.AsNoTracking()
+        return await db.GroupAccess.AsNoTracking()
             .Where(p => p.UserId == userId && p.GroupId == device.GroupId)
             .Select(p => p.Permissions)
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);

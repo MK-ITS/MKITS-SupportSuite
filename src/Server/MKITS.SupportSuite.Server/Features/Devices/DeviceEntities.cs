@@ -55,7 +55,7 @@ public sealed class DeviceGroup
 }
 
 /// <summary>Access of one User to one group.</summary>
-public sealed class GroupPermission
+public sealed class GroupAccess
 {
     public Guid UserId { get; set; }
 

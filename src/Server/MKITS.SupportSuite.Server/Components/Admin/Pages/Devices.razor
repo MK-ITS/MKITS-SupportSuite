@@ -354,8 +354,8 @@
     /// <summary>Shows the result; <paramref name="errorKey"/> is a resource key or null for success.</summary>
     private bool Done(string? errorKey)
     {
-        _message = errorKey is null ? L["Devices_Done"] : null;
-        _error = errorKey is null ? null : L[errorKey];
+        _message = errorKey is null ? L["Devices_Done"].Value : null;
+        _error = errorKey is null ? null : L[errorKey].Value;
         return errorKey is null;
     }
 
