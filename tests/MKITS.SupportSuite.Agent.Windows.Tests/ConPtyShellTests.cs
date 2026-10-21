@@ -29,10 +29,16 @@ public sealed class ConPtyShellTests
             }
         });
 
-        await shell.WriteAsync(Encoding.UTF8.GetBytes("echo mkits-%COMPUTERNAME:~0,0%ok\r\n"), timeout.Token);
+        // The caret is removed by cmd, so the expected text only appears in the command's output, not in the echoed input.
+        await shell.WriteAsync(Encoding.UTF8.GetBytes("echo mkits-^ok\r\n"), timeout.Token);
         while (!Contains(output, "mkits-ok"))
         {
-            await Task.Delay(100, timeout.Token);
+            if (timeout.IsCancellationRequested)
+            {
+                Assert.Fail($"No expected output. Received: {Snapshot(output)}");
+            }
+
+            await Task.Delay(100, CancellationToken.None);
         }
 
         shell.Resize(100, 40);
@@ -49,6 +55,14 @@ public sealed class ConPtyShellTests
 
         Assert.Equal(["powershell", "cmd"], host.AvailableShells);
         Assert.Throws<InvalidOperationException>(() => host.Start("bash", 80, 24));
+    }
+
+    private static string Snapshot(StringBuilder output)
+    {
+        lock (output)
+        {
+            return output.ToString().Replace("\u001b", "<ESC>", StringComparison.Ordinal);
+        }
     }
 
     private static bool Contains(StringBuilder output, string text)

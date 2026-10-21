@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) MK-ITSolutions and contributors
 
-using ByteChannel = System.Threading.Channels.Channel;
 using Google.Protobuf;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Common.Protocol.V0;
+using ByteChannel = System.Threading.Channels.Channel;
 
 namespace MKITS.SupportSuite.Agent.Core.Tests;
 
