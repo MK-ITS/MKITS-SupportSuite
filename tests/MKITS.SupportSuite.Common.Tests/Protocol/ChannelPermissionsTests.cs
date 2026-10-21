@@ -8,6 +8,8 @@ namespace MKITS.SupportSuite.Common.Tests.Protocol;
 
 public sealed class ChannelPermissionsTests
 {
+    private static readonly string[] ViewAndShell = ["view", "shell"];
+
     [Theory]
     [InlineData(Channel.Video, ViewerPermissions.View)]
     [InlineData(Channel.Display, ViewerPermissions.View)]
@@ -26,7 +28,7 @@ public sealed class ChannelPermissionsTests
     {
         var names = ChannelPermissions.ToNames(ViewerPermissions.View | ViewerPermissions.Shell);
 
-        Assert.Equal(new[] { "view", "shell" }, names);
+        Assert.Equal(ViewAndShell, names);
         Assert.Equal(ViewerPermissions.View | ViewerPermissions.Shell, ChannelPermissions.Parse(names));
         Assert.Equal(ViewerPermissions.Control, ChannelPermissions.Parse(["control", "root", "VIEW"]));
         Assert.Equal(ViewerPermissions.All, ChannelPermissions.Parse(ChannelPermissions.ToNames(ViewerPermissions.All)));

@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MKITS.SupportSuite.Agent.Core.Devices;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Common.Crypto;
-using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Identity;

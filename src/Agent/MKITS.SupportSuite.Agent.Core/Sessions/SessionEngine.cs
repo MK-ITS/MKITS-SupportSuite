@@ -171,7 +171,7 @@ internal sealed class SessionEngine : ISessionContext
     /// Servers before protocol 0.3 do not send permissions; their sessions are ad-hoc with full rights. The relay
     /// enforces the permissions anyway – this is defense in depth.
     /// </summary>
-    private static ViewerPermissions ParsePermissions(IReadOnlyCollection<string> names) =>
+    private static ViewerPermissions ParsePermissions(Google.Protobuf.Collections.RepeatedField<string> names) =>
         names.Count == 0 ? ViewerPermissions.All : ChannelPermissions.Parse(names);
 
     private void OnSessionState(SessionState state, Action<string>? onEnded)
