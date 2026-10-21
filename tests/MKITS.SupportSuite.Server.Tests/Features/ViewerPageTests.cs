@@ -34,6 +34,15 @@ public sealed class ViewerPageTests
     }
 
     [Fact]
+    public void Render_DeviceKey_OnlyForPermanentSessions()
+    {
+        Assert.DoesNotContain("data-device-key", ViewerPage.Render(Guid.NewGuid(), "t", "Sam", new KeyLocalizer()), StringComparison.Ordinal);
+
+        var html = ViewerPage.Render(Guid.NewGuid(), "t", "Sam", new KeyLocalizer(), [1, 2, 251]);
+        Assert.Contains("data-device-key=\"AQL7\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ContentSecurityPolicy_KeepsScriptsSameOrigin()
     {
         var directives = ViewerPage.ContentSecurityPolicy.Split(';', StringSplitOptions.TrimEntries);

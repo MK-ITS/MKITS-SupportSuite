@@ -57,16 +57,6 @@ public sealed class DeviceService(
 
     internal const int MaxNameLength = 100;
 
-    /// <summary>Wire names of the permissions (docs/protocol.md, <c>ConsentRequest</c> / <c>ViewerJoined</c>).</summary>
-    private static readonly (DevicePermissions Flag, string Name)[] PermissionNameMap =
-    [
-        (DevicePermissions.View, "view"),
-        (DevicePermissions.Control, "control"),
-        (DevicePermissions.Files, "files"),
-        (DevicePermissions.Shell, "shell"),
-        (DevicePermissions.Clipboard, "clipboard"),
-    ];
-
     /// <summary>
     /// Raised after a device was disabled, removed or moved, so the relay can end its sessions or disconnect it.
     /// Handlers must not block.
@@ -75,7 +65,7 @@ public sealed class DeviceService(
 
     /// <summary>The permissions as wire names, e.g. <c>["view", "control"]</c>.</summary>
     public static IReadOnlyList<string> PermissionNames(DevicePermissions permissions) =>
-        PermissionNameMap.Where(p => permissions.HasFlag(p.Flag)).Select(p => p.Name).ToList();
+        ChannelPermissions.ToNames((ViewerPermissions)(int)permissions);
     private const string P256Oid = "1.2.840.10045.3.1.7";
 
     // ------------------------------------------------------------------ groups
@@ -388,6 +378,13 @@ public sealed class DeviceService(
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         var policy = await db.DeviceGroups.Where(g => g.Id == device.GroupId).Select(g => g.ConsentPolicy).FirstAsync(cancellationToken).ConfigureAwait(false);
         return new DeviceFacts(device.Id, device.GroupId, device.Name, device.Status, policy);
+    }
+
+    /// <summary>The enrolled public key (SPKI), e.g. for the viewer to verify the device's key exchange.</summary>
+    public async Task<byte[]?> GetPublicKeyAsync(Guid deviceId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.Devices.AsNoTracking().Where(d => d.Id == deviceId).Select(d => d.PublicKey).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<DeviceFacts?> GetFactsAsync(Guid deviceId, CancellationToken cancellationToken = default)

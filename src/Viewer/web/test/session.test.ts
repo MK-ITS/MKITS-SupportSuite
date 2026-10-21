@@ -120,6 +120,39 @@ describe("ViewerSession", () => {
     }
   });
 
+  it("permanent device: accepts only a key exchange signed with the device key", async () => {
+    const deviceKey = await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
+    const deviceSpki = new Uint8Array(await subtle.exportKey("spki", deviceKey.publicKey));
+    const forger = await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
+
+    for (const signer of [forger, deviceKey]) {
+      const socket = new FakeSocket();
+      const errors: string[] = [];
+      const session = new ViewerSession({ error: (c) => errors.push(c) }, () => socket);
+      session.connect("wss://example.test/ws/viewer", "t", SESSION_ID, deviceSpki);
+      socket.open();
+      socket.deliver({ body: { case: "helloAck", value: { heartbeatSeconds: 30 } } });
+      socket.deliver({ body: { case: "sessionState", value: { sessionId: SESSION_ID, status: SessionStatus.ACTIVE } } });
+      await until(() => socket.sent.some((f) => f.body.case === "keyExchange"));
+      const exchange = socket.sent.find((f) => f.body.case === "keyExchange");
+      const viewerSpki = exchange?.body.case === "keyExchange" ? exchange.body.value.ephemeralPublicKey : new Uint8Array();
+
+      const agent = await agentKeys(viewerSpki);
+      const signature = new Uint8Array(await subtle.sign({ name: "ECDSA", hash: "SHA-256" }, signer.privateKey, agent.spki as BufferSource));
+      socket.deliver({ body: { case: "keyExchange", value: { sessionId: SESSION_ID, ephemeralPublicKey: agent.spki, deviceSignature: signature } } });
+
+      if (signer === forger) {
+        await until(() => errors.length > 0);
+        expect(errors).toEqual(["DEVICE_SIGNATURE_INVALID"]);
+        expect(session.ready).toBe(false);
+      } else {
+        await until(() => session.ready);
+        expect(session.ready).toBe(true);
+        expect(errors).toEqual([]);
+      }
+    }
+  });
+
   it("answers pings and reports errors", async () => {
     const socket = new FakeSocket();
     const errors: string[] = [];

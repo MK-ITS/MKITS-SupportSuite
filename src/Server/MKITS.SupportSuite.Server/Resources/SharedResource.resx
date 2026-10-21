@@ -269,6 +269,8 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_Error_AUTH_FAILED" xml:space="preserve"><value>The viewer ticket is no longer valid. Please reload the page.</value></data>
   <data name="Viewer_Error_RATE_LIMITED" xml:space="preserve"><value>Too many supporters are connected to this session.</value></data>
   <data name="Viewer_Error_KEY_EXCHANGE_FAILED" xml:space="preserve"><value>The encrypted connection could not be established.</value></data>
+  <data name="Viewer_Error_DEVICE_SIGNATURE_INVALID" xml:space="preserve"><value>The device could not prove its identity. The connection was not established.</value></data>
+  <data name="Viewer_Error_NOT_AUTHORIZED" xml:space="preserve"><value>Not authorized.</value></data>
   <data name="Viewer_FileSend" xml:space="preserve"><value>Send file</value></data>
   <data name="Viewer_FileOffered" xml:space="preserve"><value>The customer sends “{0}” ({1}).</value></data>
   <data name="Viewer_FileAccept" xml:space="preserve"><value>Accept</value></data>

@@ -269,6 +269,8 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Viewer_Error_AUTH_FAILED" xml:space="preserve"><value>Das Viewer-Ticket ist nicht mehr gültig. Bitte laden Sie die Seite neu.</value></data>
   <data name="Viewer_Error_RATE_LIMITED" xml:space="preserve"><value>Mit dieser Sitzung sind zu viele Supporter verbunden.</value></data>
   <data name="Viewer_Error_KEY_EXCHANGE_FAILED" xml:space="preserve"><value>Die verschlüsselte Verbindung konnte nicht aufgebaut werden.</value></data>
+  <data name="Viewer_Error_DEVICE_SIGNATURE_INVALID" xml:space="preserve"><value>Das Gerät konnte seine Identität nicht nachweisen. Die Verbindung wurde nicht aufgebaut.</value></data>
+  <data name="Viewer_Error_NOT_AUTHORIZED" xml:space="preserve"><value>Nicht berechtigt.</value></data>
   <data name="Viewer_FileSend" xml:space="preserve"><value>Datei senden</value></data>
   <data name="Viewer_FileOffered" xml:space="preserve"><value>Der Kunde sendet „{0}“ ({1}).</value></data>
   <data name="Viewer_FileAccept" xml:space="preserve"><value>Annehmen</value></data>

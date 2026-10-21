@@ -8,6 +8,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Localization;
+using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.Sessions;
 
@@ -41,7 +42,7 @@ public static class ViewerPage
         "Viewer_Status_WAITING_FOR_AGENT", "Viewer_Status_WAITING_FOR_VIEWER", "Viewer_Status_AWAITING_CONSENT",
         "Viewer_Status_ACTIVE", "Viewer_Status_SUSPENDED", "Viewer_Status_ENDED",
         "Viewer_Error_CONSENT_DENIED", "Viewer_Error_SESSION_ENDED", "Viewer_Error_AUTH_FAILED", "Viewer_Error_RATE_LIMITED",
-        "Viewer_Error_KEY_EXCHANGE_FAILED",
+        "Viewer_Error_KEY_EXCHANGE_FAILED", "Viewer_Error_DEVICE_SIGNATURE_INVALID", "Viewer_Error_NOT_AUTHORIZED",
         "Sessions_EndReason_code_expired", "Sessions_EndReason_revoked", "Sessions_EndReason_ended_by_supporter",
         "Sessions_EndReason_ended_by_customer", "Sessions_EndReason_consent_denied", "Sessions_EndReason_consent_timeout",
         "Sessions_EndReason_no_viewer", "Sessions_EndReason_connection_lost", "Sessions_EndReason_max_duration",
@@ -60,6 +61,7 @@ public static class ViewerPage
         Guid sessionId,
         HttpContext context,
         SessionService sessions,
+        DeviceService devices,
         IAuthorizationService authorization,
         IStringLocalizer<SharedResource> localizer)
     {
@@ -77,19 +79,28 @@ public static class ViewerPage
 
         var displayName = await sessions.GetActiveUserDisplayNameAsync(userId, context.RequestAborted).ConfigureAwait(false) ?? string.Empty;
 
+        // Permanent devices: the viewer verifies the agent's key exchange against the enrolled device key.
+        var facts = await sessions.GetFactsAsync(sessionId, context.RequestAborted).ConfigureAwait(false);
+        var deviceKey = facts?.DeviceId is { } deviceId
+            ? await devices.GetPublicKeyAsync(deviceId, context.RequestAborted).ConfigureAwait(false)
+            : null;
+
         // The page carries a one-time ticket: never cache it.
         context.Response.Headers.CacheControl = "no-store";
         context.Items[Infrastructure.Security.SecurityHeadersMiddleware.PolicyOverrideKey] = ContentSecurityPolicy;
-        return Results.Content(Render(sessionId, ticket, displayName, localizer), "text/html; charset=utf-8");
+        return Results.Content(Render(sessionId, ticket, displayName, localizer, deviceKey), "text/html; charset=utf-8");
     }
 
-    internal static string Render(Guid sessionId, string ticket, string displayName, IStringLocalizer localizer)
+    internal static string Render(Guid sessionId, string ticket, string displayName, IStringLocalizer localizer, byte[]? deviceKey = null)
     {
         var html = HtmlEncoder.Default;
         string T(string key) => html.Encode(localizer[key].Value);
 
         // System.Text.Json escapes <, >, & and quotes by default, so the block cannot break out of its <script> element.
         var texts = JsonSerializer.Serialize(TextKeys.ToDictionary(k => k, k => localizer[k].Value));
+
+        // Base64 contains only [A-Za-z0-9+/=] – safe inside a quoted attribute.
+        var deviceKeyAttribute = deviceKey is null ? string.Empty : $" data-device-key=\"{Convert.ToBase64String(deviceKey)}\"";
 
         var page = new StringBuilder();
         page.Append(CultureInfo.InvariantCulture, $"""
@@ -104,7 +115,7 @@ public static class ViewerPage
             <link rel="stylesheet" href="/viewer/viewer.css">
             </head>
             <body class="viewer-page">
-            <div id="viewer" data-session-id="{html.Encode(sessionId.ToString())}" data-ticket="{html.Encode(ticket)}" data-ws="/ws/viewer" data-supporter="{html.Encode(displayName)}">
+            <div id="viewer" data-session-id="{html.Encode(sessionId.ToString())}" data-ticket="{html.Encode(ticket)}" data-ws="/ws/viewer" data-supporter="{html.Encode(displayName)}"{deviceKeyAttribute}>
               <header class="viewer-toolbar">
                 <a href="/sessions">{T("Viewer_Back")}</a>
                 <span id="viewer-status" role="status" aria-live="polite"></span>

@@ -246,7 +246,8 @@ function start(): void {
   const wsUrl = new URL(root.dataset.ws ?? "/ws/viewer", window.location.href);
   wsUrl.protocol = wsUrl.protocol === "http:" ? "ws:" : "wss:";
   setStatus(t("Viewer_Connecting"));
-  session.connect(wsUrl.toString(), root.dataset.ticket ?? "", root.dataset.sessionId ?? "");
+  const deviceKey = root.dataset.deviceKey ? Uint8Array.from(atob(root.dataset.deviceKey), (c) => c.charCodeAt(0)) : undefined;
+  session.connect(wsUrl.toString(), root.dataset.ticket ?? "", root.dataset.sessionId ?? "", deviceKey);
 }
 
 if (document.readyState === "loading") {

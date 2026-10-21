@@ -9,13 +9,13 @@ import {
   SessionStatus,
 } from "./gen/mkits/v0/frame_pb";
 import { Channel, type SessionPayload, SessionPayloadSchema } from "./gen/mkits/v0/session_pb";
-import { computeSecurityCode, type E2EKeyPair, establish, generateKeyPair, type SessionCipher } from "./crypto";
+import { computeSecurityCode, type E2EKeyPair, establish, generateKeyPair, type SessionCipher, verifyDeviceSignature } from "./crypto";
 
 type FrameBody = NonNullable<MessageInitShape<typeof FrameSchema>["body"]>;
 
 /** Protocol major/minor this viewer speaks (src/Common/.../ProtocolVersion.cs). */
 export const PROTOCOL_MAJOR = 0;
-export const PROTOCOL_MINOR = 2;
+export const PROTOCOL_MINOR = 3;
 export const SUB_PROTOCOL = "mkits.v0";
 
 /** What the UI needs to know. All callbacks are optional. */
@@ -82,6 +82,7 @@ export class ViewerSession {
   private keyPair: E2EKeyPair | null = null;
   private cipher: SessionCipher | null = null;
   private sessionId = "";
+  private deviceKey: Uint8Array | null = null;
   private sendQueue: Promise<void> = Promise.resolve();
   private receiveQueue: Promise<void> = Promise.resolve();
   private status: SessionStatus = SessionStatus.UNSPECIFIED;
@@ -97,8 +98,10 @@ export class ViewerSession {
     return this.cipher !== null;
   }
 
-  connect(url: string, ticket: string, sessionId: string): void {
+  /** `deviceKey` (SPKI): permanent device sessions – the agent's key exchange must carry a valid device signature. */
+  connect(url: string, ticket: string, sessionId: string, deviceKey?: Uint8Array): void {
     this.sessionId = sessionId;
+    this.deviceKey = deviceKey && deviceKey.length > 0 ? deviceKey : null;
     const socket = this.openSocket(url, SUB_PROTOCOL);
     socket.binaryType = "arraybuffer";
     this.socket = socket;
@@ -167,7 +170,7 @@ export class ViewerSession {
         await this.onState(body.value.status, body.value.endReason);
         break;
       case "keyExchange":
-        await this.onKeyExchange(body.value.ephemeralPublicKey);
+        await this.onKeyExchange(body.value.ephemeralPublicKey, body.value.deviceSignature);
         break;
       case "sessionData": {
         const cipher = this.cipher;
@@ -215,9 +218,15 @@ export class ViewerSession {
     }
   }
 
-  private async onKeyExchange(agentPublicKey: Uint8Array): Promise<void> {
+  private async onKeyExchange(agentPublicKey: Uint8Array, deviceSignature: Uint8Array): Promise<void> {
     const own = this.keyPair;
     if (!own) {
+      return;
+    }
+    if (this.deviceKey && !(await verifyDeviceSignature(this.deviceKey, agentPublicKey, deviceSignature))) {
+      // Not the enrolled device (or a man in the middle): never talk to it.
+      this.cipher = null;
+      this.events.error?.("DEVICE_SIGNATURE_INVALID");
       return;
     }
     try {

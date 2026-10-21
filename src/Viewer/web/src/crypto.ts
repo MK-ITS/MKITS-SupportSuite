@@ -55,6 +55,22 @@ export async function computeSecurityCode(sessionId: string, agentPublicKey: Uin
 }
 
 /**
+ * Permanent devices sign their ephemeral ECDH key with the long-term device key (ECDSA P-256 / SHA-256,
+ * IEEE P1363 r‖s – WebCrypto's native format). The device key comes from the server, which stored it at enrollment.
+ */
+export async function verifyDeviceSignature(deviceKeySpki: Uint8Array, ephemeralPublicKey: Uint8Array, signature: Uint8Array): Promise<boolean> {
+  if (signature.length !== 64) {
+    return false;
+  }
+  try {
+    const key = await subtle().importKey("spki", deviceKeySpki as BufferSource, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+    return await subtle().verify({ name: "ECDSA", hash: "SHA-256" }, key, signature as BufferSource, ephemeralPublicKey as BufferSource);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Viewer side of the key agreement: raw ECDH secret → HKDF-SHA256 (salt = session id,
  * info = label ‖ agent key ‖ viewer key) → key agent→viewer (receive) and viewer→agent (send).
  */

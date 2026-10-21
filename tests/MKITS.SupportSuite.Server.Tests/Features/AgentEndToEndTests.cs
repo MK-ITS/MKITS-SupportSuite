@@ -19,7 +19,7 @@ namespace MKITS.SupportSuite.Server.Tests.Features;
 /// <summary>The real agent core against the real relay; the viewer side is a test peer using the shared crypto.</summary>
 public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
+    internal static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
     private readonly MkitsWebApplicationFactory _factory = new();
     private Guid _supporterId;
@@ -186,7 +186,7 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
         Platform = "windows",
     };
 
-    private sealed class RecordingUi(bool grant) : IAgentUserInterface
+    internal sealed class RecordingUi(bool grant) : IAgentUserInterface
     {
         private readonly ConcurrentDictionary<AgentStatus, TaskCompletionSource> _reached = new();
 
@@ -216,6 +216,10 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
 
         public void OnSecurityCode(string supporterDisplayName, string securityCode) => SecurityCode.TrySetResult(securityCode);
 
+        public ConcurrentQueue<ConsentPolicy> Policies { get; } = new();
+
+        public void OnSessionAssigned(string operatorName, ConsentPolicy policy) => Policies.Enqueue(policy);
+
         public Task WaitForStatusAsync(AgentStatus status) => Reached(status).Task.WaitAsync(Timeout);
 
         /// <summary>Waits until event <paramref name="then"/> was recorded after event <paramref name="first"/>.</summary>
@@ -241,7 +245,7 @@ public sealed class AgentEndToEndTests : IAsyncLifetime, IDisposable
             _reached.GetOrAdd(status, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
     }
 
-    private sealed class EchoChatHandler : ISessionChannelHandler
+    internal sealed class EchoChatHandler : ISessionChannelHandler
     {
         public TaskCompletionSource<string> Received { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
