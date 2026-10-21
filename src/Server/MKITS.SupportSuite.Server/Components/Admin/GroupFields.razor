@@ -1,0 +1,28 @@
+@* SPDX-License-Identifier: AGPL-3.0-only — Copyright (C) MK-ITSolutions and contributors *@
+@* Form fields of a device group (create and edit). Rendered inside an EditForm with class "form grid". *@
+@using MKITS.SupportSuite.Server.Features.Devices
+
+<label for="@(Prefix)-group-name">@L["Groups_Field_Name"]</label>
+<InputText id="@(Prefix + "-group-name")" @bind-Value="Model.Name" maxlength="100" required />
+
+<label for="@(Prefix)-group-description">@L["Groups_Field_Description"]</label>
+<InputText id="@(Prefix + "-group-description")" @bind-Value="Model.Description" maxlength="500" />
+
+<label for="@(Prefix)-group-consent">@L["Groups_Field_Consent"]</label>
+<InputSelect id="@(Prefix + "-group-consent")" @bind-Value="Model.ConsentPolicy">
+    <option value="@DeviceConsentPolicy.Ask">@L["Groups_Consent_Ask"]</option>
+    <option value="@DeviceConsentPolicy.Notify">@L["Groups_Consent_Notify"]</option>
+    <option value="@DeviceConsentPolicy.Silent">@L["Groups_Consent_Silent"]</option>
+</InputSelect>
+
+<label for="@(Prefix)-group-approval">@L["Groups_Field_Approval"]</label>
+<InputCheckbox id="@(Prefix + "-group-approval")" @bind-Value="Model.RequireApproval" />
+
+@code {
+    [Parameter, EditorRequired]
+    public GroupInput Model { get; set; } = default!;
+
+    /// <summary>Makes the element ids unique when the component is used twice on a page.</summary>
+    [Parameter, EditorRequired]
+    public string Prefix { get; set; } = default!;
+}

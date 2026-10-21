@@ -45,6 +45,20 @@ jobs:
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef --version "10.*"
 
+      - name: Build
+        run: dotnet build src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj --no-restore "-flp:ErrorsOnly;LogFile=build-errors.log"
+
+      - name: Report build errors as annotations
+        if: failure()
+        shell: python
+        run: |
+          # Full error texts for environments without log access.
+          import os
+          if os.path.exists("build-errors.log"):
+              for line in sorted(set(open("build-errors.log", encoding="utf-8", errors="replace").read().splitlines())):
+                  if line.strip():
+                      print("::error title=Build error::" + line.strip()[:1500].replace("%", "%25"))
+
       - name: Generate migration
         run: |
           dotnet ef migrations add "${{ steps.name.outputs.value }}" \
