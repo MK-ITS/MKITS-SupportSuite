@@ -139,6 +139,8 @@ jobs:
           push: false
           load: true
           tags: mkits-server:ci
+          build-args: |
+            BUILD_NUMBER=1
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

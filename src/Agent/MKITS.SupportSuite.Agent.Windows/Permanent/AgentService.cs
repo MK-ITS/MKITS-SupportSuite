@@ -103,6 +103,7 @@ internal sealed class AgentService : ServiceBase
                 options, new ClientWebSocketConnector(), store, bridge,
                 [streamer, new InputHandler(helper, helper), bridge]);
             bridge.EndSessionRequested += (_, _) => _ = agent.EndSessionAsync();
+            _ = AgentUpdater.RunAsync(server, agent, cancellationToken);
 
             var result = await agent.RunAsync(cancellationToken).ConfigureAwait(false);
             if (result != DeviceAgentStopReason.Cancelled)

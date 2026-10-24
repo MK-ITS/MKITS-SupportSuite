@@ -20,6 +20,9 @@ public sealed record ClientPackage(ClientPlatform Platform, string RelativePath,
 /// <summary>A package that is actually present on this server.</summary>
 public sealed record AvailableClient(ClientPackage Package, string FullPath, long SizeBytes);
 
+/// <summary>A signed agent update next to a package: <c>&lt;file&gt;.manifest.json</c> and <c>&lt;file&gt;.manifest.sig</c> (ADR-0023).</summary>
+public sealed record AgentUpdate(AvailableClient Client, byte[] Manifest, string Signature);
+
 /// <summary>
 /// The ad-hoc client packages offered on the portal. Packages are looked up in <c>/data/agents</c> first
 /// (operator-provided, e.g. a newer or self-built version) and then in the <c>agents</c> folder of the
@@ -48,6 +51,35 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
 
     public AvailableClient? Get(ClientPlatform platform) =>
         Packages.Where(p => p.Platform == platform).Select(Find).FirstOrDefault();
+
+    /// <summary>Folder name of a platform in the agents directory, e.g. <c>windows-x64</c> (also the update API name).</summary>
+    public static string FolderOf(ClientPlatform platform) =>
+        Path.GetDirectoryName(Packages.First(p => p.Platform == platform).RelativePath)!;
+
+    public static ClientPlatform? FromFolder(string? folder) =>
+        Packages.Where(p => Path.GetDirectoryName(p.RelativePath) == folder).Select(p => (ClientPlatform?)p.Platform).FirstOrDefault();
+
+    /// <summary>
+    /// The signed update for a platform: only if manifest and signature sit next to the package that is actually served
+    /// (an operator-provided file without them disables updates instead of mixing files of different builds).
+    /// The server never checks the signature itself – agents do, with the release key compiled into them.
+    /// </summary>
+    public AgentUpdate? GetUpdate(ClientPlatform platform)
+    {
+        if (Get(platform) is not { } client)
+        {
+            return null;
+        }
+
+        var manifest = client.FullPath + ".manifest.json";
+        var signature = client.FullPath + ".manifest.sig";
+        if (!File.Exists(manifest) || !File.Exists(signature) || new FileInfo(manifest).Length > 4096 || new FileInfo(signature).Length > 1024)
+        {
+            return null;
+        }
+
+        return new AgentUpdate(client, File.ReadAllBytes(manifest), File.ReadAllText(signature).Trim());
+    }
 
     private AvailableClient? Find(ClientPackage package)
     {

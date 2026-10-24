@@ -28,6 +28,14 @@ internal static class AgentPaths
 
     public static string LogFile => Path.Combine(DataDirectory, "agent.log");
 
+    /// <summary>Downloaded, verified update waiting to be applied (ADR-0023).</summary>
+    public static string UpdateDirectory => Path.Combine(DataDirectory, "update");
+
+    public static string StagedUpdate => Path.Combine(UpdateDirectory, ExecutableName);
+
+    /// <summary>The previous EXE, kept until the updated service runs.</summary>
+    public static string BackupExecutable => Executable + ".previous";
+
     /// <summary>Configuration of one on-demand helper (pipe name, service PID).</summary>
     public static string HelperDirectory(string id) => Path.Combine(DataDirectory, "helper", id);
 }

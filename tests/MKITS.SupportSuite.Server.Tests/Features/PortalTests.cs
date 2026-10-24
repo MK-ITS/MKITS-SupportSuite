@@ -2,6 +2,7 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -154,6 +155,37 @@ public sealed class PortalTests : IDisposable
 
         var result = await scope.ServiceProvider.GetRequiredService<SessionService>().CreateAdHocAsync(supporter.Id, null);
         return Assert.IsType<CreatedSession>(result.Session).Code;
+    }
+
+    [Fact]
+    public async Task AgentUpdate_WithoutSignedManifest_IsNotOffered()
+    {
+        PlaceClient(Path.Combine("windows-x64", "MKITS-Support.exe"));
+
+        using var offer = await _client.GetAsync(new Uri("/api/agent-updates/windows-x64", UriKind.Relative));
+        using var unknown = await _client.GetAsync(new Uri("/api/agent-updates/macos-arm64", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.NotFound, offer.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentUpdate_ServesManifestSignatureAndFile_AsStored()
+    {
+        PlaceClient(Path.Combine("windows-x64", "MKITS-Support.exe"));
+        var directory = Path.Combine(_factory.DataDirectory, "agents", "windows-x64");
+        var manifest = "{\"product\":\"MKITS-SupportSuite\"}"u8.ToArray();
+        await File.WriteAllBytesAsync(Path.Combine(directory, "MKITS-Support.exe.manifest.json"), manifest);
+        await File.WriteAllTextAsync(Path.Combine(directory, "MKITS-Support.exe.manifest.sig"), "c2lnbmF0dXJl\n");
+
+        using var offer = await _client.GetAsync(new Uri("/api/agent-updates/windows-x64", UriKind.Relative));
+        var json = await offer.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        var file = await _client.GetByteArrayAsync(new Uri("/api/agent-updates/windows-x64/file", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.OK, offer.StatusCode);
+        Assert.Equal(Convert.ToBase64String(manifest), json.GetProperty("manifest").GetString());
+        Assert.Equal("c2lnbmF0dXJl", json.GetProperty("signature").GetString());
+        Assert.Equal(FakeClient, file);
     }
 
     private void PlaceClient(string relativePath)

@@ -28,4 +28,34 @@ public static class ProductInfo
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion
         ?? "0.0.0";
+
+    /// <summary>
+    /// Orders builds for the agent auto-update (CI: commit timestamp). <c>0</c> for local builds, which are never offered
+    /// as updates and never update themselves.
+    /// </summary>
+    public static long BuildNumber { get; } =
+        long.TryParse(Metadata("BuildNumber"), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : 0;
+
+    /// <summary>Public key (SPKI, ECDSA P-256) that signs agent updates, or <c>null</c> if this build has none (ADR-0023).</summary>
+    public static byte[]? AgentUpdatePublicKey { get; } = DecodeKey(Metadata("AgentUpdatePublicKey"));
+
+    private static string? Metadata(string key) =>
+        typeof(ProductInfo).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == key)?.Value;
+
+    private static byte[]? DecodeKey(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return Convert.FromBase64String(value);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
 }
