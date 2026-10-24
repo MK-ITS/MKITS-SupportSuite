@@ -81,6 +81,22 @@ Create an **enrollment token** in the group (validity, number of devices). It is
   `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
   The agent installs itself to `%ProgramFiles%\MKITS-SupportSuite\Agent`, registers the service **MKITS SupportSuite Agent** (automatic start, restarts on failure) and enrolls. Identity and settings are stored DPAPI-protected in `%ProgramData%\MKITS-SupportSuite\agent` (SYSTEM and Administrators only); the log is `agent.log` there. Running `--install` again updates the agent and keeps the identity (`--reenroll` forces a new enrollment, a token is needed then). Remove with `MKITS-Agent.exe --uninstall`. **Updates:** installed agents update themselves from the server (checked every few hours, only outside of sessions) once your server runs a newer image – provided the image is signed with the project's release key (ADR-0023); otherwise run `--install` again with the new EXE.
   Screen, mouse and keyboard work also at the logon screen, on the lock screen and with UAC prompts (Ctrl+Alt+Del included). When a user is logged on, a session window appears for the duration of a session (hidden under *Silent*): chat, file transfer, clipboard and the shell run there with **that user's** rights. Without a logged-on user only screen and input are available.
+#### Mass deployment (Intune, GPO, RMM)
+
+There is no MSI package (ADR-0024); the EXE installs itself. Use a token with a short lifetime and a limited number of devices – deployment configurations are readable by other administrators (Intune) or all domain users (SYSVOL). For broad rollouts enable *New devices need approval*. Revoke the token afterwards.
+
+- **Intune (Win32 app):** package `MKITS-Agent.exe` with the *Microsoft Win32 Content Prep Tool*.
+  Install command: `MKITS-Agent.exe --install --server https://support.example.com --token <token>` (install behavior: *System*).
+  Uninstall command: `"%ProgramFiles%\MKITS-SupportSuite\Agent\MKITS-Agent.exe" --uninstall`.
+  Detection rule: file `%ProgramFiles%\MKITS-SupportSuite\Agent\MKITS-Agent.exe` exists.
+- **GPO (computer startup script):** put `MKITS-Agent.exe` on a share readable by *Domain Computers* and add a startup script:
+  ```bat
+  sc query MKITSAgent >nul 2>&1 || "\\fileserver\deploy$\MKITS-Agent.exe" --install --server https://support.example.com --token <token>
+  ```
+- **RMM / software deployment:** run the install command as SYSTEM or Administrator.
+
+Exit codes: `0` ok, `2` invalid arguments, `5` not elevated, `6` service error, `7` file error. Details are in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
+
 - **Linux, Android:** planned (Phases 11, 12).
 
 Tokens are stored only as hashes and can be revoked. Revoke tokens after a rollout.

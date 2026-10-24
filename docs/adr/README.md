@@ -31,3 +31,4 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0021](0021-windows-elevated-ad-hoc.md) | Elevated ad-hoc mode on Windows (temporary service + SYSTEM helper) | Accepted |
 | [ADR-0022](0022-windows-permanent-agent.md) | Permanent Windows agent (service + on-demand helper) | Accepted |
 | [ADR-0023](0023-agent-auto-update.md) | Signed agent auto-update | Accepted |
+| [ADR-0024](0024-windows-deployment-without-msi.md) | Windows deployment without an MSI package | Accepted |
