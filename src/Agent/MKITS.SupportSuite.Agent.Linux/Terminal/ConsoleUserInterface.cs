@@ -23,11 +23,11 @@ internal sealed class ConsoleUserInterface : IAgentUserInterface, IChatPresenter
         {
             lock (_consoleGate)
             {
-                Write(Text.Format("Consent_Question", prompt.SupporterDisplayName, prompt.OperatorName, prompt.ServerHost));
-                Write(Text.Format("Consent_Permissions", string.Join(", ", prompt.Permissions.Select(p => Text.Get("Permission_" + p)))));
-                Console.Write(Text.Get("Consent_Prompt") + " ");
+                Write(Ui.Format("Consent_Question", prompt.SupporterDisplayName, prompt.OperatorName, prompt.ServerHost));
+                Write(Ui.Format("Consent_Permissions", string.Join(", ", prompt.Permissions.Select(p => Ui.Get("Permission_" + p)))));
+                Console.Write(Ui.Get("Consent_Prompt") + " ");
                 var answer = Console.ReadLine()?.Trim();
-                return string.Equals(answer, Text.Get("Consent_YesLetter"), StringComparison.OrdinalIgnoreCase)
+                return string.Equals(answer, Ui.Get("Consent_YesLetter"), StringComparison.OrdinalIgnoreCase)
                     || string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase);
             }
         }, cancellationToken);
@@ -35,14 +35,14 @@ internal sealed class ConsoleUserInterface : IAgentUserInterface, IChatPresenter
 
     public void OnStatusChanged(AgentStatus status, string? detail) => Write(status switch
     {
-        AgentStatus.Connecting => Text.Format("Status_Connecting", detail),
-        AgentStatus.WaitingForSupporter => Text.Format("Status_WaitingForSupporter", detail),
-        AgentStatus.AwaitingConsent => Text.Get("Status_AwaitingConsent"),
-        AgentStatus.Active => Text.Get("Status_Active"),
-        AgentStatus.Reconnecting => Text.Get("Status_Reconnecting"),
+        AgentStatus.Connecting => Ui.Format("Status_Connecting", detail),
+        AgentStatus.WaitingForSupporter => Ui.Format("Status_WaitingForSupporter", detail),
+        AgentStatus.AwaitingConsent => Ui.Get("Status_AwaitingConsent"),
+        AgentStatus.Active => Ui.Get("Status_Active"),
+        AgentStatus.Reconnecting => Ui.Get("Status_Reconnecting"),
         _ => detail is not null && string.Equals(detail, detail.ToUpperInvariant(), StringComparison.Ordinal)
-            ? Text.ForError(detail)
-            : Text.Get("Status_Ended"),
+            ? Ui.ForError(detail)
+            : Ui.Get("Status_Ended"),
     });
 
     public void OnSupportersChanged(IReadOnlyList<string> displayNames)
@@ -50,12 +50,12 @@ internal sealed class ConsoleUserInterface : IAgentUserInterface, IChatPresenter
         ArgumentNullException.ThrowIfNull(displayNames);
         if (displayNames.Count > 0)
         {
-            Write(Text.Format("Supporters", string.Join(", ", displayNames)));
+            Write(Ui.Format("Supporters", string.Join(", ", displayNames)));
         }
     }
 
     public void OnSecurityCode(string supporterDisplayName, string securityCode) =>
-        Write(Text.Format("SecurityCode", supporterDisplayName, securityCode));
+        Write(Ui.Format("SecurityCode", supporterDisplayName, securityCode));
 
     public void ShowMessage(string author, string text, DateTimeOffset timestamp) =>
         Write($"[{timestamp.ToLocalTime().ToString("t", CultureInfo.CurrentCulture)}] {author}: {text}");

@@ -68,6 +68,29 @@ RUN --mount=type=secret,id=agent_update_key \
       echo "Agent update not signed (no release key or local build) – agents will not update to this build."; \
     fi
 
+# ---- Linux client (AppImage, x86_64) ----
+# Same idea as the Windows client: the portal serves the client of the server's version (ADR-0019).
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS linux-client
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libturbojpeg0 \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
+COPY src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj src/Common/MKITS.SupportSuite.Common/
+COPY src/Agent/MKITS.SupportSuite.Agent.Core/MKITS.SupportSuite.Agent.Core.csproj src/Agent/MKITS.SupportSuite.Agent.Core/
+COPY src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj src/Agent/MKITS.SupportSuite.Agent.Linux/
+RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj -r linux-x64
+
+COPY proto/ proto/
+COPY deploy/keys/ deploy/keys/
+COPY deploy/linux/ deploy/linux/
+COPY src/Common/ src/Common/
+COPY src/Agent/MKITS.SupportSuite.Agent.Core/ src/Agent/MKITS.SupportSuite.Agent.Core/
+COPY src/Agent/MKITS.SupportSuite.Agent.Linux/ src/Agent/MKITS.SupportSuite.Agent.Linux/
+ARG BUILD_NUMBER=0
+# No FUSE during image builds: appimagetool runs extracted.
+RUN APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-appimage.sh /out/linux
+
 # ---- runtime stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
 LABEL org.opencontainers.image.title="MKITS-SupportSuite Server" \
@@ -77,6 +100,7 @@ LABEL org.opencontainers.image.title="MKITS-SupportSuite Server" \
 WORKDIR /app
 COPY --from=build /app/publish .
 COPY --from=windows-client /out/windows-x64/MKITS-Support.exe* agents/windows-x64/
+COPY --from=linux-client /out/linux/MKITS-Support-x86_64.AppImage agents/linux-x64/MKITS-Support.AppImage
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
 # The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).

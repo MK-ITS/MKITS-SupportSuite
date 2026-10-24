@@ -146,7 +146,7 @@ Weitere Einstellungen (IP-Sperren, Sitzungen, SMTP, Aufbewahrung) stehen im [Adm
 
 ### 8.1 Support-Clients für das Kundenportal
 
-**Der Windows-Client ist im Server-Image enthalten** (gleiche Version wie der Server): Das Kundenportal bietet ihn für Adhoc-Sitzungen an, und Admins laden ihn als `MKITS-Agent.exe` für dauerhafte Geräte herunter (*Geräteverwaltung* → Registrierungstoken erstellen → Link beim Token). Es muss nichts kopiert werden.
+**Der Windows-Client und der Linux-Client (AppImage, x86_64) sind im Server-Image enthalten** (gleiche Version wie der Server): Das Kundenportal bietet sie für Adhoc-Sitzungen an, und Admins laden ihn als `MKITS-Agent.exe` für dauerhafte Geräte herunter (*Geräteverwaltung* → Registrierungstoken erstellen → Link beim Token). Es muss nichts kopiert werden.
 
 Dateien im Datenvolume haben Vorrang vor den mitgelieferten – z. B. ein code-signierter Build (ADR-0009) oder Clients für weitere Plattformen:
 

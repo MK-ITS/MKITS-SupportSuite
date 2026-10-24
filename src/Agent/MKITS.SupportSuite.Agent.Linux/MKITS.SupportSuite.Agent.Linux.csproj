@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     Linux agent (Debian, Ubuntu): X11 and Wayland (xdg-desktop-portal / PipeWire) capture and input,
-    PTY shell, systemd unit and .deb packaging.
+    PTY shell, graphical ad-hoc client (Avalonia, AppImage), later systemd unit and .deb packaging.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -13,6 +13,13 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="MKITS.SupportSuite.Agent.Linux.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Graphical ad-hoc client (code-only UI, no XAML). -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
   </ItemGroup>
 
   <ItemGroup>

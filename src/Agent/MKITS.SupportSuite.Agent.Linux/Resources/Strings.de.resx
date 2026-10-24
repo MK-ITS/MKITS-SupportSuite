@@ -26,6 +26,37 @@
   <data name="Consent_Permissions" xml:space="preserve"><value>Der Supporter darf: {0}. Sie können die Sitzung jederzeit mit Strg+C beenden.</value></data>
   <data name="Consent_Prompt" xml:space="preserve"><value>Erlauben? [j/N]</value></data>
   <data name="Consent_YesLetter" xml:space="preserve"><value>j</value></data>
+  <data name="App_Title" xml:space="preserve"><value>MKITS Fernwartung</value></data>
+  <data name="Gui_Status_Active" xml:space="preserve"><value>Fernwartung aktiv – Ihr Bildschirm ist für den Supporter sichtbar.</value></data>
+  <data name="Gui_Status_Ended" xml:space="preserve"><value>Die Sitzung wurde beendet. Sie können dieses Fenster schließen.</value></data>
+  <data name="Gui_Close" xml:space="preserve"><value>Schließen</value></data>
+  <data name="EndSession" xml:space="preserve"><value>Sitzung beenden</value></data>
+  <data name="Chat_Send" xml:space="preserve"><value>Senden</value></data>
+  <data name="Chat_You" xml:space="preserve"><value>Sie</value></data>
+  <data name="Consent_Title" xml:space="preserve"><value>Fernwartung erlauben?</value></data>
+  <data name="Consent_Text" xml:space="preserve"><value>{0} ({1}) möchte sich mit diesem Computer verbinden.
+
+Server: {2}
+Der Supporter darf: {3}.
+
+Sie können die Sitzung jederzeit beenden.</value></data>
+  <data name="Consent_Allow" xml:space="preserve"><value>Erlauben</value></data>
+  <data name="Consent_Deny" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="File_Send" xml:space="preserve"><value>Datei senden …</value></data>
+  <data name="File_Confirm_Title" xml:space="preserve"><value>Datei annehmen?</value></data>
+  <data name="File_Confirm_Text" xml:space="preserve"><value>Der Supporter sendet „{0}“ ({1}). Die Datei wird in {2} gespeichert.</value></data>
+  <data name="File_Accept" xml:space="preserve"><value>Annehmen</value></data>
+  <data name="File_Decline" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="File_Received" xml:space="preserve"><value>Datei gespeichert: {0}</value></data>
+  <data name="File_Failed" xml:space="preserve"><value>Dateiübertragung fehlgeschlagen: {0}</value></data>
+  <data name="File_Offered" xml:space="preserve"><value>Biete {0} dem Supporter an …</value></data>
+  <data name="File_Sent" xml:space="preserve"><value>Gesendet: {0}</value></data>
+  <data name="File_NotSent" xml:space="preserve"><value>Nicht gesendet (abgelehnt oder fehlgeschlagen): {0}</value></data>
+  <data name="Connect_Title" xml:space="preserve"><value>Mit Fernwartung verbinden</value></data>
+  <data name="Connect_Server" xml:space="preserve"><value>Serveradresse</value></data>
+  <data name="Connect_Code" xml:space="preserve"><value>Sitzungscode</value></data>
+  <data name="Connect_Button" xml:space="preserve"><value>Verbinden</value></data>
+  <data name="Connect_Invalid" xml:space="preserve"><value>Bitte prüfen Sie Serveradresse und Code.</value></data>
   <data name="Permission_view" xml:space="preserve"><value>Bildschirm ansehen</value></data>
   <data name="Permission_control" xml:space="preserve"><value>Maus und Tastatur verwenden</value></data>
   <data name="Permission_files" xml:space="preserve"><value>Dateien übertragen</value></data>

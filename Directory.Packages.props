@@ -19,6 +19,12 @@
     <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.13" />
   </ItemGroup>
 
+  <ItemGroup Label="Linux agent UI (later also the native viewer)">
+    <PackageVersion Include="Avalonia" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+  </ItemGroup>
+
   <ItemGroup Label="Server">
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />

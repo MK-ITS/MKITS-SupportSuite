@@ -5,56 +5,83 @@ using System.Runtime.InteropServices;
 using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
+using MKITS.SupportSuite.Agent.Linux;
+using MKITS.SupportSuite.Agent.Linux.Gui;
 using MKITS.SupportSuite.Agent.Linux.Platform;
 using MKITS.SupportSuite.Agent.Linux.Terminal;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Common.Sessions;
 
-// Linux ad-hoc client, terminal version (Phase 11A): mkits-agent --server https://support.example.com --code 12345678
-// Server and code also come from the file name (MKITS-Support_<host>_<code>, ADR-0019), like on Windows.
+// Linux ad-hoc client (ADR-0019): MKITS-Support_<host>_<code>.AppImage carries server and code in its file name.
+// Developers: mkits-agent --server https://support.example.com --code 12345678 [--terminal]
+var terminal = args.Contains("--terminal", StringComparer.Ordinal) || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
 var options = FromArguments(args) ?? FromFileName();
-if (options is null)
-{
-    Console.Error.WriteLine(Text.Get("Usage"));
-    return 2;
-}
 
+// Problems that make remote support impossible on this desktop, checked before anything connects.
+string? problem = null;
+X11Display? display = null;
 if (string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase))
 {
-    Console.Error.WriteLine(Text.Get("Error_Wayland"));
-    return 3;
+    problem = Ui.Get("Error_Wayland");
+}
+else if ((display = X11Display.Open()) is null)
+{
+    problem = Ui.Get("Error_NoDisplay");
+}
+else if (!JpegEncoder.IsAvailable)
+{
+    problem = Ui.Get("Error_NoTurboJpeg");
 }
 
-using var display = X11Display.Open();
-if (display is null)
+using (display)
 {
-    Console.Error.WriteLine(Text.Get("Error_NoDisplay"));
-    return 3;
+    if (terminal)
+    {
+        if (problem is not null || options is null || display is null)
+        {
+            Console.Error.WriteLine(problem ?? Ui.Get("Usage"));
+            return problem is null ? 2 : 3;
+        }
+
+        return await RunTerminalAsync(options, display);
+    }
+
+    // Graphical client: errors as a message window, missing target via the connect window.
+    return App.Run(() =>
+    {
+        if (problem is not null || display is null)
+        {
+            return new QuestionWindow(Ui.Get("App_Title"), problem ?? Ui.Get("Error_NoDisplay"), Ui.Get("Gui_Close"), null);
+        }
+
+        if (options is not null)
+        {
+            return new SessionWindow(options, display);
+        }
+
+        return new ConnectWindow(target => new SessionWindow(AgentSessionOptions.FromTarget(target, Machine(), "linux"), display).Show());
+    }, args);
 }
 
-if (!JpegEncoder.IsAvailable)
+static async Task<int> RunTerminalAsync(AgentSessionOptions options, X11Display display)
 {
-    Console.Error.WriteLine(Text.Get("Error_NoTurboJpeg"));
-    return 4;
+    var ui = new ConsoleUserInterface();
+    using var screen = new X11ScreenSource(display);
+    await using var streamer = new ScreenStreamer(screen);
+    await using var shells = new ShellHandler(new PtyShellHost());
+    await using var session = new AgentSession(
+        options, new ClientWebSocketConnector(), ui,
+        [streamer, new InputHandler(new X11InputInjector(display), screen), new ChatHandler(ui), shells]);
+
+    Console.CancelKeyPress += (_, e) =>
+    {
+        e.Cancel = true; // end cleanly: the supporter sees "ended by customer"
+        _ = session.EndAsync();
+    };
+
+    var result = await session.RunAsync(CancellationToken.None);
+    return result.Succeeded ? 0 : 1;
 }
-
-var ui = new ConsoleUserInterface();
-using var screen = new X11ScreenSource(display);
-await using var streamer = new ScreenStreamer(screen);
-await using var shells = new ShellHandler(new PtyShellHost());
-await using var session = new AgentSession(
-    options, new ClientWebSocketConnector(), ui,
-    [streamer, new InputHandler(new X11InputInjector(display), screen), new ChatHandler(ui), shells]);
-
-using var stop = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true; // end cleanly: the supporter sees "ended by customer"
-    _ = session.EndAsync();
-};
-
-var result = await session.RunAsync(stop.Token);
-return result.Succeeded ? 0 : 1;
 
 static AgentSessionOptions? FromArguments(string[] args)
 {

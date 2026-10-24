@@ -131,6 +131,49 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  linux-client:
+    name: Linux client (AppImage)
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Dependencies (libjpeg-turbo to bundle, Xvfb for the smoke test)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends libturbojpeg xvfb xauth libxtst6 libxrandr2
+
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1" # no FUSE on the runner
+        run: deploy/linux/build-appimage.sh artifacts/linux
+
+      # The terminal mode without a target prints the usage and exits with 2; the graphical mode must keep running.
+      - name: Smoke test
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          set +e
+          xvfb-run -a artifacts/linux/MKITS-Support-x86_64.AppImage --terminal
+          code=$?
+          [ "$code" -eq 2 ] || { echo "::error::terminal mode exited with $code (expected 2)"; exit 1; }
+          timeout 15 xvfb-run -a artifacts/linux/MKITS-Support-x86_64.AppImage
+          code=$?
+          [ "$code" -eq 124 ] || { echo "::error::graphical client exited early with $code"; exit 1; }
+
+      # Unsigned development build. Copy it to /data/agents/linux-x64/MKITS-Support.AppImage on a test server.
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: MKITS-Support-linux-x64
+          path: artifacts/linux/MKITS-Support-x86_64.AppImage
+          if-no-files-found: error
+          retention-days: 14
+
   docker:
     name: Docker image (server)
     runs-on: ubuntu-latest
@@ -165,5 +208,6 @@ jobs:
           echo
           # The bundled Windows client must be in the image (portal and admin agent download).
           docker exec mkits-smoke test -s /app/agents/windows-x64/MKITS-Support.exe
+          docker exec mkits-smoke test -s /app/agents/linux-x64/MKITS-Support.AppImage
           docker logs mkits-smoke
           docker rm -f mkits-smoke
