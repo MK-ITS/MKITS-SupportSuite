@@ -17,3 +17,7 @@ updates:
     directory: "/deploy/docker"
     schedule:
       interval: weekly
+    ignore:
+      # Node.js: LTS releases (even majors) only – odd majors are short-lived "current" releases.
+      - dependency-name: "node"
+        versions: [">=23 <24", ">=25 <26", ">=27 <28", ">=29 <30"]
