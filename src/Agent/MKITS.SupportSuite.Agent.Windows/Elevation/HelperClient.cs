@@ -230,7 +230,7 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
     }
 
     /// <summary>The pipe server must be the helper EXE from the protected folder (guards against a squatted pipe name).</summary>
-    private static bool ServerIsOurHelper(NamedPipeClientStream pipe, string expectedExecutable)
+    internal static bool ServerIsOurHelper(NamedPipeClientStream pipe, string expectedExecutable)
     {
         if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var serverPid))
         {
