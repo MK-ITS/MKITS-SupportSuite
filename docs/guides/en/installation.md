@@ -146,20 +146,24 @@ Further settings (IP bans, sessions, SMTP, retention) are listed in the [adminis
 
 ### 8.1 Support clients for the customer portal
 
-The portal offers the ad-hoc client for download once the file is present in the data volume. Until official releases are bundled with the image (Phase 8 onwards), copy the files there yourself:
+**The Windows client is included in the server image** (same version as the server): the customer portal offers it for ad-hoc sessions, and Admins download it as `MKITS-Agent.exe` for permanent devices (*Device administration* → create an enrollment token → link next to the token). Nothing needs to be copied.
+
+Files in the data volume take precedence over the bundled ones – e.g. a code-signed build (ADR-0009) or clients for further platforms:
 
 ```bash
 # Create the folders once
 docker compose exec server mkdir -p /data/agents/windows-x64 /data/agents/linux-x64 /data/agents/linux-arm64 /data/agents/android
-# Windows client (portable EXE)
+# Optional: your own (e.g. signed) Windows build instead of the bundled one
 docker compose cp MKITS-Support.exe server:/data/agents/windows-x64/MKITS-Support.exe
-# Linux clients (AppImage) and Android (APK), if available
+# Linux clients (AppImage) and Android (APK), once available
 docker compose cp MKITS-Support-x86_64.AppImage server:/data/agents/linux-x64/MKITS-Support.AppImage
 docker compose cp MKITS-Support-aarch64.AppImage server:/data/agents/linux-arm64/MKITS-Support.AppImage
 docker compose cp MKITS-Support.apk server:/data/agents/android/MKITS-Support.apk
 ```
 
-*Administration → Settings → Support clients* shows which files were found. Customers download the file under a name that contains your server address and the session code (`MKITS-Support_support.example.com_12345678.exe`), so the client connects without further input. Files are read on every download – replacing them needs no restart.
+Remove a copied file again to return to the bundled version (otherwise an old copy would stay in use after server updates). *Administration → Settings → Support clients* shows which files were found. Customers download the file under a name that contains your server address and the session code (`MKITS-Support_support.example.com_12345678.exe`), so the client connects without further input. Files are read on every download – replacing them needs no restart.
+
+> The bundled client is not code-signed yet: Windows SmartScreen may warn on first start (*More info → Run anyway*).
 
 ## 9. Updates
 
