@@ -17,7 +17,8 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Adhoc-Sitzungen: Codes, Kundenportal, Windows-Client mit Zustimmung, Browser-Viewer (Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Shell), Administrator-Modus | ✅ verfügbar (Meilenstein M1) |
 | Gerätegruppen, Berechtigungen, Registrierungstokens, Geräteliste, Supporter-Seite *Geräte* | ✅ verfügbar |
 | Windows-Agent als Dienst (unbeaufsichtigter Zugriff, Zustimmungsrichtlinien, Sitzungsfenster mit Chat/Dateien/Zwischenablage/Shell) | ✅ verfügbar (siehe §5.2) |
-| MSI-Paket, Agent-Auto-Update | 🔜 Phase 10 |
+| Agent-Auto-Update (signiert) | ✅ verfügbar, sobald der Release-Schlüssel eingerichtet ist |
+| MSI-Paket | 🔜 Phase 10 |
 | Linux-Agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
@@ -78,7 +79,7 @@ In der Gruppe ein **Registrierungstoken** erzeugen (Gültigkeit, Anzahl Geräte)
 
 - **Windows** (10 / Server 2016 oder neuer, x64): `MKITS-Agent.exe` herunterladen (Link beim Token) und in einer **Administrator**-Eingabeaufforderung oder per Softwareverteilung / RMM-Werkzeug ausführen:
   `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
-  Der Agent installiert sich nach `%ProgramFiles%\MKITS-SupportSuite\Agent`, richtet den Dienst **MKITS SupportSuite Agent** ein (automatischer Start, Neustart bei Fehlern) und registriert sich. Identität und Einstellungen liegen DPAPI-geschützt in `%ProgramData%\MKITS-SupportSuite\agent` (nur SYSTEM und Administratoren); dort liegt auch das Protokoll `agent.log`. Ein erneutes `--install` aktualisiert den Agent und behält die Identität (`--reenroll` erzwingt eine neue Registrierung, dann ist ein Token nötig). Entfernen mit `MKITS-Agent.exe --uninstall`.
+  Der Agent installiert sich nach `%ProgramFiles%\MKITS-SupportSuite\Agent`, richtet den Dienst **MKITS SupportSuite Agent** ein (automatischer Start, Neustart bei Fehlern) und registriert sich. Identität und Einstellungen liegen DPAPI-geschützt in `%ProgramData%\MKITS-SupportSuite\agent` (nur SYSTEM und Administratoren); dort liegt auch das Protokoll `agent.log`. Ein erneutes `--install` aktualisiert den Agent und behält die Identität (`--reenroll` erzwingt eine neue Registrierung, dann ist ein Token nötig). Entfernen mit `MKITS-Agent.exe --uninstall`. **Updates:** Installierte Agents aktualisieren sich selbst vom Server (Prüfung alle paar Stunden, nur außerhalb von Sitzungen), sobald Ihr Server ein neueres Image verwendet – vorausgesetzt, das Image ist mit dem Release-Schlüssel des Projekts signiert (ADR-0023); andernfalls `--install` mit der neuen EXE erneut ausführen.
   Bildschirm, Maus und Tastatur funktionieren auch am Anmeldebildschirm, auf dem Sperrbildschirm und bei UAC-Abfragen (inklusive Strg+Alt+Entf). Ist ein Benutzer angemeldet, erscheint für die Dauer einer Sitzung ein Sitzungsfenster (bei *Still* verborgen): Chat, Dateiübertragung, Zwischenablage und Shell laufen dort mit den Rechten **dieses Benutzers**. Ohne angemeldeten Benutzer stehen nur Bildschirm und Eingabe zur Verfügung.
 - **Linux, Android:** geplant (Phasen 11, 12).
 

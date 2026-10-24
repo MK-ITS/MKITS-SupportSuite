@@ -11,6 +11,29 @@
     <InternalsVisibleTo Include="MKITS.SupportSuite.Common.Tests" />
   </ItemGroup>
 
+  <!--
+    Agent auto-update (ADR-0023):
+    - BuildNumber orders builds (CI: commit timestamp, -p:BuildNumber=...). Local builds are 0 and never offered as updates.
+    - The update public key (base64 SPKI, ECDSA P-256) is compiled in from deploy/keys/agent-update.pub. Without it
+      agents never apply updates. The private key exists only as a CI secret.
+  -->
+  <PropertyGroup>
+    <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
+    <AgentUpdateKeyFile>$(MSBuildThisFileDirectory)../../../deploy/keys/agent-update.pub</AgentUpdateKeyFile>
+    <AgentUpdatePublicKey Condition="'$(AgentUpdatePublicKey)' == '' And Exists('$(AgentUpdateKeyFile)')">$([System.IO.File]::ReadAllText('$(AgentUpdateKeyFile)').Trim())</AgentUpdatePublicKey>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BuildNumber</_Parameter1>
+      <_Parameter2>$(BuildNumber)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>AgentUpdatePublicKey</_Parameter1>
+      <_Parameter2>$(AgentUpdatePublicKey)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" />
     <!-- Build-time code generator only (protoc); not shipped. -->

@@ -5,6 +5,7 @@
     <Project Path="src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj" />
     <Project Path="src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj" />
     <Project Path="src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj" />
+    <Project Path="src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MKITS.SupportSuite.Server.Tests/MKITS.SupportSuite.Server.Tests.csproj" />

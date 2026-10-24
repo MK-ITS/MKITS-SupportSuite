@@ -38,6 +38,8 @@ internal static class Program
                 return Permanent.AgentService.Run();
             case "--agent-helper" when args.Length > 1:
                 return Elevation.PrivilegedHelper.RunForAgent(args[1]);
+            case "--apply-update":
+                return Permanent.AgentUpdater.Apply();
             case "--agent-user" when args.Length > 1:
                 return UI.SessionWindow.Run(args[1]);
             default:

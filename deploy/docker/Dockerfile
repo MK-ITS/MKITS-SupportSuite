@@ -40,16 +40,33 @@ COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj src/Common/MKITS.SupportSuite.Common/
 COPY src/Agent/MKITS.SupportSuite.Agent.Core/MKITS.SupportSuite.Agent.Core.csproj src/Agent/MKITS.SupportSuite.Agent.Core/
 COPY src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj src/Agent/MKITS.SupportSuite.Agent.Windows/
-RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj -r win-x64
+COPY src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj src/Tools/MKITS.SupportSuite.UpdateSigner/
+RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj -r win-x64 \
+ && dotnet restore src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj
 
 COPY proto/ proto/
+COPY deploy/keys/ deploy/keys/
 COPY src/Common/ src/Common/
 COPY src/Agent/MKITS.SupportSuite.Agent.Core/ src/Agent/MKITS.SupportSuite.Agent.Core/
 COPY src/Agent/MKITS.SupportSuite.Agent.Windows/ src/Agent/MKITS.SupportSuite.Agent.Windows/
+COPY src/Tools/MKITS.SupportSuite.UpdateSigner/ src/Tools/MKITS.SupportSuite.UpdateSigner/
+
+# Build number orders agent updates (CI: commit timestamp). 0 = local build, never offered as update (ADR-0023).
+ARG BUILD_NUMBER=0
 RUN dotnet publish src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj \
-    -c Release -r win-x64 --self-contained --no-restore \
+    -c Release -r win-x64 --self-contained --no-restore -p:BuildNumber=${BUILD_NUMBER} \
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
     -o /out/windows-x64
+
+# Signed update manifest – only if the release key is passed as BuildKit secret "agent_update_key" (CI secret
+# AGENT_UPDATE_SIGNING_KEY). The key never ends up in an image layer.
+RUN --mount=type=secret,id=agent_update_key \
+    if [ -s /run/secrets/agent_update_key ] && [ "${BUILD_NUMBER}" != "0" ]; then \
+      dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
+        /out/windows-x64/MKITS-Support.exe windows-x64 "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key; \
+    else \
+      echo "Agent update not signed (no release key or local build) – agents will not update to this build."; \
+    fi
 
 # ---- runtime stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
@@ -59,7 +76,7 @@ LABEL org.opencontainers.image.title="MKITS-SupportSuite Server" \
 
 WORKDIR /app
 COPY --from=build /app/publish .
-COPY --from=windows-client /out/windows-x64/MKITS-Support.exe agents/windows-x64/MKITS-Support.exe
+COPY --from=windows-client /out/windows-x64/MKITS-Support.exe* agents/windows-x64/
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
 # The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).

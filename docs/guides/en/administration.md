@@ -17,7 +17,8 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Ad-hoc sessions: codes, customer portal, Windows client with consent, browser viewer (screen, input, chat, files, clipboard, shell), administrator mode | ✅ available (milestone M1) |
 | Device groups, permissions, enrollment tokens, device list, supporter page *Devices* | ✅ available |
 | Windows agent as a service (unattended access, consent policies, session window with chat/files/clipboard/shell) | ✅ available (see §5.2) |
-| MSI package, agent auto-update | 🔜 Phase 10 |
+| Agent auto-update (signed) | ✅ available once the release key is set up |
+| MSI package | 🔜 Phase 10 |
 | Linux agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
@@ -78,7 +79,7 @@ Create an **enrollment token** in the group (validity, number of devices). It is
 
 - **Windows** (10 / Server 2016 or newer, x64): download `MKITS-Agent.exe` (link next to the token) and run in an **administrator** command prompt, or via your software deployment / RMM tool:
   `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
-  The agent installs itself to `%ProgramFiles%\MKITS-SupportSuite\Agent`, registers the service **MKITS SupportSuite Agent** (automatic start, restarts on failure) and enrolls. Identity and settings are stored DPAPI-protected in `%ProgramData%\MKITS-SupportSuite\agent` (SYSTEM and Administrators only); the log is `agent.log` there. Running `--install` again updates the agent and keeps the identity (`--reenroll` forces a new enrollment, a token is needed then). Remove with `MKITS-Agent.exe --uninstall`.
+  The agent installs itself to `%ProgramFiles%\MKITS-SupportSuite\Agent`, registers the service **MKITS SupportSuite Agent** (automatic start, restarts on failure) and enrolls. Identity and settings are stored DPAPI-protected in `%ProgramData%\MKITS-SupportSuite\agent` (SYSTEM and Administrators only); the log is `agent.log` there. Running `--install` again updates the agent and keeps the identity (`--reenroll` forces a new enrollment, a token is needed then). Remove with `MKITS-Agent.exe --uninstall`. **Updates:** installed agents update themselves from the server (checked every few hours, only outside of sessions) once your server runs a newer image – provided the image is signed with the project's release key (ADR-0023); otherwise run `--install` again with the new EXE.
   Screen, mouse and keyboard work also at the logon screen, on the lock screen and with UAC prompts (Ctrl+Alt+Del included). When a user is logged on, a session window appears for the duration of a session (hidden under *Silent*): chat, file transfer, clipboard and the shell run there with **that user's** rights. Without a logged-on user only screen and input are available.
 - **Linux, Android:** planned (Phases 11, 12).
 

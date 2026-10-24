@@ -71,3 +71,22 @@ gh api repos/MK-ITS/MKITS-SupportSuite/actions/jobs/<id> --jq '.steps[] | "\(.na
 | `MkitsWebApplicationFactory` | full server in memory with a temporary data directory; header `X-Test-Remote-Ip` sets the client IP |
 | `TestDatabase` | real SQLite database in a temp file, migrated; implements `IDbContextFactory<MkitsDbContext>` |
 | `ManualTimeProvider` | deterministic clock (`Advance(...)`) for time-dependent logic |
+
+## Agent update release key (ADR-0023)
+
+Agents only install updates signed with the release key. One-time setup by a maintainer, **on your own computer** (never
+commit or paste the private key anywhere else):
+
+```bash
+# 1. Create the key pair (ECDSA P-256)
+openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out agent-update.key.pem
+# 2. Store the private key as repository secret (Settings → Secrets and variables → Actions)
+gh secret set AGENT_UPDATE_SIGNING_KEY --repo MK-ITS/MKITS-SupportSuite < agent-update.key.pem
+# 3. Commit the public key (base64 SubjectPublicKeyInfo, one line)
+openssl pkey -in agent-update.key.pem -pubout -outform DER | base64 -w0 > deploy/keys/agent-update.pub
+# 4. Keep agent-update.key.pem offline (password manager / safe); delete other copies
+```
+
+From then on the *Publish server image* workflow signs every agent build (`MKITS-Support.exe.manifest.json/.sig` in the
+image). Agents built before step 3 have no key and must be updated once with `MKITS-Agent.exe --install`.
+
