@@ -52,10 +52,7 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
     public AvailableClient? Get(ClientPlatform platform) =>
         Packages.Where(p => p.Platform == platform).Select(Find).FirstOrDefault();
 
-    /// <summary>Folder name of a platform in the agents directory, e.g. <c>windows-x64</c> (also the update API name).</summary>
-    public static string FolderOf(ClientPlatform platform) =>
-        Path.GetDirectoryName(Packages.First(p => p.Platform == platform).RelativePath)!;
-
+    /// <summary>Platform for a folder name in the agents directory, e.g. <c>windows-x64</c> (also the update API name).</summary>
     public static ClientPlatform? FromFolder(string? folder) =>
         Packages.Where(p => Path.GetDirectoryName(p.RelativePath) == folder).Select(p => (ClientPlatform?)p.Platform).FirstOrDefault();
 

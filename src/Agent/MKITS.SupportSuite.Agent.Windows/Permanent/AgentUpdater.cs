@@ -90,12 +90,15 @@ internal static class AgentUpdater
             if (TryStart(service))
             {
                 AgentLog.Write($"updated to build {ProductInfo.BuildNumber} ({ProductInfo.Version})");
+                TryDelete(AgentPaths.BackupExecutable); // only now: the health check is over
                 return 0;
             }
 
             AgentLog.Write("updated service did not start – restoring the previous version");
             File.Copy(AgentPaths.BackupExecutable, AgentPaths.Executable, overwrite: true);
-            return TryStart(service) ? 3 : 4;
+            var restored = TryStart(service);
+            TryDelete(AgentPaths.BackupExecutable);
+            return restored ? 3 : 4;
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or System.ServiceProcess.TimeoutException)
         {
@@ -137,22 +140,28 @@ internal static class AgentUpdater
         }
     }
 
-    /// <summary>Leftovers of a previous update (the updater cannot delete its own EXE while it runs).</summary>
+    /// <summary>
+    /// Leftovers of a previous update (the updater cannot delete its own EXE while it runs). The backup of the previous
+    /// EXE is deliberately not touched here: the updater may still need it for a rollback while this service starts.
+    /// </summary>
     private static void CleanUp()
     {
-        foreach (var file in new[] { AgentPaths.StagedUpdate, AgentPaths.StagedUpdate + ".download", AgentPaths.BackupExecutable })
+        TryDelete(AgentPaths.StagedUpdate);
+        TryDelete(AgentPaths.StagedUpdate + ".download");
+    }
+
+    private static void TryDelete(string file)
+    {
+        try
         {
-            try
+            if (File.Exists(file))
             {
-                if (File.Exists(file))
-                {
-                    File.Delete(file);
-                }
+                File.Delete(file);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // still in use – next time
-            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // still in use – next time
         }
     }
 
