@@ -84,6 +84,16 @@ public sealed class X11Tests(XvfbFixture xvfb) : IClassFixture<XvfbFixture>
     }
 
     [Theory]
+    [InlineData("KeyA", 30)]
+    [InlineData("Digit1", 2)]
+    [InlineData("IntlRo", 89)]
+    [InlineData("IntlYen", 124)]
+    [InlineData("ArrowUp", 103)]
+    [InlineData("MetaLeft", 125)]
+    [InlineData("NumpadEnter", 96)]
+    public void KeyCodes_MapToEvdev(string code, int evdev) => Assert.Equal(evdev, KeyCodes.FromCode(code));
+
+    [Theory]
     [InlineData("a", 0x61)]
     [InlineData("ü", 0xFC)]
     [InlineData("€", 0x010020AC)]

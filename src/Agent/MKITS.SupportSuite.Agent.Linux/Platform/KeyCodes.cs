@@ -7,12 +7,14 @@ namespace MKITS.SupportSuite.Agent.Linux.Platform;
 
 /// <summary>
 /// W3C <c>KeyboardEvent.code</c> → Linux evdev key code. Non-extended PC scan codes (set 1) are identical to evdev
-/// codes; the extended (<c>0xE0</c>) keys have their own evdev numbers.
+/// codes except a few international keys; the extended (<c>0xE0</c>) keys have their own evdev numbers.
 /// </summary>
 internal static class KeyCodes
 {
-    private static readonly Dictionary<ushort, int> Extended = new()
+    private static readonly Dictionary<ushort, int> Different = new()
     {
+        [0x73] = 89,    // KEY_RO (IntlRo)
+        [0x7D] = 124,   // KEY_YEN (IntlYen)
         [0xE01C] = 96,  // KEY_KPENTER
         [0xE01D] = 97,  // KEY_RIGHTCTRL
         [0xE035] = 98,  // KEY_KPSLASH
@@ -41,11 +43,11 @@ internal static class KeyCodes
             return null;
         }
 
-        if (!ScanCodes.IsExtended(scanCode))
+        if (Different.TryGetValue(scanCode, out var evdev))
         {
-            return scanCode;
+            return evdev;
         }
 
-        return Extended.TryGetValue(scanCode, out var evdev) ? evdev : null;
+        return ScanCodes.IsExtended(scanCode) ? null : scanCode;
     }
 }

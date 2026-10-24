@@ -62,9 +62,16 @@ internal sealed class PtyShellProcess : IShellProcess
     public static PtyShellProcess Start(string shell, int columns, int rows)
     {
         var master = LibcNative.PosixOpenPt(LibcNative.ReadWrite | LibcNative.NoControllingTerminal);
-        if (master < 0 || LibcNative.GrantPt(master) != 0 || LibcNative.UnlockPt(master) != 0)
+        if (master < 0)
         {
             throw new IOException($"Cannot create a pseudo terminal ({Marshal.GetLastPInvokeError()}).");
+        }
+
+        if (LibcNative.GrantPt(master) != 0 || LibcNative.UnlockPt(master) != 0)
+        {
+            var error = Marshal.GetLastPInvokeError();
+            _ = LibcNative.Close(master);
+            throw new IOException($"Cannot prepare the pseudo terminal ({error}).");
         }
 
         var nameBuffer = new byte[256];
