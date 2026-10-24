@@ -6,7 +6,7 @@
 ARG DOTNET_VERSION=10.0
 
 # ---- browser viewer (TypeScript → wwwroot/viewer/viewer.js) ----
-FROM node:22-bookworm-slim AS viewer
+FROM node:25-bookworm-slim AS viewer
 WORKDIR /src
 COPY proto/ proto/
 COPY src/Viewer/web/package.json src/Viewer/web/package-lock.json src/Viewer/web/
