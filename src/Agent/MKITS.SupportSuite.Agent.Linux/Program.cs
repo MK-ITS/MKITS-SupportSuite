@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
-using MKITS.SupportSuite.Agent.Linux.Terminal;
 using MKITS.SupportSuite.Agent.Linux.Platform;
+using MKITS.SupportSuite.Agent.Linux.Terminal;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Common.Sessions;
 
