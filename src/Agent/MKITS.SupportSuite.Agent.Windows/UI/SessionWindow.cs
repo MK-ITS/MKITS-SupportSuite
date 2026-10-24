@@ -28,7 +28,6 @@ internal sealed class SessionWindow : Form, IAgentUserInterface, IChatPresenter,
     private readonly Button _end = new() { Text = UiText.Get("EndSession"), AutoSize = true, BackColor = Color.Firebrick, ForeColor = Color.White };
     private readonly System.Windows.Forms.Timer _clipboardTimer = new() { Interval = 1000 };
     private readonly CancellationTokenSource _closing = new();
-    private readonly NamedPipeClientStream _pipe;
     private readonly ChatHandler _chat;
     private readonly ClipboardHandler _clipboard;
     private readonly FileTransferHandler _files;
@@ -39,7 +38,6 @@ internal sealed class SessionWindow : Form, IAgentUserInterface, IChatPresenter,
 
     public SessionWindow(NamedPipeClientStream pipe)
     {
-        _pipe = pipe;
         _chat = new ChatHandler(this);
         _clipboard = new ClipboardHandler(this);
         _files = new FileTransferHandler(this);

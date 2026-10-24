@@ -45,6 +45,9 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
     private ISessionContext? _context;
     private int _nextConsentId;
 
+    /// <summary>Incremented whenever the connection is stopped; a connect attempt of an older generation is discarded.</summary>
+    private int _generation;
+
     // Last known state, sent to a user-session process that connects late.
     private (string Operator, ConsentPolicy Policy)? _assigned;
     private (AgentStatus Status, string? Detail)? _status;
@@ -182,12 +185,12 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
                 return _starting;
             }
 
-            _starting = ConnectAndServeAsync();
+            _starting = ConnectAndServeAsync(_generation);
             return _starting;
         }
     }
 
-    private async Task<IUserSessionConnection?> ConnectAndServeAsync()
+    private async Task<IUserSessionConnection?> ConnectAndServeAsync(int generation)
     {
         IUserSessionConnection? connection;
         try
@@ -203,13 +206,32 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
         {
             lock (_gate)
             {
-                _starting = null; // try again with the next session
+                if (generation == _generation)
+                {
+                    _starting = null; // try again with the next session
+                }
             }
 
             return null;
         }
 
-        Volatile.Write(ref _connection, connection);
+        bool current;
+        lock (_gate)
+        {
+            // The session may have ended while the process was coming up: never resurrect a stopped connection.
+            current = generation == _generation;
+            if (current)
+            {
+                _connection = connection;
+            }
+        }
+
+        if (!current)
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+            return null;
+        }
+
         _ = ReadLoopAsync(connection);
 
         // Catch up: the session may have started while the process was coming up.
@@ -264,6 +286,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
             _connection = null;
             _starting = null;
             _context = null;
+            _generation++;
         }
 
         foreach (var consent in _consents.Values)
@@ -319,7 +342,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
             }
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException
-            or InvalidDataException or EndOfStreamException or InvalidProtocolBufferException)
+            or InvalidDataException or EndOfStreamException or FormatException or InvalidProtocolBufferException)
         {
             // closed, or the user-session process sent garbage: drop it
         }

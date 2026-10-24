@@ -37,7 +37,7 @@ public sealed class BridgeClient(Stream stream, IAgentUserInterface ui, IReadOnl
                 await HandleAsync(message, cancellationToken).ConfigureAwait(false);
             }
         }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidDataException or EndOfStreamException
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidDataException or EndOfStreamException or FormatException
             or InvalidProtocolBufferException)
         {
             // the service is gone or sent garbage

@@ -86,10 +86,20 @@ public static class BridgeProtocol
         return await ReadExactlyOrEndAsync(stream, message, cancellationToken).ConfigureAwait(false) ? message : null;
     }
 
+    /// <summary>Reads a length-checked string. Malformed length prefixes become <see cref="InvalidDataException"/>.</summary>
     public static string ReadString(BinaryReader reader)
     {
         ArgumentNullException.ThrowIfNull(reader);
-        var value = reader.ReadString();
+        string value;
+        try
+        {
+            value = reader.ReadString();
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidDataException("Malformed string.", ex);
+        }
+
         return value.Length <= MaxStringLength ? value : throw new InvalidDataException("String too long.");
     }
 

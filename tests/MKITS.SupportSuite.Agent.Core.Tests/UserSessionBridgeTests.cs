@@ -127,6 +127,17 @@ public sealed class UserSessionBridgeTests : IAsyncDisposable
         await Eventually(() => !_bridge.IsConnected);
     }
 
+    [Fact]
+    public async Task MalformedStringLength_DropsTheUserSession()
+    {
+        await StartSessionAsync();
+
+        // Payload message whose viewer-id string has an invalid 7-bit length prefix (5 continuation bytes).
+        await BridgeProtocol.WriteAsync(_connector.ClientStream!, [(byte)BridgeMessageType.Payload, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01], CancellationToken.None);
+
+        await Eventually(() => !_bridge.IsConnected);
+    }
+
     private async Task StartSessionAsync()
     {
         _bridge.OnSessionAssigned("ACME", ConsentPolicy.Notify);
