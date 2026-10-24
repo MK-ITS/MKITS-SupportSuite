@@ -146,20 +146,24 @@ Weitere Einstellungen (IP-Sperren, Sitzungen, SMTP, Aufbewahrung) stehen im [Adm
 
 ### 8.1 Support-Clients für das Kundenportal
 
-Das Portal bietet den Adhoc-Client zum Download an, sobald die Datei im Datenvolume liegt. Bis offizielle Releases im Image enthalten sind (ab Phase 8), kopieren Sie die Dateien selbst dorthin:
+**Der Windows-Client ist im Server-Image enthalten** (gleiche Version wie der Server): Das Kundenportal bietet ihn für Adhoc-Sitzungen an, und Admins laden ihn als `MKITS-Agent.exe` für dauerhafte Geräte herunter (*Geräteverwaltung* → Registrierungstoken erstellen → Link beim Token). Es muss nichts kopiert werden.
+
+Dateien im Datenvolume haben Vorrang vor den mitgelieferten – z. B. ein code-signierter Build (ADR-0009) oder Clients für weitere Plattformen:
 
 ```bash
 # Ordner einmalig anlegen
 docker compose exec server mkdir -p /data/agents/windows-x64 /data/agents/linux-x64 /data/agents/linux-arm64 /data/agents/android
-# Windows-Client (portable EXE)
+# Optional: eigener (z. B. signierter) Windows-Build statt des mitgelieferten
 docker compose cp MKITS-Support.exe server:/data/agents/windows-x64/MKITS-Support.exe
-# Linux-Clients (AppImage) und Android (APK), falls vorhanden
+# Linux-Clients (AppImage) und Android (APK), sobald verfügbar
 docker compose cp MKITS-Support-x86_64.AppImage server:/data/agents/linux-x64/MKITS-Support.AppImage
 docker compose cp MKITS-Support-aarch64.AppImage server:/data/agents/linux-arm64/MKITS-Support.AppImage
 docker compose cp MKITS-Support.apk server:/data/agents/android/MKITS-Support.apk
 ```
 
-*Administration → Einstellungen → Support-Clients* zeigt, welche Dateien gefunden wurden. Kunden laden die Datei unter einem Namen herunter, der Ihre Serveradresse und den Sitzungscode enthält (`MKITS-Support_support.example.com_12345678.exe`), sodass der Client ohne weitere Eingabe verbindet. Die Dateien werden bei jedem Download neu gelesen – ein Austausch erfordert keinen Neustart.
+Entfernen Sie eine kopierte Datei wieder, um zur mitgelieferten Version zurückzukehren (sonst bliebe nach Server-Updates eine alte Kopie in Gebrauch). *Administration → Einstellungen → Support-Clients* zeigt, welche Dateien gefunden wurden. Kunden laden die Datei unter einem Namen herunter, der Ihre Serveradresse und den Sitzungscode enthält (`MKITS-Support_support.example.com_12345678.exe`), sodass der Client ohne weitere Eingabe verbindet. Die Dateien werden bei jedem Download neu gelesen – ein Austausch erfordert keinen Neustart.
+
+> Der mitgelieferte Client ist noch nicht code-signiert: Windows SmartScreen kann beim ersten Start warnen (*Weitere Informationen → Trotzdem ausführen*).
 
 ## 9. Updates
 

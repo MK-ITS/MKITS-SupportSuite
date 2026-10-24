@@ -31,6 +31,26 @@ COPY --from=viewer /src/src/Server/MKITS.SupportSuite.Server/wwwroot/viewer/ src
 RUN dotnet publish src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj \
     -c Release --no-restore -o /app/publish /p:UseAppHost=false
 
+# ---- Windows client / agent (single-file EXE, cross-compiled; EnableWindowsTargeting) ----
+# Bundled so that the customer portal and the admin agent download always serve the client of the same version.
+# A file in /data/agents/windows-x64/ takes precedence (e.g. a code-signed build, ADR-0009).
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS windows-client
+WORKDIR /src
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
+COPY src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj src/Common/MKITS.SupportSuite.Common/
+COPY src/Agent/MKITS.SupportSuite.Agent.Core/MKITS.SupportSuite.Agent.Core.csproj src/Agent/MKITS.SupportSuite.Agent.Core/
+COPY src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj src/Agent/MKITS.SupportSuite.Agent.Windows/
+RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj -r win-x64
+
+COPY proto/ proto/
+COPY src/Common/ src/Common/
+COPY src/Agent/MKITS.SupportSuite.Agent.Core/ src/Agent/MKITS.SupportSuite.Agent.Core/
+COPY src/Agent/MKITS.SupportSuite.Agent.Windows/ src/Agent/MKITS.SupportSuite.Agent.Windows/
+RUN dotnet publish src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj \
+    -c Release -r win-x64 --self-contained --no-restore \
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
+    -o /out/windows-x64
+
 # ---- runtime stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
 LABEL org.opencontainers.image.title="MKITS-SupportSuite Server" \
@@ -39,6 +59,7 @@ LABEL org.opencontainers.image.title="MKITS-SupportSuite Server" \
 
 WORKDIR /app
 COPY --from=build /app/publish .
+COPY --from=windows-client /out/windows-x64/MKITS-Support.exe agents/windows-x64/MKITS-Support.exe
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
 # The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).
