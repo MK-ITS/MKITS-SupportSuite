@@ -14,11 +14,10 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Sicherheits-Header, vertrauenswürdige Reverse Proxys, Datenverzeichnis, Lokalisierung (DE/EN) | ✅ verfügbar |
 | Ersteinrichtung, Anmeldung, Benutzer, Rollen, Zwei-Faktor (TOTP), Profil/Sprache | ✅ verfügbar |
 | IP-Sperren, Allow-/Deny-Listen, Audit-Log mit Integritätsprüfung, E-Mail-Benachrichtigungen (Admin-Oberfläche) | ✅ verfügbar |
-| Adhoc-Sitzungscodes (anlegen, auflisten, widerrufen, Ablauf) | ✅ verfügbar |
-| Kundenportal (Codeeingabe, Client-Download), Relay mit Zustimmung, E2E-Krypto (Serverseite) | ✅ verfügbar |
-| Zustimmungsdialog und Banner in den Clients | 🔜 Phasen 7–8 |
-| Windows-Agent, Browser-Viewer (Chat, Dateien, Zwischenablage, Shell) | 🔜 Phasen 7–9 (Meilenstein M1) |
-| Gerätegruppen, dauerhafter Zugriff, Installer, Auto-Update | 🔜 Phase 10 (M2) |
+| Adhoc-Sitzungen: Codes, Kundenportal, Windows-Client mit Zustimmung, Browser-Viewer (Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Shell), Administrator-Modus | ✅ verfügbar (Meilenstein M1) |
+| Gerätegruppen, Berechtigungen, Registrierungstokens, Geräteliste, Supporter-Seite *Geräte* | ✅ verfügbar |
+| Windows-Agent als Dienst (unbeaufsichtigtes Ansehen und Steuern, Zustimmungsrichtlinien) | ✅ verfügbar (erste Version, siehe §5.2) |
+| Chat, Dateien, Zwischenablage und Shell auf dauerhaften Geräten; MSI-Paket; Auto-Update | 🔜 Phase 10 |
 | Linux-Agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
@@ -61,33 +60,33 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 - **2FA-Richtlinie:** Pflicht für Admins (Admin-Seiten sind ohne sie nicht erreichbar); User können sie unter *Mein Konto* aktivieren. Eine Pflicht auch für User ist geplant (`Mkits__Security__RequireTwoFactorForUsers`).
 - **Passwörter:** mindestens 12 Zeichen, keine Zeichenklassen-Vorgaben (lange Passphrasen sind besser). Nach 10 Fehlversuchen wird ein Konto für 15 Minuten gesperrt (zusätzlich zu IP-Sperren).
 
-## 5. Geräte und dauerhafter Zugriff *(geplant)*
+## 5. Geräte und dauerhafter Zugriff
 
 ### 5.1 Gerätegruppen
 
-*Administration → Gerätegruppen* – typischerweise eine Gruppe je Kunde oder Standort.
+*Geräteverwaltung* (`/admin/devices`) – typischerweise eine Gruppe je Kunde oder Standort.
 
 | Einstellung | Bedeutung |
 |---|---|
-| Zustimmungsrichtlinie | Fragen / Hinweis / Still |
-| Aufzeichnungsrichtlinie | Aus / Optional (Supporter entscheidet) / Pflicht |
-| Freigabe neuer Geräte erforderlich | neue Geräte bleiben *ausstehend*, bis ein Admin sie freigibt |
-| Berechtigungen | je User: Ansehen, Steuern, Dateien, Zwischenablage, Shell |
+| Zustimmung des Benutzers am Gerät | **Jedes Mal fragen** (Ja/Nein-Meldung am Gerät; niemand angemeldet → abgelehnt), **Nur benachrichtigen** (Meldung ohne Rückfrage), **Still** (nichts – nur wo rechtlich zulässig, z. B. unbeaufsichtigte Server) |
+| Neue Geräte benötigen Freigabe | neue Geräte warten auf Freigabe, bis ein Admin sie freigibt |
+| Berechtigungen | je User: Ansehen, Steuern, Dateien, Shell, Zwischenablage (jede Berechtigung schließt Ansehen ein; Admins haben immer alle). Server und Agent setzen sie pro Funktion durch. |
 
 ### 5.2 Geräte registrieren
 
-In der Gruppe ein **Registrierungs-Token** erzeugen (Gültigkeit, maximale Anzahl Verwendungen). Dann:
+In der Gruppe ein **Registrierungstoken** erzeugen (Gültigkeit, Anzahl Geräte). Es wird **einmalig** zusammen mit dem Installationsbefehl angezeigt. Dann:
 
-- **Windows:** MSI auf der Gruppenseite herunterladen und installieren, z. B. per GPO/Intune:
-  `msiexec /i MKITS-Agent.msi /qn MKITS_SERVER=https://support.example.com MKITS_TOKEN=<token>`
-- **Linux (Debian/Ubuntu):** `sudo apt install ./mkits-agent_<version>_amd64.deb && sudo mkits-agent enroll --server https://support.example.com --token <token>`
-- **Android:** APK aus dem Portal installieren, App öffnen, Registrierungs-QR-Code scannen, auf Nachfrage die Bedienungshilfe aktivieren.
+- **Windows** (10 / Server 2016 oder neuer, x64): `MKITS-Agent.exe` herunterladen (Link beim Token) und in einer **Administrator**-Eingabeaufforderung oder per Softwareverteilung / RMM-Werkzeug ausführen:
+  `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
+  Der Agent installiert sich nach `%ProgramFiles%\MKITS-SupportSuite\Agent`, richtet den Dienst **MKITS SupportSuite Agent** ein (automatischer Start, Neustart bei Fehlern) und registriert sich. Identität und Einstellungen liegen DPAPI-geschützt in `%ProgramData%\MKITS-SupportSuite\agent` (nur SYSTEM und Administratoren); dort liegt auch das Protokoll `agent.log`. Ein erneutes `--install` aktualisiert den Agent und behält die Identität (`--reenroll` erzwingt eine neue Registrierung, dann ist ein Token nötig). Entfernen mit `MKITS-Agent.exe --uninstall`.
+  Erste Version: Bildschirm, Maus und Tastatur (auch Sperrbildschirm, UAC-Abfragen und Strg+Alt+Entf) sind verfügbar; Chat, Dateien, Zwischenablage und Shell auf dauerhaften Geräten folgen.
+- **Linux, Android:** geplant (Phasen 11, 12).
 
-Tokens werden nur einmal angezeigt, nur als Hash gespeichert und können widerrufen werden. Nach einem Rollout Tokens widerrufen.
+Tokens werden nur als Hash gespeichert und können widerrufen werden. Nach einem Rollout Tokens widerrufen.
 
 ### 5.3 Geräte verwalten
 
-Die Geräteliste zeigt Online-Status, Betriebssystem, Agent-Version, zuletzt gesehen und letzte IP. Aktionen: umbenennen, in andere Gruppe verschieben, deaktivieren (blockiert Verbindungen), entfernen (Agent muss neu registriert werden). Agents aktualisieren sich automatisch vom Server (signierte Updates).
+Die Geräteliste zeigt Gruppe, Betriebssystem, Agent-Version, zuletzt gesehen und letzte IP. Aktionen: freigeben, in eine andere Gruppe verschieben, deaktivieren (beendet eine laufende Sitzung und trennt das Gerät), entfernen (Agent muss neu registriert werden). Supporter sehen die Geräte, auf die sie Zugriff haben, unter **Geräte** (`/devices`) mit dem Online-Zustand und verbinden sich dort oder treten einer laufenden Sitzung bei.
 
 ## 6. Ablauf Adhoc-Support *(teilweise verfügbar)*
 

@@ -7,6 +7,7 @@
 @inject DeviceService DeviceService
 @inject UserAdministration Administration
 @inject TimeProvider Clock
+@inject Microsoft.Extensions.Options.IOptions<MKITS.SupportSuite.Server.Infrastructure.Configuration.MkitsOptions> MkitsOptions
 
 <PageTitle>@L["Devices_Title"]</PageTitle>
 
@@ -159,6 +160,8 @@
                         <p>@L["Tokens_ShownOnce"]</p>
                         <p class="token-value" data-testid="enrollment-token">@_createdToken.Token</p>
                         <p>@L["Tokens_ValidUntil", _createdToken.ExpiresAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)]</p>
+                        <p>@L["Tokens_InstallWindows"] <a href="@Features.Downloads.PortalEndpoints.AgentDownloadPath" data-enhance-nav="false">MKITS-Agent.exe</a></p>
+                        <p class="token-value" data-testid="install-command">MKITS-Agent.exe --install --server @MkitsOptions.Value.PublicBaseUrl.TrimEnd('/') --token @_createdToken.Token</p>
                     </div>
                 }
                 <EditForm Model="_newToken" OnSubmit="CreateTokenAsync" class="form grid" FormName="new-token" Context="tokenContext">

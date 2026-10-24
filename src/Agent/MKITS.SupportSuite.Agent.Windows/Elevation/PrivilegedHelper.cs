@@ -22,9 +22,14 @@ namespace MKITS.SupportSuite.Agent.Windows.Elevation;
 /// </summary>
 internal static partial class PrivilegedHelper
 {
-    public static int Run(string id)
+    public static int Run(string id) => Run(ElevatedSessionConfig.Load(id));
+
+    /// <summary><c>--agent-helper &lt;id&gt;</c>: started on demand by the permanent agent service.</summary>
+    public static int RunForAgent(string id) =>
+        ElevatedSessionConfig.IsValidId(id) ? Run(ElevatedSessionConfig.Load(id, Permanent.AgentPaths.HelperDirectory(id))) : 10;
+
+    private static int Run(ElevatedSessionConfig config)
     {
-        var config = ElevatedSessionConfig.Load(id);
         SasClient.CurrentId = config.Id;
         using var pipe = CreatePipe(config);
 
