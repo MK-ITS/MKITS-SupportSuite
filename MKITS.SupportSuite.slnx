@@ -12,5 +12,6 @@
     <Project Path="tests/MKITS.SupportSuite.Common.Tests/MKITS.SupportSuite.Common.Tests.csproj" />
     <Project Path="tests/MKITS.SupportSuite.Agent.Core.Tests/MKITS.SupportSuite.Agent.Core.Tests.csproj" />
     <Project Path="tests/MKITS.SupportSuite.Agent.Windows.Tests/MKITS.SupportSuite.Agent.Windows.Tests.csproj" />
+    <Project Path="tests/MKITS.SupportSuite.Agent.Linux.Tests/MKITS.SupportSuite.Agent.Linux.Tests.csproj" />
   </Folder>
 </Solution>

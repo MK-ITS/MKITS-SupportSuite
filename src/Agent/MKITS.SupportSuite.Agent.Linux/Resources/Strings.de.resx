@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from one table so that English and German stay in sync. -->
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Usage" xml:space="preserve"><value>Aufruf: mkits-agent --server https://&lt;server&gt; --code &lt;Sitzungscode&gt;</value></data>
+  <data name="Error_Wayland" xml:space="preserve"><value>Dieser Desktop verwendet Wayland. Bildschirmfreigabe unter Wayland folgt in einer späteren Version – bitte melden Sie sich mit einer X11-Sitzung an (z. B. „Ubuntu mit Xorg“).</value></data>
+  <data name="Error_NoDisplay" xml:space="preserve"><value>Kein grafischer Desktop gefunden (DISPLAY ist nicht gesetzt oder der X-Server ist nicht erreichbar).</value></data>
+  <data name="Error_NoTurboJpeg" xml:space="preserve"><value>libjpeg-turbo fehlt. Installieren mit: sudo apt install libturbojpeg0 (Debian) bzw. libturbojpeg (Ubuntu).</value></data>
+  <data name="Status_Connecting" xml:space="preserve"><value>Verbinde mit {0} …</value></data>
+  <data name="Status_WaitingForSupporter" xml:space="preserve"><value>Verbunden. Warte auf {0} …</value></data>
+  <data name="Status_AwaitingConsent" xml:space="preserve"><value>Ein Supporter möchte sich verbinden.</value></data>
+  <data name="Status_Active" xml:space="preserve"><value>Fernwartung aktiv – Ihr Bildschirm ist für den Supporter sichtbar. Strg+C beendet die Sitzung.</value></data>
+  <data name="Status_Reconnecting" xml:space="preserve"><value>Verbindung unterbrochen – verbinde neu …</value></data>
+  <data name="Status_Ended" xml:space="preserve"><value>Die Sitzung wurde beendet.</value></data>
+  <data name="Error_CODE_INVALID" xml:space="preserve"><value>Der Sitzungscode ist ungültig. Bitte fragen Sie Ihren Supporter nach einem neuen Code.</value></data>
+  <data name="Error_CODE_EXPIRED" xml:space="preserve"><value>Der Sitzungscode ist abgelaufen. Bitte fragen Sie Ihren Supporter nach einem neuen Code.</value></data>
+  <data name="Error_IP_BLOCKED" xml:space="preserve"><value>Ihre Netzwerkadresse ist vom Server gesperrt.</value></data>
+  <data name="Error_PROTOCOL_MISMATCH" xml:space="preserve"><value>Diese Client-Version passt nicht zum Server. Bitte laden Sie ihn erneut herunter.</value></data>
+  <data name="Error_Generic" xml:space="preserve"><value>Die Verbindung zum Server ist fehlgeschlagen ({0}).</value></data>
+  <data name="Supporters" xml:space="preserve"><value>Verbunden: {0}</value></data>
+  <data name="SecurityCode" xml:space="preserve"><value>Sicherheitscode für {0}: {1} – vergleichen Sie ihn im Zweifel telefonisch mit Ihrem Supporter.</value></data>
+  <data name="Consent_Question" xml:space="preserve"><value>{0} ({1}) möchte sich mit diesem Computer verbinden. Server: {2}</value></data>
+  <data name="Consent_Permissions" xml:space="preserve"><value>Der Supporter darf: {0}. Sie können die Sitzung jederzeit mit Strg+C beenden.</value></data>
+  <data name="Consent_Prompt" xml:space="preserve"><value>Erlauben? [j/N]</value></data>
+  <data name="Consent_YesLetter" xml:space="preserve"><value>j</value></data>
+  <data name="Permission_view" xml:space="preserve"><value>Bildschirm ansehen</value></data>
+  <data name="Permission_control" xml:space="preserve"><value>Maus und Tastatur verwenden</value></data>
+  <data name="Permission_files" xml:space="preserve"><value>Dateien übertragen</value></data>
+  <data name="Permission_shell" xml:space="preserve"><value>ein Terminal mit Ihren Benutzerrechten öffnen</value></data>
+  <data name="Permission_clipboard" xml:space="preserve"><value>die Zwischenablage verwenden</value></data>
+</root>

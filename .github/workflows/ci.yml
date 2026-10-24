@@ -46,6 +46,13 @@ jobs:
           npm test
           npm run build
 
+      # Linux agent platform tests: X server (Xvfb), XTest, XRandR and libjpeg-turbo.
+      - name: Linux agent test dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends xvfb libxtst6 libxrandr2 libturbojpeg
+
       - name: Restore
         run: dotnet restore MKITS.SupportSuite.slnx "-flp:ErrorsOnly;LogFile=build-errors.log"
 
