@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Linux platform tests (X11 capture/input under Xvfb, PTY shell). They compile everywhere but only run on Linux;
+    the X11 tests need Xvfb, libXtst and libturbojpeg (CI installs them).
+  -->
+  <PropertyGroup>
+    <IsTestProject Condition="!$([MSBuild]::IsOSPlatform('Linux'))">false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Agent\MKITS.SupportSuite.Agent.Linux\MKITS.SupportSuite.Agent.Linux.csproj" />
+  </ItemGroup>
+</Project>

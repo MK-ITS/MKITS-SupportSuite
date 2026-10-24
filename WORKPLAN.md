@@ -214,10 +214,10 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 **→ M2: permanent Windows devices**
 
 ### Phase 11 – Linux agent (Debian/Ubuntu)
-- [ ] 11.1 X11 capture/input (XShm/XDamage, XTest)
+- [~] 11.1 X11 capture/input – 11A: `XGetImage` per XRandR monitor + libjpeg-turbo, XTest input (evdev keycodes, Unicode text via spare keycode), quiet X error handler; terminal ad-hoc client; tests under Xvfb in CI. XShm/XDamage optimisation and the graphical client follow
 - [ ] 11.2 Wayland via xdg-desktop-portal (ScreenCast + RemoteDesktop, PipeWire); GNOME and KDE; unattended via portal restore tokens / gnome-remote-desktop – limits documented
 - [ ] 11.3 Login screen (GDM/LightDM/SDDM) access where possible
-- [ ] 11.4 Remote shell (PTY), privilege handling (polkit/sudo)
+- [~] 11.4 Remote shell (PTY) – PTY via `posix_openpt` + `posix_spawn` + `setsid --ctty` (job control, window size, exit code); privilege handling follows
 - [ ] 11.5 systemd unit, `.deb` packages (amd64, arm64)
 
 **→ M3: Linux**
@@ -299,3 +299,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-24 | PRs #26–#30 merged. The server image bundles the Windows client/agent of the same version (`/app/agents`, `/data/agents` takes precedence); CI smoke test checks it; installation guides updated. |
 | 2026-10-24 | PR #31 merged (Windows client bundled in the image). Phase 10.4 (PR #32): signed agent auto-update – `UpdateManifest`/`AgentUpdateClient` in the agent core, `ProductInfo.BuildNumber`/`AgentUpdatePublicKey`, update signer tool, signing in the image build via BuildKit secret, `/api/agent-updates/{platform}`, Windows `AgentUpdater` (`--apply-update` with rollback), ADR-0023. |
 | 2026-10-25 | PR #32 merged. 10.2 decided: no MSI (WiX v6 maintenance fee), EXE deployment via Intune/GPO documented (ADR-0024). Next: Phase 11 Linux agent. |
+| 2026-10-25 | Phase 11A (PR #34): Linux agent platform layer – X11 capture (XRandR monitors, `XGetImage`, libjpeg-turbo), XTest input, PTY shell, terminal ad-hoc client (EN/DE), Linux test project running Xvfb in CI. |
