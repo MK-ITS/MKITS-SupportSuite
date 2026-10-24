@@ -16,8 +16,8 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | IP bans, allow/deny lists, audit log with integrity check, e-mail notifications (admin UI) | ✅ available |
 | Ad-hoc sessions: codes, customer portal, Windows client with consent, browser viewer (screen, input, chat, files, clipboard, shell), administrator mode | ✅ available (milestone M1) |
 | Device groups, permissions, enrollment tokens, device list, supporter page *Devices* | ✅ available |
-| Windows agent as a service (unattended view and control, consent policies) | ✅ available (first version, see §5.2) |
-| Chat, files, clipboard and shell on permanent devices; MSI package; auto-update | 🔜 Phase 10 |
+| Windows agent as a service (unattended access, consent policies, session window with chat/files/clipboard/shell) | ✅ available (see §5.2) |
+| MSI package, agent auto-update | 🔜 Phase 10 |
 | Linux agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
@@ -79,7 +79,7 @@ Create an **enrollment token** in the group (validity, number of devices). It is
 - **Windows** (10 / Server 2016 or newer, x64): download `MKITS-Agent.exe` (link next to the token) and run in an **administrator** command prompt, or via your software deployment / RMM tool:
   `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
   The agent installs itself to `%ProgramFiles%\MKITS-SupportSuite\Agent`, registers the service **MKITS SupportSuite Agent** (automatic start, restarts on failure) and enrolls. Identity and settings are stored DPAPI-protected in `%ProgramData%\MKITS-SupportSuite\agent` (SYSTEM and Administrators only); the log is `agent.log` there. Running `--install` again updates the agent and keeps the identity (`--reenroll` forces a new enrollment, a token is needed then). Remove with `MKITS-Agent.exe --uninstall`.
-  First version: screen, mouse/keyboard (including the lock screen, UAC prompts and Ctrl+Alt+Del) are available; chat, files, clipboard and shell on permanent devices follow.
+  Screen, mouse and keyboard work also at the logon screen, on the lock screen and with UAC prompts (Ctrl+Alt+Del included). When a user is logged on, a session window appears for the duration of a session (hidden under *Silent*): chat, file transfer, clipboard and the shell run there with **that user's** rights. Without a logged-on user only screen and input are available.
 - **Linux, Android:** planned (Phases 11, 12).
 
 Tokens are stored only as hashes and can be revoked. Revoke tokens after a rollout.

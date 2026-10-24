@@ -16,8 +16,8 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | IP-Sperren, Allow-/Deny-Listen, Audit-Log mit Integritätsprüfung, E-Mail-Benachrichtigungen (Admin-Oberfläche) | ✅ verfügbar |
 | Adhoc-Sitzungen: Codes, Kundenportal, Windows-Client mit Zustimmung, Browser-Viewer (Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Shell), Administrator-Modus | ✅ verfügbar (Meilenstein M1) |
 | Gerätegruppen, Berechtigungen, Registrierungstokens, Geräteliste, Supporter-Seite *Geräte* | ✅ verfügbar |
-| Windows-Agent als Dienst (unbeaufsichtigtes Ansehen und Steuern, Zustimmungsrichtlinien) | ✅ verfügbar (erste Version, siehe §5.2) |
-| Chat, Dateien, Zwischenablage und Shell auf dauerhaften Geräten; MSI-Paket; Auto-Update | 🔜 Phase 10 |
+| Windows-Agent als Dienst (unbeaufsichtigter Zugriff, Zustimmungsrichtlinien, Sitzungsfenster mit Chat/Dateien/Zwischenablage/Shell) | ✅ verfügbar (siehe §5.2) |
+| MSI-Paket, Agent-Auto-Update | 🔜 Phase 10 |
 | Linux-Agent (X11 + Wayland) | 🔜 Phase 11 (M3) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
@@ -79,7 +79,7 @@ In der Gruppe ein **Registrierungstoken** erzeugen (Gültigkeit, Anzahl Geräte)
 - **Windows** (10 / Server 2016 oder neuer, x64): `MKITS-Agent.exe` herunterladen (Link beim Token) und in einer **Administrator**-Eingabeaufforderung oder per Softwareverteilung / RMM-Werkzeug ausführen:
   `MKITS-Agent.exe --install --server https://support.example.com --token <token>`
   Der Agent installiert sich nach `%ProgramFiles%\MKITS-SupportSuite\Agent`, richtet den Dienst **MKITS SupportSuite Agent** ein (automatischer Start, Neustart bei Fehlern) und registriert sich. Identität und Einstellungen liegen DPAPI-geschützt in `%ProgramData%\MKITS-SupportSuite\agent` (nur SYSTEM und Administratoren); dort liegt auch das Protokoll `agent.log`. Ein erneutes `--install` aktualisiert den Agent und behält die Identität (`--reenroll` erzwingt eine neue Registrierung, dann ist ein Token nötig). Entfernen mit `MKITS-Agent.exe --uninstall`.
-  Erste Version: Bildschirm, Maus und Tastatur (auch Sperrbildschirm, UAC-Abfragen und Strg+Alt+Entf) sind verfügbar; Chat, Dateien, Zwischenablage und Shell auf dauerhaften Geräten folgen.
+  Bildschirm, Maus und Tastatur funktionieren auch am Anmeldebildschirm, auf dem Sperrbildschirm und bei UAC-Abfragen (inklusive Strg+Alt+Entf). Ist ein Benutzer angemeldet, erscheint für die Dauer einer Sitzung ein Sitzungsfenster (bei *Still* verborgen): Chat, Dateiübertragung, Zwischenablage und Shell laufen dort mit den Rechten **dieses Benutzers**. Ohne angemeldeten Benutzer stehen nur Bildschirm und Eingabe zur Verfügung.
 - **Linux, Android:** geplant (Phasen 11, 12).
 
 Tokens werden nur als Hash gespeichert und können widerrufen werden. Nach einem Rollout Tokens widerrufen.

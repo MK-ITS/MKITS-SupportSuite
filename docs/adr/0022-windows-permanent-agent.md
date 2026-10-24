@@ -23,18 +23,26 @@ desktop of the console session, controlled over a protected named pipe.
   active console session **only while a session needs it** and stopped when the session ends; it is replaced when the
   console session changes. Pipe DACL SYSTEM only; the helper accepts only the service's process id, and the service
   checks that the pipe server is the installed EXE. Ctrl+Alt+Del is raised by the service (`SendSAS`).
-- **User interaction without an extra process (first version):** `WTSSendMessage` shows a Yes/No message in the
-  console session under the *ask* policy (100 s, below the server's 2-minute timeout) and an information message under
-  *notify*; *silent* shows nothing. If nobody is logged on at the console, *ask* requests are declined.
+- **Session window in the user's session.** For each session the service starts the same EXE (`--agent-user <pipe>`)
+  **as the user logged on at the console** (`WTSQueryUserToken`). It runs the chat, clipboard, file-transfer and shell
+  handlers with the **user's** rights and shows the session window (status, supporters, security code, chat, *End
+  session*; hidden under *silent*) and the consent dialog (*ask*). The service forwards only these channels' decrypted
+  payloads over a named pipe (DACL SYSTEM + that user, network denied, single instance, client PID check; the window
+  checks that the pipe server is the installed EXE) and accepts only those channels back – never video or input. The
+  bridge protocol lives in the agent core (`UserSessionBridge` / `BridgeClient`), so the Linux agent can reuse it.
+- **Fallback without a logged-on user:** `WTSSendMessage` (Yes/No under *ask*, 100 s – below the server's 2-minute
+  timeout; information message under *notify*); with nobody at the console, *ask* requests are declined and the
+  user-rights channels are unavailable.
 - Upgrades: running `--install` again stops the service, replaces the EXE and keeps the identity (`--reenroll` forces
   a new enrollment). MSI packaging (Phase 10.2) wraps the same commands.
 
 ## Consequences
 
 - Unattended view and control work at the logon screen, on the lock screen and with UAC prompts.
-- Chat, file transfer, clipboard and the shell are **not** offered by the service yet: they need a component running in
-  the logged-on user's session (with that user's rights and clipboard), planned next. Until then these channels are
-  simply not handled (and permissions keep them closed on the relay anyway).
-- `WTSSendMessage` boxes are plain; a branded consent window and a permanent banner come with the user-session component.
+- Chat, files, clipboard and shell work like in ad-hoc sessions, with the logged-on user's rights (files land in the
+  user's Downloads folder; the shell is the user's PowerShell/cmd, not SYSTEM). A SYSTEM shell for servers without a
+  logged-on user is not offered.
+- Malware running as the logged-on user could tamper with the session window (e.g. answer consent dialogs). This is the
+  same boundary as for the ad-hoc client (ADR-0021); it cannot reach video, input, keys or other users' sessions.
 - DPAPI machine scope does not protect against local administrators – by design they control the agent.
 - Code signing (ADR-0009) is needed before production rollouts (SmartScreen, EDR reputation).

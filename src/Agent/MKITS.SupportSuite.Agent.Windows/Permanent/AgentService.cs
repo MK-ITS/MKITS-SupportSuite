@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
+using MKITS.SupportSuite.Agent.Core.Bridge;
 using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Devices;
 using MKITS.SupportSuite.Agent.Core.Features;
@@ -14,7 +15,8 @@ namespace MKITS.SupportSuite.Agent.Windows.Permanent;
 /// <summary>
 /// The installed agent (<c>--agent-service</c>, LocalSystem, automatic start; ADR-0022). Holds the permanent connection
 /// to the server (<see cref="DeviceAgent"/>), the device identity (DPAPI, protected folder) and the end-to-end keys.
-/// Screen and input go through the on-demand helper in the console session.
+/// Screen and input go through the on-demand helper in the console session; chat, clipboard, files and shell through
+/// the session window in the logged-on user's session (<see cref="UserSessionBridge"/>).
 /// </summary>
 internal sealed class AgentService : ServiceBase
 {
@@ -93,10 +95,14 @@ internal sealed class AgentService : ServiceBase
                 Platform = "windows",
             };
 
+            // Chat, clipboard, files and shell run in the user's session with the user's rights; the bridge also shows the
+            // session window there. Without a logged-on user the service's message boxes are the fallback.
+            await using var bridge = new UserSessionBridge(new UserSessionConnector(), new ServiceUserInterface(helper));
             await using var streamer = new ScreenStreamer(helper);
             await using var agent = new DeviceAgent(
-                options, new ClientWebSocketConnector(), store, new ServiceUserInterface(helper),
-                [streamer, new InputHandler(helper, helper)]);
+                options, new ClientWebSocketConnector(), store, bridge,
+                [streamer, new InputHandler(helper, helper), bridge]);
+            bridge.EndSessionRequested += (_, _) => _ = agent.EndSessionAsync();
 
             var result = await agent.RunAsync(cancellationToken).ConfigureAwait(false);
             if (result != DeviceAgentStopReason.Cancelled)

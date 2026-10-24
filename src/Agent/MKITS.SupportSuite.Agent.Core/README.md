@@ -10,6 +10,7 @@ the device integrations; everything protocol-related lives here.
 | `Sessions/AgentSession` | ad-hoc: handshake, authentication with the code, resume after a connection loss |
 | `Sessions/SessionEngine` | shared by both modes: viewers and their permissions, consent, E2E key exchange per supporter, decrypt + dispatch |
 | `Devices/DeviceAgent` | permanent: enrollment, device-key authentication, idle presence, sessions over the presence connection, reconnect with backoff |
+| `Bridge/UserSessionBridge`, `BridgeClient`, `BridgeProtocol` | split agent: the service keeps connection and keys, a process in the user's session runs chat/clipboard/files/shell with the user's rights |
 | `Devices/DeviceIdentity`, `IDeviceIdentityStore`, `FileDeviceIdentityStore` | device id + ECDSA P-256 key; the platform protects the private key (DPAPI / file mode 0600) |
 | `Sessions/IAgentUserInterface` | implemented by the platform UI: consent dialog, status/banner, supporters, security code |
 | `Sessions/ISessionChannelHandler` | implemented per feature; receives decrypted payloads, `OnViewerReadyAsync` after the key exchange, `OnViewerGone` |
