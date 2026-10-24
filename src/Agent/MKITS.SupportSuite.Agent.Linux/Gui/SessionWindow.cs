@@ -21,7 +21,7 @@ namespace MKITS.SupportSuite.Agent.Linux.Gui;
 /// can never be hidden): status, supporters, security code, chat, file transfer and the end button. Runs the session
 /// with X11 capture/input, clipboard, files and the PTY shell. Calls from background threads are posted to the UI thread.
 /// </summary>
-internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresenter, IClipboard, IFileTransferUi
+internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresenter, IClipboard, IFileTransferUi, IDisposable
 {
     private readonly TextBlock _status = new() { FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _supporters = new() { TextWrapping = TextWrapping.Wrap };
@@ -69,6 +69,18 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         _clipboardTimer.Tick += async (_, _) => await PollClipboardAsync();
         Opened += async (_, _) => await RunAsync();
         Closing += OnClosing;
+        Closed += (_, _) => Dispose();
+    }
+
+    /// <summary>Called when the window is closed; the session itself is disposed when <see cref="RunAsync"/> ends.</summary>
+    public void Dispose()
+    {
+        _clipboardTimer.Stop();
+        _closing.Dispose();
+        if (Interlocked.Exchange(ref _session, null) is { } session)
+        {
+            _ = session.DisposeAsync().AsTask();
+        }
     }
 
     // ------------------------------------------------------------------ IAgentUserInterface
@@ -197,7 +209,10 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         }
         finally
         {
-            await _session.DisposeAsync();
+            if (Interlocked.Exchange(ref _session, null) is { } session)
+            {
+                await session.DisposeAsync();
+            }
         }
     }
 
@@ -212,8 +227,8 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
             return;
         }
 
-        await _closing.CancelAsync();
         _clipboardTimer.Stop();
+        await _closing.CancelAsync();
     }
 
     private async Task EndAsync()
@@ -265,7 +280,7 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
             return;
         }
 
-        _clipboardText = await clipboard.GetTextAsync();
+        _clipboardText = await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clipboard);
         await _clipboard.PollAsync(_session, _closing.Token);
     }
 
