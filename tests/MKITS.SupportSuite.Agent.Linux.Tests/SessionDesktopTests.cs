@@ -23,6 +23,7 @@ public sealed class SessionDesktopTests : IDisposable
     private readonly byte[] _cookie = RandomNumberGenerator.GetBytes(16);
     private readonly string _display;
     private readonly Process _server;
+    private readonly StringBuilder _serverLog = new();
 
     public SessionDesktopTests()
     {
@@ -36,7 +37,14 @@ public sealed class SessionDesktopTests : IDisposable
             RedirectStandardError = true,
             UseShellExecute = false,
         }) ?? throw new InvalidOperationException("Xvfb is not available – install xvfb.");
-        _ = _server.StandardError.ReadToEndAsync(); // keep the pipe drained
+        _server.ErrorDataReceived += (_, e) =>
+        {
+            lock (_serverLog)
+            {
+                _serverLog.AppendLine(e.Data);
+            }
+        };
+        _server.BeginErrorReadLine();
 
         for (var i = 0; i < 50; i++)
         {
@@ -63,7 +71,7 @@ public sealed class SessionDesktopTests : IDisposable
         using var withCookie = X11Display.OpenSurvivable(_display, _cookie);
         using var wrongCookie = X11Display.OpenSurvivable(_display, RandomNumberGenerator.GetBytes(16));
 
-        Assert.NotNull(withCookie);
+        Assert.True(withCookie is not null, Diagnose());
         Assert.Null(wrongCookie);
     }
 
@@ -71,7 +79,7 @@ public sealed class SessionDesktopTests : IDisposable
     public void LostXServer_MarksTheDisplayBroken_InsteadOfEndingTheProcess()
     {
         using var display = X11Display.OpenSurvivable(_display, _cookie);
-        Assert.NotNull(display);
+        Assert.True(display is not null, Diagnose());
 
         StopServer();
         using var screen = new X11ScreenSource(display);
@@ -96,7 +104,9 @@ public sealed class SessionDesktopTests : IDisposable
             },
             time);
 
-        var monitor = Assert.Single(desktop.GetMonitors());
+        var monitors = desktop.GetMonitors();
+        Assert.True(monitors.Count == 1, Diagnose());
+        var monitor = monitors[0];
         Assert.Equal((800, 600), (monitor.Width, monitor.Height));
         Assert.NotNull(desktop.Capture(monitor.Id, 60, CancellationToken.None));
         _ = desktop.GetMonitors();
@@ -115,6 +125,18 @@ public sealed class SessionDesktopTests : IDisposable
         time.Advance(TimeSpan.FromSeconds(10));
         Assert.Single(desktop.GetMonitors());
         Assert.Equal(2, resolves);
+    }
+
+    /// <summary>Why the display could not be opened (for CI logs).</summary>
+    private string Diagnose()
+    {
+        string log;
+        lock (_serverLog)
+        {
+            log = _serverLog.ToString();
+        }
+
+        return $"display {_display}, Xvfb exited: {_server.HasExited}, libX11 exit handler: {X11Native.TrySetIoErrorExitHandlerAvailable}, Xvfb log: {log}";
     }
 
     private void StopServer()

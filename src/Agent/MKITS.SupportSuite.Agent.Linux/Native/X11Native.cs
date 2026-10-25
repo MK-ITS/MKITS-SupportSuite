@@ -108,6 +108,9 @@ internal static partial class X11Native
     /// <c>XSetIOErrorExitHandler</c> (libX11 ≥ 1.7): a handler that returns instead of exiting, so a lost X server does
     /// not kill a long-running process. Returns <c>false</c> on older libX11 (then the process exits and systemd restarts it).
     /// </summary>
+    /// <summary>Whether this libX11 has <c>XSetIOErrorExitHandler</c> (diagnostics).</summary>
+    internal static bool TrySetIoErrorExitHandlerAvailable => SetIoErrorExitHandlerExport.Value != 0;
+
     internal static unsafe bool TrySetIoErrorExitHandler(nint display, delegate* unmanaged[Cdecl]<nint, nint, void> handler)
     {
         var export = SetIoErrorExitHandlerExport.Value;
