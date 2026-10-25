@@ -46,7 +46,8 @@ public sealed class SessionDesktopTests : IDisposable
         };
         _server.BeginErrorReadLine();
 
-        for (var i = 0; i < 50; i++)
+        // Xvfb can take many seconds to start on a busy CI runner (all test projects run in parallel).
+        for (var i = 0; i < 300; i++)
         {
             using var probe = X11Display.OpenSurvivable(_display, _cookie);
             if (probe is not null)
@@ -136,7 +137,8 @@ public sealed class SessionDesktopTests : IDisposable
             log = _serverLog.ToString();
         }
 
-        return $"display {_display}, Xvfb exited: {_server.HasExited}, libX11 exit handler: {X11Native.TrySetIoErrorExitHandlerAvailable}, Xvfb log: {log}";
+        var socket = File.Exists("/tmp/.X11-unix/X" + _display[1..]);
+        return $"display {_display}, socket: {socket}, Xvfb exited: {_server.HasExited}, libX11 exit handler: {X11Native.TrySetIoErrorExitHandlerAvailable}, Xvfb log: {log}";
     }
 
     private void StopServer()
