@@ -15,6 +15,23 @@ internal static partial class X11Native
     internal const int ZPixmap = 2;
     internal const ulong AllPlanes = ulong.MaxValue;
 
+    /// <summary>Looked up once: libX11 stays loaded for the process anyway (the P/Invokes below use it).</summary>
+    private static readonly Lazy<nint> SetIoErrorExitHandlerExport = new(() =>
+    {
+        if (!NativeLibrary.TryLoad(LibX11, out var library))
+        {
+            return 0;
+        }
+
+        if (NativeLibrary.TryGetExport(library, "XSetIOErrorExitHandler", out var export))
+        {
+            return export;
+        }
+
+        NativeLibrary.Free(library);
+        return 0;
+    });
+
     /// <summary>Prefix of <c>XImage</c> (LP64 layout, x86_64 and arm64).</summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct XImage
@@ -70,8 +87,41 @@ internal static partial class X11Native
     [LibraryImport(LibX11)]
     internal static unsafe partial nint XSetErrorHandler(delegate* unmanaged[Cdecl]<nint, nint, int> handler);
 
+    /// <summary>
+    /// Called when the connection to the X server is lost (e.g. the user logged out). Xlib then calls the display's
+    /// exit handler, which terminates the process unless replaced (<see cref="TrySetIoErrorExitHandler"/>).
+    /// </summary>
+    [LibraryImport(LibX11)]
+    internal static unsafe partial nint XSetIOErrorHandler(delegate* unmanaged[Cdecl]<nint, int> handler);
+
+    /// <summary>
+    /// Authorization for the following <see cref="XOpenDisplay"/> calls instead of <c>$XAUTHORITY</c> (the system service
+    /// uses the cookie of the user's X server). <c>null</c>/0 restores the default lookup.
+    /// </summary>
+    [LibraryImport(LibX11)]
+    internal static partial void XSetAuthorization(byte[]? name, int nameLength, byte[]? data, int dataLength);
+
     [LibraryImport(LibX11, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial nint XOpenDisplay(string? name);
+
+    /// <summary>
+    /// <c>XSetIOErrorExitHandler</c> (libX11 ≥ 1.7): a handler that returns instead of exiting, so a lost X server does
+    /// not kill a long-running process. Returns <c>false</c> on older libX11 (then the process exits and systemd restarts it).
+    /// </summary>
+    /// <summary>Whether this libX11 has <c>XSetIOErrorExitHandler</c> (diagnostics).</summary>
+    internal static bool TrySetIoErrorExitHandlerAvailable => SetIoErrorExitHandlerExport.Value != 0;
+
+    internal static unsafe bool TrySetIoErrorExitHandler(nint display, delegate* unmanaged[Cdecl]<nint, nint, void> handler)
+    {
+        var export = SetIoErrorExitHandlerExport.Value;
+        if (export == 0)
+        {
+            return false;
+        }
+
+        ((delegate* unmanaged[Cdecl]<nint, delegate* unmanaged[Cdecl]<nint, nint, void>, nint, void>)export)(display, handler, 0);
+        return true;
+    }
 
     [LibraryImport(LibX11)]
     internal static partial int XCloseDisplay(nint display);

@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Json;
+using MKITS.SupportSuite.Agent.Core.Devices;
 using MKITS.SupportSuite.Agent.Windows.Platform;
 
 namespace MKITS.SupportSuite.Agent.Windows.Permanent;
@@ -15,19 +16,8 @@ internal sealed record AgentConfig(string ServerUri, string? ProtectedToken)
 {
     private const string TokenPurpose = "agent-enrollment-token";
 
-    /// <summary>
-    /// Accepts https URLs; plain http only for <c>localhost</c> (development). Returns the normalized base address or <c>null</c>.
-    /// </summary>
-    public static Uri? ParseServer(string? value)
-    {
-        if (!Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var uri) || !string.IsNullOrEmpty(uri.UserInfo))
-        {
-            return null;
-        }
-
-        var allowed = uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback);
-        return allowed ? new Uri(uri.GetLeftPart(UriPartial.Authority) + "/") : null;
-    }
+    /// <inheritdoc cref="ServerAddress.Parse"/>
+    public static Uri? ParseServer(string? value) => ServerAddress.Parse(value);
 
     public static AgentConfig Create(Uri server, string? token) =>
         new(server.ToString(), string.IsNullOrEmpty(token) ? null : Convert.ToBase64String(Dpapi.Protect(Encoding.UTF8.GetBytes(token), TokenPurpose)));

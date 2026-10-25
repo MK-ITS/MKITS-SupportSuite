@@ -217,8 +217,8 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 11.1 X11 capture/input – 11A: `XGetImage` per XRandR monitor + libjpeg-turbo, XTest input (evdev keycodes, Unicode text via spare keycode), quiet X error handler; terminal ad-hoc client; tests under Xvfb in CI. XShm/XDamage optimisation and the graphical client follow
 - [ ] 11.2 Wayland via xdg-desktop-portal (ScreenCast + RemoteDesktop, PipeWire); GNOME and KDE; unattended via portal restore tokens / gnome-remote-desktop – limits documented
 - [ ] 11.3 Login screen (GDM/LightDM/SDDM) access where possible
-- [~] 11.4 Remote shell (PTY) – PTY via `posix_openpt` + `posix_spawn` + `setsid --ctty` (job control, window size, exit code); privilege handling follows
-- [ ] 11.5 systemd unit, `.deb` packages (amd64, arm64)
+- [x] 11.4 Remote shell (PTY) – PTY via `posix_openpt` + `posix_spawn` + `setsid --ctty` (job control, window size, exit code); ad-hoc client: user's rights; installed agent: root in the service (ADR-0025)
+- [~] 11.5 systemd unit, `.deb` packages (amd64, arm64) – 11C: installed agent (ADR-0025): root service with logind/Xauthority lookup of the user's X display (survives logout via `XSetIOErrorExitHandler`), session window via `runuser` + stdio bridge, `--install`/`--uninstall`, `.deb` (amd64) with systemd unit, CI job installs, configures and removes the package. Follows: package in the server image + admin UI command, arm64, Linux auto-update
 
 **→ M3: Linux**
 
@@ -301,3 +301,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-25 | PR #32 merged. 10.2 decided: no MSI (WiX v6 maintenance fee), EXE deployment via Intune/GPO documented (ADR-0024). Next: Phase 11 Linux agent. |
 | 2026-10-25 | Phase 11A (PR #34): Linux agent platform layer – X11 capture (XRandR monitors, `XGetImage`, libjpeg-turbo), XTest input, PTY shell, terminal ad-hoc client (EN/DE), Linux test project running Xvfb in CI. |
 | 2026-10-25 | PRs #33/#34 merged. Phase 11B (PR #35): graphical Linux ad-hoc client (Avalonia 11.3, code-only UI: session window, consent/file dialogs, connect window; clipboard, files, chat, shell), AppImage build (self-contained folder + bundled libjpeg-turbo), CI job with Xvfb smoke test, AppImage bundled in the server image. |
+| 2026-10-25 | PR #35 merged. Phase 11C (PR #36): installed Linux agent (ADR-0025) – systemd service as root, X display of the logged-on user via logind + Xauthority cookie, session window in the user session over a stdio bridge, root shell, `.deb` package with systemd unit, CI job installing, configuring and removing the package. |

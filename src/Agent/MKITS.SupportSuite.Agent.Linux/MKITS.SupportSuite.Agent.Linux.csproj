@@ -12,6 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Linux only: Unix file modes, /proc, libc. -->
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatformAttribute">
+      <_Parameter1>linux</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="MKITS.SupportSuite.Agent.Linux.Tests" />
   </ItemGroup>
 

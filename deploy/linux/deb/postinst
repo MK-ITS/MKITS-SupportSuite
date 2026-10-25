@@ -1,0 +1,13 @@
+#!/bin/sh
+# Installed or upgraded: reload the unit; an already configured agent is restarted with the new version.
+set -e
+if [ "$1" = "configure" ] && [ -d /run/systemd/system ]; then
+  systemctl daemon-reload || true
+  if [ -f /etc/mkits-agent/agent.json ]; then
+    systemctl enable mkits-agent.service >/dev/null 2>&1 || true
+    systemctl restart mkits-agent.service || true
+  else
+    echo "Connect the agent to your server: sudo mkits-agent --install --server https://<host> --token <enrollment token>"
+  fi
+fi
+exit 0

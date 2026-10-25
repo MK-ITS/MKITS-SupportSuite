@@ -21,7 +21,11 @@ internal sealed class QuestionWindow : Window
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
         var yesButton = new Button { Content = yes, IsDefault = no is null };
-        yesButton.Click += (_, _) => Close(true);
+        yesButton.Click += (_, _) =>
+        {
+            Answer = true;
+            Close(true);
+        };
         buttons.Children.Add(yesButton);
         if (no is not null)
         {
@@ -43,4 +47,7 @@ internal sealed class QuestionWindow : Window
             },
         };
     }
+
+    /// <summary>The answer when shown without an owner (<c>Show</c> instead of <c>ShowDialog</c>).</summary>
+    public bool Answer { get; private set; }
 }

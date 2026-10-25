@@ -28,13 +28,24 @@ public interface IUserSessionConnector
 /// handlers with the <b>user's</b> rights, and lets that process show the consent dialog and the session window.
 /// The connection, the device key and the end-to-end keys stay in the service. Without a user session (nobody logged
 /// on) these channels are not available and the <c>fallback</c> UI handles consent and notices.
+/// <para>
+/// <c>forwardedChannels</c> narrows the forwarded channels (the Linux service runs the shell itself); it can only pick
+/// from the user channels – screen and input never leave the service.
+/// </para>
 /// </summary>
-public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUserInterface fallback) : ISessionChannelHandler, IAgentUserInterface, IAsyncDisposable
+public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUserInterface fallback, IReadOnlyCollection<Channel>? forwardedChannels = null)
+    : ISessionChannelHandler, IAgentUserInterface, IAsyncDisposable
 {
     /// <summary>How long a consent request waits for the user-session process to come up.</summary>
     internal static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(20);
 
-    private static readonly HashSet<Channel> ForwardedChannels = [Channel.Chat, Channel.Clipboard, Channel.File, Channel.Shell];
+    private static readonly HashSet<Channel> UserChannels = [Channel.Chat, Channel.Clipboard, Channel.File, Channel.Shell];
+
+    private readonly HashSet<Channel> _forwarded = forwardedChannels is null
+        ? UserChannels
+        : forwardedChannels.All(UserChannels.Contains)
+            ? [.. forwardedChannels]
+            : throw new ArgumentException("Only chat, clipboard, file and shell can be forwarded to the user's session.", nameof(forwardedChannels));
 
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly Lock _gate = new();
@@ -143,7 +154,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
     {
         ArgumentNullException.ThrowIfNull(payload);
         _context = context;
-        if (!ForwardedChannels.Contains(PayloadChannels.For(payload)))
+        if (!_forwarded.Contains(PayloadChannels.For(payload)))
         {
             return Task.CompletedTask;
         }
@@ -362,7 +373,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
             case BridgeMessageType.Payload:
                 var viewerId = BridgeProtocol.ReadString(reader);
                 var payload = SessionPayload.Parser.ParseFrom(reader.ReadBytes(Math.Clamp(reader.ReadInt32(), 0, BridgeProtocol.MaxMessageSize)));
-                if (ForwardedChannels.Contains(PayloadChannels.For(payload)) && _context is { } context)
+                if (_forwarded.Contains(PayloadChannels.For(payload)) && _context is { } context)
                 {
                     await context.SendAsync(viewerId.Length == 0 ? null : viewerId, payload, _disposed.Token).ConfigureAwait(false);
                 }
