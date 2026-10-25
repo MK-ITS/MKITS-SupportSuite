@@ -32,7 +32,7 @@ public sealed class SessionDesktopTests : IDisposable
         _display = ":" + number.ToString(CultureInfo.InvariantCulture);
         File.WriteAllBytes(_authFile, XAuthority.Write(
             [new XAuthorityEntry(XAuthority.FamilyLocal, Encoding.ASCII.GetBytes(Environment.MachineName), number.ToString(CultureInfo.InvariantCulture), XAuthority.MitMagicCookie, _cookie)]));
-        _server = Process.Start(new ProcessStartInfo("/usr/bin/Xvfb", $"{_display} -auth {_authFile} -screen 0 800x600x24 -nolisten tcp")
+        _server = Process.Start(new ProcessStartInfo("/usr/bin/Xvfb", $"{_display} -auth {_authFile} -screen 0 800x600x24 -nolisten tcp -noreset")
         {
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -46,6 +46,7 @@ public sealed class SessionDesktopTests : IDisposable
         };
         _server.BeginErrorReadLine();
 
+        // -noreset: without it Xvfb resets when the probe disconnects and refuses connections for a moment.
         // Xvfb can take many seconds to start on a busy CI runner (all test projects run in parallel).
         for (var i = 0; i < 300; i++)
         {
