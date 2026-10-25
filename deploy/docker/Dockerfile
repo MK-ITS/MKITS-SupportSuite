@@ -71,8 +71,10 @@ RUN --mount=type=secret,id=agent_update_key \
 # ---- Linux client (AppImage, x86_64) ----
 # Same idea as the Windows client: the portal serves the client of the server's version (ADR-0019).
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS linux-client
+# The package is called libturbojpeg on Ubuntu (the SDK image's base) and libturbojpeg0 on Debian.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libturbojpeg0 \
+ && (apt-get install -y --no-install-recommends libturbojpeg || apt-get install -y --no-install-recommends libturbojpeg0) \
+ && apt-get install -y --no-install-recommends curl ca-certificates file \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
