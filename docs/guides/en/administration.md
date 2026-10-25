@@ -18,9 +18,10 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Device groups, permissions, enrollment tokens, device list, supporter page *Devices* | ✅ available |
 | Windows agent as a service (unattended access, consent policies, session window with chat/files/clipboard/shell) | ✅ available (see §5.2) |
 | Agent auto-update (signed) | ✅ available once the release key is set up |
-| MSI package | 🔜 Phase 10 |
+| MSI package | ✖ not planned – the EXE installs itself (ADR-0024) |
 | Linux ad-hoc client (AppImage, X11 desktops): screen, input, chat, files, clipboard, terminal | ✅ available |
-| Linux on Wayland desktops, permanent Linux agent (systemd, .deb) | 🔜 Phase 11 (M3) |
+| Permanent Linux agent (systemd service, .deb; screen/input on X11 desktops, root shell) | ✅ available (see §5.2) |
+| Linux on Wayland desktops, Linux auto-update, arm64 | 🔜 Phase 11 (M3) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
 
@@ -99,7 +100,15 @@ There is no MSI package (ADR-0024); the EXE installs itself. Use a token with a 
 
 Exit codes: `0` ok, `2` invalid arguments, `5` not elevated, `6` service error, `7` file error. Details are in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
 
-- **Linux, Android:** planned (Phases 11, 12).
+- **Linux** (Debian 12+, Ubuntu 22.04+, x64): download `mkits-agent_amd64.deb` (link next to the token) and run as root:
+  ```bash
+  sudo apt install ./mkits-agent_amd64.deb
+  sudo mkits-agent --install --server https://support.example.com --token <token>
+  ```
+  The package installs the agent to `/opt/mkits-agent` and the systemd service **mkits-agent** (starts at boot, restarts on failure); `--install` stores server and token and enrolls the device. Configuration (`/etc/mkits-agent`) and identity (`/var/lib/mkits-agent`) are readable by root only; the token is deleted after enrollment. Log: `journalctl -u mkits-agent`. `--reenroll` forces a new enrollment, `sudo mkits-agent --uninstall` disconnects the device, `sudo apt purge mkits-agent` removes everything. **Updates:** install the package of the newer server version (`sudo apt install ./mkits-agent_amd64.deb`); the service restarts with it (automatic updates for Linux follow).
+  Screen, mouse and keyboard work while a user is logged on to an **X11** desktop (follows logouts and user switches); Wayland desktops and the login screen are not supported yet. The session window (chat, files, clipboard; hidden under *Silent*) runs with the logged-on user's rights. **The remote shell runs as root** – on servers without a desktop it is the main tool. Grant the *Shell* permission for Linux devices only to people who may administer them (ADR-0025). Without a graphical session *Ask every time* is declined (nobody to ask); use *Notify only* or *Silent* for servers.
+  Exit codes: `0` ok, `2` invalid arguments, `5` not root, `6` systemd error, `7` file error (or package missing).
+- **Android:** planned (Phase 12).
 
 Tokens are stored only as hashes and can be revoked. Revoke tokens after a rollout.
 

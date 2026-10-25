@@ -188,6 +188,19 @@ public sealed class PortalTests : IDisposable
         Assert.Equal(FakeClient, file);
     }
 
+    [Fact]
+    public async Task LinuxAgentPackage_IsFoundForAdmins_ButNotOfferedOnThePortal()
+    {
+        PlaceClient(ClientCatalog.LinuxAgentPackage);
+        var catalog = _factory.Services.GetRequiredService<ClientCatalog>();
+
+        using var update = await _client.GetAsync(new Uri("/api/agent-updates/linux-x64", UriKind.Relative));
+
+        Assert.NotNull(catalog.FindFile(ClientCatalog.LinuxAgentPackage));
+        Assert.Empty(catalog.GetAvailable()); // the portal offers ad-hoc clients only
+        Assert.Equal(HttpStatusCode.NotFound, update.StatusCode);
+    }
+
     private void PlaceClient(string relativePath)
     {
         var path = Path.Combine(_factory.DataDirectory, "agents", relativePath);

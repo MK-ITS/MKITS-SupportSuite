@@ -11,3 +11,4 @@ docs/
 tests/
 *.md
 !README.md
+!THIRD-PARTY-NOTICES.md
