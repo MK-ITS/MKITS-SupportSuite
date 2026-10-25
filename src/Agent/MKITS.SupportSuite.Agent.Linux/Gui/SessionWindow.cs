@@ -41,6 +41,8 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
     private FileTransferHandler? _files;
     private ClipboardHandler? _clipboard;
     private string? _clipboardText;
+    private bool _sharing;
+    private int _clipboardVersion;
     private bool _ended;
 
     public SessionWindow(AgentSessionOptions options, X11Display display)
@@ -114,11 +116,8 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
             _send.IsEnabled = false;
             _clipboardTimer.Stop();
         }
-        else if (status == AgentStatus.Active)
-        {
-            _clipboardTimer.Start();
-        }
 
+        _sharing = status == AgentStatus.Active;
         _sendFile.IsEnabled = status == AgentStatus.Active;
     });
 
@@ -147,12 +146,15 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
     public void SetText(string text)
     {
         _clipboardText = text; // no echo back to the supporter
+        Interlocked.Increment(ref _clipboardVersion);
         Post(async () =>
         {
             if (Clipboard is { } clipboard)
             {
                 await clipboard.SetTextAsync(text);
             }
+
+            Interlocked.Increment(ref _clipboardVersion); // also discard reads that started before the write landed
         });
     }
 
@@ -185,6 +187,12 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         {
             Position = new PixelPoint(area.Right - (int)Bounds.Width - 24, area.Bottom - (int)Bounds.Height - 48);
         }
+
+        // The clipboard is read asynchronously, so GetText() serves a cache. Prime it before the session runs and keep it
+        // fresh from now on: ClipboardHandler records the current content as "already known" when a viewer becomes
+        // ready, and an empty cache would make the user's existing clipboard look like a new change and leak it.
+        await RefreshClipboardAsync();
+        _clipboardTimer.Start();
 
         using var screen = new X11ScreenSource(_display);
         await using var streamer = new ScreenStreamer(screen);
@@ -275,13 +283,25 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
 
     private async Task PollClipboardAsync()
     {
-        if (_session is null || _clipboard is null || Clipboard is not { } clipboard)
+        await RefreshClipboardAsync();
+        if (_sharing && _session is { } session && _clipboard is { } handler)
         {
-            return;
+            await handler.PollAsync(session, _closing.Token);
         }
+    }
 
-        _clipboardText = await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clipboard);
-        await _clipboard.PollAsync(_session, _closing.Token);
+    private async Task RefreshClipboardAsync()
+    {
+        if (Clipboard is { } clipboard)
+        {
+            // A read that overlaps SetText would restore the old content and send it back as a "change".
+            var version = Volatile.Read(ref _clipboardVersion);
+            var text = await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clipboard);
+            if (version == Volatile.Read(ref _clipboardVersion))
+            {
+                _clipboardText = text;
+            }
+        }
     }
 
     private async Task<bool> AskAsync(string title, string text, string yes, string no, CancellationToken cancellationToken) =>
