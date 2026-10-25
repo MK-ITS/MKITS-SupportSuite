@@ -15,6 +15,23 @@ internal static partial class X11Native
     internal const int ZPixmap = 2;
     internal const ulong AllPlanes = ulong.MaxValue;
 
+    /// <summary>Looked up once: libX11 stays loaded for the process anyway (the P/Invokes below use it).</summary>
+    private static readonly Lazy<nint> SetIoErrorExitHandlerExport = new(() =>
+    {
+        if (!NativeLibrary.TryLoad(LibX11, out var library))
+        {
+            return 0;
+        }
+
+        if (NativeLibrary.TryGetExport(library, "XSetIOErrorExitHandler", out var export))
+        {
+            return export;
+        }
+
+        NativeLibrary.Free(library);
+        return 0;
+    });
+
     /// <summary>Prefix of <c>XImage</c> (LP64 layout, x86_64 and arm64).</summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct XImage
@@ -93,7 +110,8 @@ internal static partial class X11Native
     /// </summary>
     internal static unsafe bool TrySetIoErrorExitHandler(nint display, delegate* unmanaged[Cdecl]<nint, nint, void> handler)
     {
-        if (!NativeLibrary.TryLoad(LibX11, out var library) || !NativeLibrary.TryGetExport(library, "XSetIOErrorExitHandler", out var export))
+        var export = SetIoErrorExitHandlerExport.Value;
+        if (export == 0)
         {
             return false;
         }

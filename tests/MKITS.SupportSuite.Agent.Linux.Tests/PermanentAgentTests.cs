@@ -185,18 +185,17 @@ public sealed class PermanentAgentTests : IDisposable
     }
 
     [Fact]
-    public void HostSystem_ReadOwnedFile_DoesNotBlockOnAFifo()
+    public async Task HostSystem_ReadOwnedFile_DoesNotBlockOnAFifo()
     {
         var fifo = Path.Combine(_directory, "fifo");
         using (var mkfifo = Process.Start("mkfifo", fifo))
         {
-            mkfifo.WaitForExit();
+            await mkfifo.WaitForExitAsync();
         }
 
-        var read = Task.Run(() => HostSystem.ReadOwnedFile(fifo, [MyUid], 1024));
+        var read = await Task.Run(() => HostSystem.ReadOwnedFile(fifo, [MyUid], 1024)).WaitAsync(TimeSpan.FromSeconds(5)); // TimeoutException if it blocked
 
-        Assert.True(read.Wait(TimeSpan.FromSeconds(5)), "reading a FIFO blocked");
-        Assert.Null(read.Result);
+        Assert.Null(read);
     }
 
     [Fact]
