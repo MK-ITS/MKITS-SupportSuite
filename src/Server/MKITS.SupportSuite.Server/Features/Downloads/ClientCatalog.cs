@@ -42,6 +42,9 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
         new(ClientPlatform.Android, Path.Combine("android", "MKITS-Support.apk"), ".apk", CodeInFileName: false),
     ];
 
+    /// <summary>The installed Linux agent (Debian package, ADR-0025) – for Admins, not offered on the portal.</summary>
+    public static readonly string LinuxAgentPackage = Path.Combine("linux-x64", "mkits-agent_amd64.deb");
+
     /// <summary>Directories searched in order.</summary>
     public IReadOnlyList<string> SearchPaths => [dataDirectory.AgentsPath, Path.Combine(environment.ContentRootPath, "agents")];
 
@@ -78,19 +81,23 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
         return new AgentUpdate(client, File.ReadAllBytes(manifest), File.ReadAllText(signature).Trim());
     }
 
-    private AvailableClient? Find(ClientPackage package)
+    /// <summary>A non-empty file below the search paths (first match wins), e.g. <see cref="LinuxAgentPackage"/>.</summary>
+    public FileInfo? FindFile(string relativePath)
     {
         foreach (var root in SearchPaths)
         {
-            var file = new FileInfo(Path.Combine(root, package.RelativePath));
+            var file = new FileInfo(Path.Combine(root, relativePath));
             if (file.Exists && file.Length > 0)
             {
-                return new AvailableClient(package, file.FullName, file.Length);
+                return file;
             }
         }
 
         return null;
     }
+
+    private AvailableClient? Find(ClientPackage package) =>
+        FindFile(package.RelativePath) is { } file ? new AvailableClient(package, file.FullName, file.Length) : null;
 }
 
 /// <summary>Guesses the visitor's platform from the User-Agent (only used to highlight the right download).</summary>

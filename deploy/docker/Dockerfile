@@ -71,7 +71,7 @@ RUN --mount=type=secret,id=agent_update_key \
 # ---- Linux client (AppImage, x86_64) ----
 # Same idea as the Windows client: the portal serves the client of the server's version (ADR-0019).
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS linux-client
-# The package is called libturbojpeg on Ubuntu (the SDK image's base) and libturbojpeg0 on Debian.
+# The package is called libturbojpeg on Ubuntu (the SDK image's base) and libturbojpeg0 on Debian. dpkg-deb is part of the base.
 RUN apt-get update \
  && (apt-get install -y --no-install-recommends libturbojpeg || apt-get install -y --no-install-recommends libturbojpeg0) \
  && apt-get install -y --no-install-recommends curl ca-certificates file \
@@ -85,6 +85,7 @@ RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.A
 
 COPY proto/ proto/
 COPY deploy/keys/ deploy/keys/
+COPY LICENSE THIRD-PARTY-NOTICES.md ./
 COPY deploy/linux/ deploy/linux/
 COPY src/Common/ src/Common/
 COPY src/Agent/MKITS.SupportSuite.Agent.Core/ src/Agent/MKITS.SupportSuite.Agent.Core/
@@ -92,6 +93,9 @@ COPY src/Agent/MKITS.SupportSuite.Agent.Linux/ src/Agent/MKITS.SupportSuite.Agen
 ARG BUILD_NUMBER=0
 # No FUSE during image builds: appimagetool runs extracted.
 RUN APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-appimage.sh /out/linux
+# The installed agent as Debian package (ADR-0025), downloaded by Admins next to the enrollment token.
+RUN BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-deb.sh /out/linux-deb \
+ && cp /out/linux-deb/mkits-agent_*_amd64.deb /out/linux/mkits-agent_amd64.deb
 
 # ---- runtime stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
@@ -103,6 +107,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY --from=windows-client /out/windows-x64/MKITS-Support.exe* agents/windows-x64/
 COPY --from=linux-client /out/linux/MKITS-Support-x86_64.AppImage agents/linux-x64/MKITS-Support.AppImage
+COPY --from=linux-client /out/linux/mkits-agent_amd64.deb agents/linux-x64/mkits-agent_amd64.deb
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
 # The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).

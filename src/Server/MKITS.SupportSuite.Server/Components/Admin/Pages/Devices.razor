@@ -162,6 +162,8 @@
                         <p>@L["Tokens_ValidUntil", _createdToken.ExpiresAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)]</p>
                         <p>@L["Tokens_InstallWindows"] <a href="@Features.Downloads.PortalEndpoints.AgentDownloadPath" data-enhance-nav="false">MKITS-Agent.exe</a></p>
                         <p class="token-value" data-testid="install-command">MKITS-Agent.exe --install --server @MkitsOptions.Value.PublicBaseUrl.TrimEnd('/') --token @_createdToken.Token</p>
+                        <p>@L["Tokens_InstallLinux"] <a href="@Features.Downloads.PortalEndpoints.LinuxAgentDownloadPath" data-enhance-nav="false">@Features.Downloads.PortalEndpoints.LinuxAgentFileName</a></p>
+                        <p class="token-value" data-testid="install-command-linux">sudo apt install ./@Features.Downloads.PortalEndpoints.LinuxAgentFileName<br />sudo mkits-agent --install --server @MkitsOptions.Value.PublicBaseUrl.TrimEnd('/') --token @_createdToken.Token</p>
                     </div>
                 }
                 <EditForm Model="_newToken" OnSubmit="CreateTokenAsync" class="form grid" FormName="new-token" Context="tokenContext">

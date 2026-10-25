@@ -18,9 +18,10 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Gerätegruppen, Berechtigungen, Registrierungstokens, Geräteliste, Supporter-Seite *Geräte* | ✅ verfügbar |
 | Windows-Agent als Dienst (unbeaufsichtigter Zugriff, Zustimmungsrichtlinien, Sitzungsfenster mit Chat/Dateien/Zwischenablage/Shell) | ✅ verfügbar (siehe §5.2) |
 | Agent-Auto-Update (signiert) | ✅ verfügbar, sobald der Release-Schlüssel eingerichtet ist |
-| MSI-Paket | 🔜 Phase 10 |
+| MSI-Paket | ✖ nicht geplant – die EXE installiert sich selbst (ADR-0024) |
 | Linux-Adhoc-Client (AppImage, X11-Desktops): Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Terminal | ✅ verfügbar |
-| Linux auf Wayland-Desktops, dauerhafter Linux-Agent (systemd, .deb) | 🔜 Phase 11 (M3) |
+| Dauerhafter Linux-Agent (systemd-Dienst, .deb; Bildschirm/Eingabe auf X11-Desktops, root-Shell) | ✅ verfügbar (siehe §5.2) |
+| Linux auf Wayland-Desktops, Linux-Auto-Update, arm64 | 🔜 Phase 11 (M3) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
 
@@ -99,7 +100,15 @@ Es gibt kein MSI-Paket (ADR-0024); die EXE installiert sich selbst. Verwenden Si
 
 Exit-Codes: `0` OK, `2` ungültige Argumente, `5` nicht als Administrator, `6` Dienstfehler, `7` Dateifehler. Details stehen in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
 
-- **Linux, Android:** geplant (Phasen 11, 12).
+- **Linux** (Debian 12+, Ubuntu 22.04+, x64): `mkits-agent_amd64.deb` herunterladen (Link beim Token) und als root ausführen:
+  ```bash
+  sudo apt install ./mkits-agent_amd64.deb
+  sudo mkits-agent --install --server https://support.example.com --token <token>
+  ```
+  Das Paket installiert den Agent nach `/opt/mkits-agent` und den systemd-Dienst **mkits-agent** (Start beim Booten, Neustart bei Fehlern); `--install` speichert Server und Token und registriert das Gerät. Konfiguration (`/etc/mkits-agent`) und Identität (`/var/lib/mkits-agent`) sind nur für root lesbar; das Token wird nach der Registrierung gelöscht. Log: `journalctl -u mkits-agent`. `--reenroll` erzwingt eine neue Registrierung, `sudo mkits-agent --uninstall` trennt das Gerät, `sudo apt purge mkits-agent` entfernt alles. **Updates:** das Paket der neueren Server-Version installieren (`sudo apt install ./mkits-agent_amd64.deb`); der Dienst startet damit neu (automatische Updates für Linux folgen).
+  Bildschirm, Maus und Tastatur funktionieren, solange ein Benutzer an einem **X11**-Desktop angemeldet ist (folgt Ab-/Anmeldungen und Benutzerwechseln); Wayland-Desktops und der Anmeldebildschirm werden noch nicht unterstützt. Das Sitzungsfenster (Chat, Dateien, Zwischenablage; bei *Still* unsichtbar) läuft mit den Rechten des angemeldeten Benutzers. **Die Remote-Shell läuft als root** – auf Servern ohne Desktop ist sie das wichtigste Werkzeug. Vergeben Sie die Berechtigung *Shell* für Linux-Geräte nur an Personen, die diese administrieren dürfen (ADR-0025). Ohne grafische Sitzung wird *Jedes Mal fragen* abgelehnt (niemand zum Fragen da); für Server *Nur benachrichtigen* oder *Still* verwenden.
+  Exit-Codes: `0` OK, `2` ungültige Argumente, `5` nicht root, `6` systemd-Fehler, `7` Dateifehler (oder Paket fehlt).
+- **Android:** geplant (Phase 12).
 
 Tokens werden nur als Hash gespeichert und können widerrufen werden. Nach einem Rollout Tokens widerrufen.
 

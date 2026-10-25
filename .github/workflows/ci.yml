@@ -274,5 +274,6 @@ jobs:
           # The bundled Windows client must be in the image (portal and admin agent download).
           docker exec mkits-smoke test -s /app/agents/windows-x64/MKITS-Support.exe
           docker exec mkits-smoke test -s /app/agents/linux-x64/MKITS-Support.AppImage
+          docker exec mkits-smoke test -s /app/agents/linux-x64/mkits-agent_amd64.deb
           docker logs mkits-smoke
           docker rm -f mkits-smoke

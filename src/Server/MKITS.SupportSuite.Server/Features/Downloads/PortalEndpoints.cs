@@ -17,6 +17,12 @@ public static class PortalEndpoints
     /// <summary>The Windows client as installable agent (<c>MKITS-Agent.exe</c>) for Admins (ADR-0022).</summary>
     public const string AgentDownloadPath = "/admin/downloads/windows-agent";
 
+    /// <summary>The installed Linux agent as Debian package for Admins (ADR-0025).</summary>
+    public const string LinuxAgentDownloadPath = "/admin/downloads/linux-agent";
+
+    /// <summary>File name of the Linux agent package on download.</summary>
+    public const string LinuxAgentFileName = "mkits-agent_amd64.deb";
+
     public static IServiceCollection AddMkitsDownloads(this IServiceCollection services)
     {
         services.AddSingleton<ClientCatalog>();
@@ -41,6 +47,17 @@ public static class PortalEndpoints
 
             context.Response.Headers.CacheControl = "no-store";
             return Results.File(client.FullPath, "application/octet-stream", "MKITS-Agent.exe");
+        }).RequireAuthorization(Identity.Policies.Admin);
+
+        endpoints.MapGet(LinuxAgentDownloadPath, (HttpContext context, ClientCatalog catalog) =>
+        {
+            if (catalog.FindFile(ClientCatalog.LinuxAgentPackage) is not { } package)
+            {
+                return Results.NotFound();
+            }
+
+            context.Response.Headers.CacheControl = "no-store";
+            return Results.File(package.FullName, "application/vnd.debian.binary-package", LinuxAgentFileName);
         }).RequireAuthorization(Identity.Policies.Admin);
 
         // Agent auto-update (ADR-0023). Public: the files are not secret (open source, same as the portal download) and

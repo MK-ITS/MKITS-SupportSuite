@@ -353,6 +353,7 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Tokens_Create" xml:space="preserve"><value>Token erstellen</value></data>
   <data name="Tokens_ShownOnce" xml:space="preserve"><value>Neues Registrierungstoken – es wird nur jetzt angezeigt:</value></data>
   <data name="Tokens_InstallWindows" xml:space="preserve"><value>Windows: Laden Sie den Agent herunter und führen Sie diesen Befehl in einer Administrator-Eingabeaufforderung aus:</value></data>
+  <data name="Tokens_InstallLinux" xml:space="preserve"><value>Linux (Debian 12+, Ubuntu 22.04+, x64): Laden Sie das Paket herunter und führen Sie diese Befehle aus:</value></data>
   <data name="Tokens_ValidUntil" xml:space="preserve"><value>Gültig bis {0}.</value></data>
   <data name="Tokens_Column_Created" xml:space="preserve"><value>Erstellt</value></data>
   <data name="Tokens_Column_Expires" xml:space="preserve"><value>Läuft ab</value></data>
