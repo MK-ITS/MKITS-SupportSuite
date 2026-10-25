@@ -8,8 +8,8 @@ using Avalonia.Themes.Fluent;
 
 namespace MKITS.SupportSuite.Agent.Linux.Gui;
 
-/// <summary>Avalonia application (code only, no XAML). The first window comes from the factory.</summary>
-internal sealed class App(Func<Window> createMainWindow) : Application
+/// <summary>Avalonia application (code only, no XAML). What it shows first comes from the start callback.</summary>
+internal sealed class App(Action<IClassicDesktopStyleApplicationLifetime> start) : Application
 {
     public override void Initialize() => Styles.Add(new FluentTheme());
 
@@ -17,16 +17,31 @@ internal sealed class App(Func<Window> createMainWindow) : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
-            desktop.MainWindow = createMainWindow();
+            start(desktop);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
     /// <summary>Runs the UI until the last window is closed.</summary>
-    public static int Run(Func<Window> createMainWindow, string[] args) =>
-        AppBuilder.Configure(() => new App(createMainWindow))
+    public static int Run(Func<Window> createMainWindow, string[] args) => Run(desktop =>
+    {
+        desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+        desktop.MainWindow = createMainWindow();
+    }, args);
+
+    /// <summary>
+    /// Installed agent: the session window of the service's session, possibly hidden ("silent" policy); the UI runs
+    /// until the service ends the session.
+    /// </summary>
+    public static int RunBridged(Stream stream, string[] args) => Run(desktop =>
+    {
+        desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        _ = SessionWindow.StartBridged(stream, () => desktop.Shutdown());
+    }, args);
+
+    private static int Run(Action<IClassicDesktopStyleApplicationLifetime> start, string[] args) =>
+        AppBuilder.Configure(() => new App(start))
             .UsePlatformDetect()
             .StartWithClassicDesktopLifetime(args);
 }

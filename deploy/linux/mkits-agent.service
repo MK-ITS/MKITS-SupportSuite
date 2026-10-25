@@ -1,0 +1,27 @@
+# Installed MKITS SupportSuite agent (ADR-0025). Configured with:
+#   sudo mkits-agent --install --server https://<host> --token <enrollment token>
+[Unit]
+Description=MKITS SupportSuite Agent
+Documentation=https://github.com/MK-ITS/MKITS-SupportSuite
+After=network-online.target systemd-logind.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/mkits-agent/mkits-agent --agent-service
+# Restart after crashes, not after problems a restart cannot fix (no configuration, rejected token: exit 78).
+Restart=on-failure
+RestartSec=10
+RestartPreventExitStatus=78
+Environment=HOME=/root
+# Configuration and device identity: root only.
+UMask=0077
+ConfigurationDirectory=mkits-agent
+ConfigurationDirectoryMode=0700
+StateDirectory=mkits-agent
+StateDirectoryMode=0700
+# Stopping the service ends every session process (session windows, remote shells).
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

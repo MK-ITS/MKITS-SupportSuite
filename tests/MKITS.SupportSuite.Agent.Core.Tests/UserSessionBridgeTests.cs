@@ -17,6 +17,8 @@ public sealed class UserSessionBridgeTests : IAsyncDisposable
     private static readonly string[] ViewAndControl = ["view", "control"];
     private static readonly string[] ViewOnly = ["view"];
     private static readonly string[] Sam = ["Sam"];
+    private static readonly Channel[] WithoutShell = [Channel.Chat, Channel.Clipboard, Channel.File];
+    private static readonly Channel[] VideoToo = [Channel.Chat, Channel.Video];
 
     private readonly LoopbackConnector _connector = new();
     private readonly RecordingUi _fallback = new(answer: false);
@@ -137,6 +139,30 @@ public sealed class UserSessionBridgeTests : IAsyncDisposable
 
         await Eventually(() => !_bridge.IsConnected);
     }
+
+    [Fact]
+    public async Task NarrowedChannels_KeepTheShellInTheService()
+    {
+        var bridge = new UserSessionBridge(_connector, _fallback, WithoutShell);
+        bridge.OnSessionAssigned("ACME", ConsentPolicy.Notify);
+        var clientStream = await _connector.ClientStreamReady.Task.WaitAsync(Timeout);
+        var shell = new EchoChat();
+        using var client = new BridgeClient(clientStream, _userUi, [shell]);
+        var run = client.RunAsync(CancellationToken.None);
+        await Eventually(() => bridge.IsConnected);
+
+        await bridge.HandleAsync(_context, "v1", new SessionPayload { ShellOpen = new ShellOpen() }, CancellationToken.None);
+        await bridge.HandleAsync(_context, "v1", new SessionPayload { ChatMessage = new ChatMessage { Text = "hi" } }, CancellationToken.None);
+
+        Assert.Equal("hi", await shell.Received.Task.WaitAsync(Timeout));
+        Assert.Equal(1, shell.Count); // the shell payload never reached the user's session
+        await bridge.DisposeAsync();
+        await run.WaitAsync(Timeout);
+    }
+
+    [Fact]
+    public void NarrowedChannels_CannotIncludeScreenOrInput() =>
+        Assert.Throws<ArgumentException>(() => new UserSessionBridge(_connector, _fallback, VideoToo));
 
     private async Task StartSessionAsync()
     {

@@ -1,0 +1,15 @@
+Package: mkits-agent
+Version: @VERSION@
+Architecture: amd64
+Maintainer: MKITS SupportSuite project <https://github.com/MK-ITS/MKITS-SupportSuite/issues>
+Installed-Size: @SIZE@
+Depends: libc6 (>= 2.28), libx11-6, libxtst6, libxrandr2, libfontconfig1, libice6, libsm6, util-linux, systemd
+Section: admin
+Priority: optional
+Homepage: https://github.com/MK-ITS/MKITS-SupportSuite
+Description: MKITS SupportSuite agent (permanent remote maintenance)
+ Keeps a permanent, end-to-end encrypted connection from this computer to a
+ self-hosted MKITS SupportSuite server, so that authorized technicians can
+ open the remote shell and – on X11 desktops – view and control the screen.
+ After installing, connect it to a server:
+ sudo mkits-agent --install --server https://<host> --token <enrollment token>

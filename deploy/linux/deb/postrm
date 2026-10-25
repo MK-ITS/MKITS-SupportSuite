@@ -1,0 +1,10 @@
+#!/bin/sh
+# Purge: remove the configuration and the device identity (the device must be removed in the web interface too).
+set -e
+if [ "$1" = "purge" ]; then
+  rm -rf /etc/mkits-agent /var/lib/mkits-agent
+fi
+if [ -d /run/systemd/system ]; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+exit 0

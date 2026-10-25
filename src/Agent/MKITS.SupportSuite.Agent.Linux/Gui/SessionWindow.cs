@@ -9,17 +9,19 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Agent.Linux.Platform;
+using MKITS.SupportSuite.Common.Protocol.V0;
 
 namespace MKITS.SupportSuite.Agent.Linux.Gui;
 
 /// <summary>
-/// The always-visible session window of the Linux ad-hoc client (ADR-0014: a visible indicator and "End session"
-/// can never be hidden): status, supporters, security code, chat, file transfer and the end button. Runs the session
-/// with X11 capture/input, clipboard, files and the PTY shell. Calls from background threads are posted to the UI thread.
+/// The session window (ADR-0014: a visible indicator and "End session" can never be hidden): status, supporters,
+/// security code, chat, file transfer and the end button. Behind it runs an <see cref="ISessionHost"/>: the ad-hoc
+/// client's own session, or – for the installed agent – the bridge to the service (then the window stays hidden for the
+/// "silent" consent policy and closes when the service ends the session). Calls from background threads are posted to
+/// the UI thread.
 /// </summary>
 internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresenter, IClipboard, IFileTransferUi, IDisposable
 {
@@ -34,21 +36,31 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
     private readonly Button _end = new() { Content = Ui.Get("EndSession"), Background = Brushes.Firebrick, Foreground = Brushes.White };
     private readonly DispatcherTimer _clipboardTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly CancellationTokenSource _closing = new();
-    private readonly AgentSessionOptions _options;
-    private readonly X11Display _display;
-    private AgentSession? _session;
-    private ChatHandler? _chat;
-    private FileTransferHandler? _files;
-    private ClipboardHandler? _clipboard;
+    private readonly ChatHandler _chat;
+    private readonly FileTransferHandler _files;
+    private readonly ClipboardHandler _clipboard;
+    private readonly bool _bridged;
+    private readonly Func<SessionWindow, ISessionHost> _createHost;
+    private ISessionHost? _session;
     private string? _clipboardText;
     private bool _sharing;
     private int _clipboardVersion;
     private bool _ended;
+    private bool _started;
 
+    /// <summary>Ad-hoc client: shown right away, runs its own session.</summary>
     public SessionWindow(AgentSessionOptions options, X11Display display)
+        : this(window => new AdHocSessionHost(options, display, window, window.UserHandlers), bridged: false)
     {
-        _options = options;
-        _display = display;
+    }
+
+    private SessionWindow(Func<SessionWindow, ISessionHost> createHost, bool bridged)
+    {
+        _createHost = createHost;
+        _bridged = bridged;
+        _chat = new ChatHandler(this);
+        _files = new FileTransferHandler(this);
+        _clipboard = new ClipboardHandler(this);
 
         Title = Ui.Get("App_Title");
         Topmost = true;
@@ -69,12 +81,42 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         _sendFile.Click += async (_, _) => await SendFileAsync();
         _end.Click += async (_, _) => await EndAsync();
         _clipboardTimer.Tick += async (_, _) => await PollClipboardAsync();
-        Opened += async (_, _) => await RunAsync();
+        Opened += async (_, _) => await StartAsync();
         Closing += OnClosing;
         Closed += (_, _) => Dispose();
     }
 
-    /// <summary>Called when the window is closed; the session itself is disposed when <see cref="RunAsync"/> ends.</summary>
+    /// <summary>The handlers that run with the user's rights in this process.</summary>
+    private ISessionChannelHandler[] UserHandlers => [_clipboard, _chat, _files];
+
+    /// <summary>
+    /// Installed agent: runs the bridge right away without showing the window (it appears with the session assignment
+    /// unless the policy is "silent"); <paramref name="ended"/> runs when the service closed the connection.
+    /// </summary>
+    public static SessionWindow StartBridged(Stream stream, Action ended)
+    {
+        var window = new SessionWindow(w => new BridgeSessionHost(stream, w, w.UserHandlers), bridged: true);
+        var done = 0;
+        void End()
+        {
+            if (Interlocked.Exchange(ref done, 1) == 0)
+            {
+                ended();
+            }
+        }
+
+        window.Closed += (_, _) => End();
+        Dispatcher.UIThread.Post(async () =>
+        {
+            await window.StartAsync();
+            window._ended = true;
+            window.Close(); // the session is over
+            End();
+        });
+        return window;
+    }
+
+    /// <summary>Called when the window is closed; the session itself is disposed when <see cref="StartAsync"/> ends.</summary>
     public void Dispose()
     {
         _clipboardTimer.Stop();
@@ -94,6 +136,17 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
             string.Join(", ", prompt.Permissions.Select(p => Ui.Get("Permission_" + p))));
         return AskAsync(Ui.Get("Consent_Title"), text, Ui.Get("Consent_Allow"), Ui.Get("Consent_Deny"), cancellationToken);
     }
+
+    /// <summary>Bridged window: becomes visible with the session unless the policy is "silent".</summary>
+    public void OnSessionAssigned(string operatorName, ConsentPolicy policy) => Post(() =>
+    {
+        _status.Text = Ui.Format("Status_WaitingForSupporter", operatorName);
+        if (_bridged && policy != ConsentPolicy.Silent && !IsVisible)
+        {
+            Show();
+            PlaceBottomRight();
+        }
+    });
 
     public void OnStatusChanged(AgentStatus status, string? detail) => Post(() =>
     {
@@ -180,12 +233,17 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
 
     // ------------------------------------------------------------------ lifecycle
 
-    private async Task RunAsync()
+    private async Task StartAsync()
     {
-        var screens = Screens.Primary?.WorkingArea;
-        if (screens is { } area)
+        if (_started)
         {
-            Position = new PixelPoint(area.Right - (int)Bounds.Width - 24, area.Bottom - (int)Bounds.Height - 48);
+            return; // Opened fires again when a hidden bridged window is shown
+        }
+
+        _started = true;
+        if (!_bridged)
+        {
+            PlaceBottomRight();
         }
 
         // The clipboard is read asynchronously, so GetText() serves a cache. Prime it before the session runs and keep it
@@ -194,21 +252,12 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         await RefreshClipboardAsync();
         _clipboardTimer.Start();
 
-        using var screen = new X11ScreenSource(_display);
-        await using var streamer = new ScreenStreamer(screen);
-        await using var shells = new ShellHandler(new PtyShellHost());
-        _chat = new ChatHandler(this);
-        _files = new FileTransferHandler(this);
-        _clipboard = new ClipboardHandler(this);
-        _session = new AgentSession(
-            _options, new ClientWebSocketConnector(), this,
-            [streamer, new InputHandler(new X11InputInjector(_display), screen), _clipboard, _chat, _files, shells]);
+        _session = _createHost(this);
         try
         {
-            var result = await _session.RunAsync(_closing.Token);
-            if (!result.Succeeded)
+            if (await _session.RunAsync(_closing.Token) is { } error)
             {
-                OnStatusChanged(AgentStatus.Ended, result.ErrorCode);
+                OnStatusChanged(AgentStatus.Ended, error.Length == 0 ? null : error);
             }
         }
         catch (OperationCanceledException)
@@ -221,6 +270,14 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
             {
                 await session.DisposeAsync();
             }
+        }
+    }
+
+    private void PlaceBottomRight()
+    {
+        if (Screens.Primary?.WorkingArea is { } area)
+        {
+            Position = new PixelPoint(area.Right - (int)Bounds.Width - 24, area.Bottom - (int)Bounds.Height - 48);
         }
     }
 
@@ -245,26 +302,26 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         _end.IsEnabled = false;
         if (_session is { } session)
         {
-            await session.EndAsync();
+            await session.EndAsync(_closing.Token);
         }
     }
 
     private async Task SendChatAsync()
     {
         var text = _chatInput.Text?.Trim();
-        if (string.IsNullOrEmpty(text) || _session is null || _chat is null)
+        if (string.IsNullOrEmpty(text) || _session is null)
         {
             return;
         }
 
         _chatInput.Text = string.Empty;
         ShowMessage(Ui.Get("Chat_You"), text, DateTimeOffset.Now);
-        await _chat.SendAsync(_session, Environment.UserName, text, _closing.Token);
+        await _chat.SendAsync(_session.Context, Environment.UserName, text, _closing.Token);
     }
 
     private async Task SendFileAsync()
     {
-        if (_session is null || _files is null)
+        if (_session is null)
         {
             return;
         }
@@ -277,16 +334,16 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
 
         var name = Path.GetFileName(path);
         ShowMessage(Ui.Get("Chat_You"), Ui.Format("File_Offered", name), DateTimeOffset.Now);
-        var sent = await _files.SendFileAsync(_session, null, path, _closing.Token);
+        var sent = await _files.SendFileAsync(_session.Context, null, path, _closing.Token);
         ShowMessage(Ui.Get("App_Title"), Ui.Format(sent ? "File_Sent" : "File_NotSent", name), DateTimeOffset.Now);
     }
 
     private async Task PollClipboardAsync()
     {
         await RefreshClipboardAsync();
-        if (_sharing && _session is { } session && _clipboard is { } handler)
+        if (_sharing && _session is { } session)
         {
-            await handler.PollAsync(session, _closing.Token);
+            await _clipboard.PollAsync(session.Context, _closing.Token);
         }
     }
 
@@ -309,7 +366,16 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
         {
             var dialog = new QuestionWindow(title, text, yes, no);
             await using var registration = cancellationToken.Register(() => Dispatcher.UIThread.Post(() => dialog.Close(false)));
-            return await dialog.ShowDialog<bool>(this);
+            if (IsVisible)
+            {
+                return await dialog.ShowDialog<bool>(this);
+            }
+
+            // A hidden bridged window ("silent" policy) cannot own a modal dialog: show it on its own.
+            var answer = new TaskCompletionSource<bool>();
+            dialog.Closed += (_, _) => answer.TrySetResult(dialog.Answer);
+            dialog.Show();
+            return await answer.Task;
         });
 
     private static string FormatSize(long bytes) => bytes switch

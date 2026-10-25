@@ -7,6 +7,7 @@ using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Agent.Linux;
 using MKITS.SupportSuite.Agent.Linux.Gui;
+using MKITS.SupportSuite.Agent.Linux.Permanent;
 using MKITS.SupportSuite.Agent.Linux.Platform;
 using MKITS.SupportSuite.Agent.Linux.Terminal;
 using MKITS.SupportSuite.Common.Protocol.V0;
@@ -14,6 +15,21 @@ using MKITS.SupportSuite.Common.Sessions;
 
 // Linux ad-hoc client (ADR-0019): MKITS-Support_<host>_<code>.AppImage carries server and code in its file name.
 // Developers: mkits-agent --server https://support.example.com --code 12345678 [--terminal]
+// The same program is the installed agent (ADR-0025): --install, --uninstall, --agent-service, --agent-user.
+switch (args.FirstOrDefault())
+{
+    case "--install":
+        return AgentInstaller.Install(args);
+    case "--uninstall":
+        return AgentInstaller.Uninstall();
+    case "--agent-service":
+        return await AgentService.RunAsync();
+    case "--agent-user":
+        return UserProcess.Run(args);
+    default:
+        break;
+}
+
 var terminal = args.Contains("--terminal", StringComparer.Ordinal) || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
 var options = FromArguments(args) ?? FromFileName();
 

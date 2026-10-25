@@ -32,3 +32,4 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0022](0022-windows-permanent-agent.md) | Permanent Windows agent (service + on-demand helper) | Accepted |
 | [ADR-0023](0023-agent-auto-update.md) | Signed agent auto-update | Accepted |
 | [ADR-0024](0024-windows-deployment-without-msi.md) | Windows deployment without an MSI package | Accepted |
+| [ADR-0025](0025-linux-permanent-agent.md) | Permanent Linux agent (systemd service + session window) | Accepted |

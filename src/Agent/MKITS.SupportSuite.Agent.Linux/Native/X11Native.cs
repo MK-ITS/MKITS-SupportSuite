@@ -70,8 +70,37 @@ internal static partial class X11Native
     [LibraryImport(LibX11)]
     internal static unsafe partial nint XSetErrorHandler(delegate* unmanaged[Cdecl]<nint, nint, int> handler);
 
+    /// <summary>
+    /// Called when the connection to the X server is lost (e.g. the user logged out). Xlib then calls the display's
+    /// exit handler, which terminates the process unless replaced (<see cref="TrySetIoErrorExitHandler"/>).
+    /// </summary>
+    [LibraryImport(LibX11)]
+    internal static unsafe partial nint XSetIOErrorHandler(delegate* unmanaged[Cdecl]<nint, int> handler);
+
+    /// <summary>
+    /// Authorization for the following <see cref="XOpenDisplay"/> calls instead of <c>$XAUTHORITY</c> (the system service
+    /// uses the cookie of the user's X server). <c>null</c>/0 restores the default lookup.
+    /// </summary>
+    [LibraryImport(LibX11)]
+    internal static partial void XSetAuthorization(byte[]? name, int nameLength, byte[]? data, int dataLength);
+
     [LibraryImport(LibX11, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial nint XOpenDisplay(string? name);
+
+    /// <summary>
+    /// <c>XSetIOErrorExitHandler</c> (libX11 ≥ 1.7): a handler that returns instead of exiting, so a lost X server does
+    /// not kill a long-running process. Returns <c>false</c> on older libX11 (then the process exits and systemd restarts it).
+    /// </summary>
+    internal static unsafe bool TrySetIoErrorExitHandler(nint display, delegate* unmanaged[Cdecl]<nint, nint, void> handler)
+    {
+        if (!NativeLibrary.TryLoad(LibX11, out var library) || !NativeLibrary.TryGetExport(library, "XSetIOErrorExitHandler", out var export))
+        {
+            return false;
+        }
+
+        ((delegate* unmanaged[Cdecl]<nint, delegate* unmanaged[Cdecl]<nint, nint, void>, nint, void>)export)(display, handler, 0);
+        return true;
+    }
 
     [LibraryImport(LibX11)]
     internal static partial int XCloseDisplay(nint display);
