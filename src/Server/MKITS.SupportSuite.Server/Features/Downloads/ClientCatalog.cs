@@ -21,7 +21,7 @@ public sealed record ClientPackage(ClientPlatform Platform, string RelativePath,
 public sealed record AvailableClient(ClientPackage Package, string FullPath, long SizeBytes);
 
 /// <summary>A signed agent update next to a package: <c>&lt;file&gt;.manifest.json</c> and <c>&lt;file&gt;.manifest.sig</c> (ADR-0023).</summary>
-public sealed record AgentUpdate(AvailableClient Client, byte[] Manifest, string Signature);
+public sealed record AgentUpdate(string FilePath, byte[] Manifest, string Signature);
 
 /// <summary>
 /// The ad-hoc client packages offered on the portal. Packages are looked up in <c>/data/agents</c> first
@@ -55,30 +55,36 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
     public AvailableClient? Get(ClientPlatform platform) =>
         Packages.Where(p => p.Platform == platform).Select(Find).FirstOrDefault();
 
-    /// <summary>Platform for a folder name in the agents directory, e.g. <c>windows-x64</c> (also the update API name).</summary>
-    public static ClientPlatform? FromFolder(string? folder) =>
-        Packages.Where(p => Path.GetDirectoryName(p.RelativePath) == folder).Select(p => (ClientPlatform?)p.Platform).FirstOrDefault();
+    /// <summary>
+    /// Update channels of installed agents (the name in <c>/api/agent-updates/{channel}</c> and in the signed manifest)
+    /// and the package each one serves: the Windows EXE, and the Linux Debian package (the AppImage is ad-hoc only).
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> UpdateChannels = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["windows-x64"] = Path.Combine("windows-x64", "MKITS-Support.exe"),
+        ["linux-x64-deb"] = LinuxAgentPackage,
+    };
 
     /// <summary>
-    /// The signed update for a platform: only if manifest and signature sit next to the package that is actually served
+    /// The signed update of a channel: only if manifest and signature sit next to the package that is actually served
     /// (an operator-provided file without them disables updates instead of mixing files of different builds).
     /// The server never checks the signature itself – agents do, with the release key compiled into them.
     /// </summary>
-    public AgentUpdate? GetUpdate(ClientPlatform platform)
+    public AgentUpdate? GetUpdate(string? channel)
     {
-        if (Get(platform) is not { } client)
+        if (channel is null || !UpdateChannels.TryGetValue(channel, out var relativePath) || FindFile(relativePath) is not { } package)
         {
             return null;
         }
 
-        var manifest = client.FullPath + ".manifest.json";
-        var signature = client.FullPath + ".manifest.sig";
+        var manifest = package.FullName + ".manifest.json";
+        var signature = package.FullName + ".manifest.sig";
         if (!File.Exists(manifest) || !File.Exists(signature) || new FileInfo(manifest).Length > 4096 || new FileInfo(signature).Length > 1024)
         {
             return null;
         }
 
-        return new AgentUpdate(client, File.ReadAllBytes(manifest), File.ReadAllText(signature).Trim());
+        return new AgentUpdate(package.FullName, File.ReadAllBytes(manifest), File.ReadAllText(signature).Trim());
     }
 
     /// <summary>A non-empty file below the search paths (first match wins), e.g. <see cref="LinuxAgentPackage"/>.</summary>

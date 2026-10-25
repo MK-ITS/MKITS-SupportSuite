@@ -44,6 +44,8 @@ authorization cookie that belongs to the logged-on user.
 - Supporters with the "shell" permission on a Linux device get root. Administrators must grant that permission
   deliberately; it is documented in the admin guide.
 - No sandboxing in the unit (`ProtectSystem` etc.): a remote administration tool needs the whole system.
-- Auto-update (ADR-0023) for Linux follows separately; until then updates come as a new package version
-  (`apt install ./mkits-agent_<version>_amd64.deb` restarts the configured service).
+- Auto-update (ADR-0023) uses the channel `linux-x64-deb`: the service verifies the signed package and installs it
+  with `apt-get` in a transient systemd unit (`systemd-run`), outside its own control group – the package's postinst
+  restarts the service, which would otherwise kill the installation. There is no automatic rollback (unlike Windows):
+  a broken build is fixed by the next update or by installing a package manually.
 - Display managers that start X without an `-auth` file and without a user Xauthority are not supported.

@@ -62,13 +62,13 @@ public static class PortalEndpoints
 
         // Agent auto-update (ADR-0023). Public: the files are not secret (open source, same as the portal download) and
         // integrity comes from the release signature that agents verify, not from the server.
-        endpoints.MapGet("/api/agent-updates/{platform}", (string platform, ClientCatalog catalog) =>
-            ClientCatalog.FromFolder(platform) is { } p && catalog.GetUpdate(p) is { } update
+        endpoints.MapGet("/api/agent-updates/{channel}", (string channel, ClientCatalog catalog) =>
+            catalog.GetUpdate(channel) is { } update
                 ? Results.Ok(new { manifest = Convert.ToBase64String(update.Manifest), signature = update.Signature })
                 : Results.NotFound());
-        endpoints.MapGet("/api/agent-updates/{platform}/file", (string platform, ClientCatalog catalog) =>
-            ClientCatalog.FromFolder(platform) is { } p && catalog.GetUpdate(p) is { } update
-                ? Results.File(update.Client.FullPath, "application/octet-stream", Path.GetFileName(update.Client.FullPath))
+        endpoints.MapGet("/api/agent-updates/{channel}/file", (string channel, ClientCatalog catalog) =>
+            catalog.GetUpdate(channel) is { } update
+                ? Results.File(update.FilePath, "application/octet-stream", Path.GetFileName(update.FilePath))
                 : Results.NotFound());
         return endpoints;
     }

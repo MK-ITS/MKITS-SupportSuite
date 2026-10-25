@@ -201,6 +201,21 @@ public sealed class PortalTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, update.StatusCode);
     }
 
+    [Fact]
+    public async Task AgentUpdate_LinuxChannel_ServesTheDebianPackage()
+    {
+        PlaceClient(ClientCatalog.LinuxAgentPackage);
+        var directory = Path.Combine(_factory.DataDirectory, "agents", "linux-x64");
+        await File.WriteAllBytesAsync(Path.Combine(directory, "mkits-agent_amd64.deb.manifest.json"), "{}"u8.ToArray());
+        await File.WriteAllTextAsync(Path.Combine(directory, "mkits-agent_amd64.deb.manifest.sig"), "c2ln");
+
+        using var offer = await _client.GetAsync(new Uri("/api/agent-updates/linux-x64-deb", UriKind.Relative));
+        var file = await _client.GetByteArrayAsync(new Uri("/api/agent-updates/linux-x64-deb/file", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.OK, offer.StatusCode);
+        Assert.Equal(FakeClient, file);
+    }
+
     private void PlaceClient(string relativePath)
     {
         var path = Path.Combine(_factory.DataDirectory, "agents", relativePath);
