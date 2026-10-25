@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MKITS Remote Support
+Name[de]=MKITS Fernwartung
+Comment=Remote support session with your supporter
+Comment[de]=Fernwartungssitzung mit Ihrem Supporter
+Exec=mkits-agent
+Icon=mkits-support
+Categories=Network;RemoteAccess;
+Terminal=false

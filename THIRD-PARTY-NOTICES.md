@@ -16,6 +16,9 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | System.ServiceProcess.ServiceController | Windows agent (temporary service) | MIT | https://github.com/dotnet/runtime |
 | MailKit / MimeKit | server (SMTP notifications) | MIT | https://github.com/jstedfast/MailKit |
 | QRCoder | server (TOTP QR codes) | MIT | https://github.com/codebude/QRCoder |
+| Avalonia (incl. Avalonia.Desktop, Avalonia.Themes.Fluent) | Linux agent UI | MIT | https://github.com/AvaloniaUI/Avalonia |
+| SkiaSharp, HarfBuzzSharp (via Avalonia, native libraries bundled) | Linux agent UI | MIT | https://github.com/mono/SkiaSharp |
+| libjpeg-turbo (TurboJPEG library, bundled into the Linux AppImage) | Linux agent (JPEG encoding) | IJG / BSD-3-Clause / zlib | https://libjpeg-turbo.org |
 | SQLite (via SQLitePCLRaw bundle) | server | Public Domain (SQLite), Apache-2.0 (SQLitePCLRaw) | https://sqlite.org, https://github.com/ericsink/SQLitePCL.raw |
 
 ## Development and test dependencies (not distributed)
