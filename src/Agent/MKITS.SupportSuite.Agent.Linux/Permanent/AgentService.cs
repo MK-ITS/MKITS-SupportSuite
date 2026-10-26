@@ -82,6 +82,7 @@ internal static class AgentService
                 options, new ClientWebSocketConnector(), store, bridge,
                 [streamer, new InputHandler(desktop, desktop), bridge, shells]);
             bridge.EndSessionRequested += (_, _) => _ = agent.EndSessionAsync();
+            _ = AgentUpdater.RunAsync(server, agent, stopping.Token);
 
             var result = await agent.RunAsync(stopping.Token).ConfigureAwait(false);
             if (result != DeviceAgentStopReason.Cancelled)

@@ -19,7 +19,7 @@ channel controlled by the server would undo that. Code signing (Authenticode) is
   have 0 and are neither offered nor updated.
 - **Manifest** `{product, platform, build, version, sha256, size}` signed over its exact bytes (P1363) by the image
   build (BuildKit secret, never stored in a layer) and placed next to the EXE (`MKITS-Support.exe.manifest.json/.sig`).
-- **Server** only serves manifest, signature and file (`GET /api/agent-updates/{platform}`, `…/file`). It does not
+- **Server** only serves manifest, signature and file (`GET /api/agent-updates/{channel}`, `…/file`; channels `windows-x64` and `linux-x64-deb`, ADR-0025). It does not
   verify anything – agents do. An operator-provided EXE without matching manifest disables updates for that platform.
 - **Agent** (Windows service) checks 5 minutes after start and then every 6 hours (with jitter). It accepts only a
   manifest signed by its compiled-in key, for its platform, with a **higher build number** (no downgrades), and only

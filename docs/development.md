@@ -88,5 +88,5 @@ openssl pkey -in agent-update.key.pem -pubout -outform DER | base64 -w0 > deploy
 ```
 
 From then on the *Publish server image* workflow signs every agent build (`MKITS-Support.exe.manifest.json/.sig` in the
-image). Agents built before step 3 have no key and must be updated once with `MKITS-Agent.exe --install`.
+image). Agents built before step 3 have no key and must be updated once by hand (Windows: `MKITS-Agent.exe --install`, Linux: `sudo apt install ./mkits-agent_amd64.deb`).
 

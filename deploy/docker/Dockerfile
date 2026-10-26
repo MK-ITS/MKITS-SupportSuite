@@ -81,7 +81,9 @@ COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj src/Common/MKITS.SupportSuite.Common/
 COPY src/Agent/MKITS.SupportSuite.Agent.Core/MKITS.SupportSuite.Agent.Core.csproj src/Agent/MKITS.SupportSuite.Agent.Core/
 COPY src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj src/Agent/MKITS.SupportSuite.Agent.Linux/
-RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj -r linux-x64
+COPY src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj src/Tools/MKITS.SupportSuite.UpdateSigner/
+RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj -r linux-x64 \
+ && dotnet restore src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj
 
 COPY proto/ proto/
 COPY deploy/keys/ deploy/keys/
@@ -90,12 +92,21 @@ COPY deploy/linux/ deploy/linux/
 COPY src/Common/ src/Common/
 COPY src/Agent/MKITS.SupportSuite.Agent.Core/ src/Agent/MKITS.SupportSuite.Agent.Core/
 COPY src/Agent/MKITS.SupportSuite.Agent.Linux/ src/Agent/MKITS.SupportSuite.Agent.Linux/
+COPY src/Tools/MKITS.SupportSuite.UpdateSigner/ src/Tools/MKITS.SupportSuite.UpdateSigner/
 ARG BUILD_NUMBER=0
 # No FUSE during image builds: appimagetool runs extracted.
 RUN APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-appimage.sh /out/linux
 # The installed agent as Debian package (ADR-0025), downloaded by Admins next to the enrollment token.
 RUN BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-deb.sh /out/linux-deb \
  && cp /out/linux-deb/mkits-agent_*_amd64.deb /out/linux/mkits-agent_amd64.deb
+# Signed update manifest for installed Linux agents (channel linux-x64-deb), as for Windows above.
+RUN --mount=type=secret,id=agent_update_key \
+    if [ -s /run/secrets/agent_update_key ] && [ "${BUILD_NUMBER}" != "0" ]; then \
+      dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
+        /out/linux/mkits-agent_amd64.deb linux-x64-deb "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key; \
+    else \
+      echo "Linux agent update not signed (no release key or local build)."; \
+    fi
 
 # ---- runtime stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
@@ -107,7 +118,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY --from=windows-client /out/windows-x64/MKITS-Support.exe* agents/windows-x64/
 COPY --from=linux-client /out/linux/MKITS-Support-x86_64.AppImage agents/linux-x64/MKITS-Support.AppImage
-COPY --from=linux-client /out/linux/mkits-agent_amd64.deb agents/linux-x64/mkits-agent_amd64.deb
+COPY --from=linux-client /out/linux/mkits-agent_amd64.deb* agents/linux-x64/
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
 # The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).

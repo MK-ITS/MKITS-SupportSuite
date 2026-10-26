@@ -247,6 +247,19 @@ public sealed class PermanentAgentTests : IDisposable
     }
 
     [Fact]
+    public void AgentUpdater_InstallsOutsideTheServiceUnit()
+    {
+        var start = AgentUpdater.InstallCommand(AgentPaths.StagedUpdate, 1234);
+
+        Assert.Equal("systemd-run", start.FileName);
+        Assert.Contains("--unit=mkits-agent-update-1234", start.ArgumentList);
+        Assert.Contains("--collect", start.ArgumentList);
+        Assert.Equal("/usr/bin/apt-get", start.ArgumentList[4]);
+        Assert.Equal(AgentPaths.StagedUpdate, start.ArgumentList[^1]); // absolute path: apt installs the local file
+        Assert.Equal("linux-x64-deb", AgentUpdater.Channel);
+    }
+
+    [Fact]
     public void DuplexStream_ReadsFromOneAndWritesToTheOther()
     {
         byte[] sent = [1, 2, 3];

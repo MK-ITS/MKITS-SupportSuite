@@ -22,4 +22,9 @@ internal static class AgentPaths
     public const string DataDirectory = "/var/lib/mkits-agent";
 
     public const string IdentityFile = DataDirectory + "/identity.json";
+
+    /// <summary>Downloaded, verified package waiting to be installed (ADR-0023); root only like the data folder.</summary>
+    public const string UpdateDirectory = DataDirectory + "/update";
+
+    public const string StagedUpdate = UpdateDirectory + "/mkits-agent_amd64.deb";
 }
