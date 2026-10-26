@@ -17,11 +17,15 @@ public static class PortalEndpoints
     /// <summary>The Windows client as installable agent (<c>MKITS-Agent.exe</c>) for Admins (ADR-0022).</summary>
     public const string AgentDownloadPath = "/admin/downloads/windows-agent";
 
-    /// <summary>The installed Linux agent as Debian package for Admins (ADR-0025).</summary>
+    /// <summary>The installed Linux agent as Debian package for Admins (ADR-0025), x86_64 and arm64.</summary>
     public const string LinuxAgentDownloadPath = "/admin/downloads/linux-agent";
 
-    /// <summary>File name of the Linux agent package on download.</summary>
+    public const string LinuxArm64AgentDownloadPath = "/admin/downloads/linux-agent-arm64";
+
+    /// <summary>File names of the Linux agent packages on download.</summary>
     public const string LinuxAgentFileName = "mkits-agent_amd64.deb";
+
+    public const string LinuxArm64AgentFileName = "mkits-agent_arm64.deb";
 
     public static IServiceCollection AddMkitsDownloads(this IServiceCollection services)
     {
@@ -49,16 +53,8 @@ public static class PortalEndpoints
             return Results.File(client.FullPath, "application/octet-stream", "MKITS-Agent.exe");
         }).RequireAuthorization(Identity.Policies.Admin);
 
-        endpoints.MapGet(LinuxAgentDownloadPath, (HttpContext context, ClientCatalog catalog) =>
-        {
-            if (catalog.FindFile(ClientCatalog.LinuxAgentPackage) is not { } package)
-            {
-                return Results.NotFound();
-            }
-
-            context.Response.Headers.CacheControl = "no-store";
-            return Results.File(package.FullName, "application/vnd.debian.binary-package", LinuxAgentFileName);
-        }).RequireAuthorization(Identity.Policies.Admin);
+        MapLinuxAgent(endpoints, LinuxAgentDownloadPath, ClientCatalog.LinuxAgentPackage, LinuxAgentFileName);
+        MapLinuxAgent(endpoints, LinuxArm64AgentDownloadPath, ClientCatalog.LinuxArm64AgentPackage, LinuxArm64AgentFileName);
 
         // Agent auto-update (ADR-0023). Public: the files are not secret (open source, same as the portal download) and
         // integrity comes from the release signature that agents verify, not from the server.
@@ -72,6 +68,18 @@ public static class PortalEndpoints
                 : Results.NotFound());
         return endpoints;
     }
+
+    private static void MapLinuxAgent(IEndpointRouteBuilder endpoints, string path, string relativePath, string fileName) =>
+        endpoints.MapGet(path, (HttpContext context, ClientCatalog catalog) =>
+        {
+            if (catalog.FindFile(relativePath) is not { } package)
+            {
+                return Results.NotFound();
+            }
+
+            context.Response.Headers.CacheControl = "no-store";
+            return Results.File(package.FullName, "application/vnd.debian.binary-package", fileName);
+        }).RequireAuthorization(Identity.Policies.Admin);
 
     private static async Task<IResult> DownloadAsync(
         HttpContext context,

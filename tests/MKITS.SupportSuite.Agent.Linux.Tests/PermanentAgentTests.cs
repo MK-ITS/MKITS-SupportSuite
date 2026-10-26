@@ -256,7 +256,8 @@ public sealed class PermanentAgentTests : IDisposable
         Assert.Contains("--collect", start.ArgumentList);
         Assert.Equal("/usr/bin/apt-get", start.ArgumentList[4]);
         Assert.Equal(AgentPaths.StagedUpdate, start.ArgumentList[^1]); // absolute path: apt installs the local file
-        Assert.Equal("linux-x64-deb", AgentUpdater.Channel);
+        Assert.Equal("linux-x64-deb", AgentUpdater.ChannelFor(System.Runtime.InteropServices.Architecture.X64));
+        Assert.Equal("linux-arm64-deb", AgentUpdater.ChannelFor(System.Runtime.InteropServices.Architecture.Arm64));
     }
 
     [Fact]

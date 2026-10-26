@@ -45,6 +45,9 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
     /// <summary>The installed Linux agent (Debian package, ADR-0025) – for Admins, not offered on the portal.</summary>
     public static readonly string LinuxAgentPackage = Path.Combine("linux-x64", "mkits-agent_amd64.deb");
 
+    /// <summary>The installed Linux agent for 64-bit ARM (e.g. Raspberry Pi OS 64-bit, ARM servers).</summary>
+    public static readonly string LinuxArm64AgentPackage = Path.Combine("linux-arm64", "mkits-agent_arm64.deb");
+
     /// <summary>Directories searched in order.</summary>
     public IReadOnlyList<string> SearchPaths => [dataDirectory.AgentsPath, Path.Combine(environment.ContentRootPath, "agents")];
 
@@ -63,6 +66,7 @@ public sealed class ClientCatalog(DataDirectory dataDirectory, IHostEnvironment 
     {
         ["windows-x64"] = Path.Combine("windows-x64", "MKITS-Support.exe"),
         ["linux-x64-deb"] = LinuxAgentPackage,
+        ["linux-arm64-deb"] = LinuxArm64AgentPackage,
     };
 
     /// <summary>

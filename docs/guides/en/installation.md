@@ -146,7 +146,7 @@ Further settings (IP bans, sessions, SMTP, retention) are listed in the [adminis
 
 ### 8.1 Support clients for the customer portal
 
-**The Windows client and the Linux client (AppImage, x86_64) are included in the server image** (same version as the server): the customer portal offers them for ad-hoc sessions, and Admins download the Windows client as `MKITS-Agent.exe` and the Linux agent package `mkits-agent_amd64.deb` for permanent devices (*Device administration* → create an enrollment token → links next to the token). Nothing needs to be copied.
+**The Windows client and the Linux client (AppImage, x86_64 and arm64) are included in the server image** (same version as the server): the customer portal offers them for ad-hoc sessions, and Admins download the Windows client as `MKITS-Agent.exe` and the Linux agent packages `mkits-agent_amd64.deb` / `mkits-agent_arm64.deb` for permanent devices (*Device administration* → create an enrollment token → links next to the token). Nothing needs to be copied.
 
 Files in the data volume take precedence over the bundled ones – e.g. a code-signed build (ADR-0009) or clients for further platforms:
 
@@ -155,7 +155,7 @@ Files in the data volume take precedence over the bundled ones – e.g. a code-s
 docker compose exec server mkdir -p /data/agents/windows-x64 /data/agents/linux-x64 /data/agents/linux-arm64 /data/agents/android
 # Optional: your own (e.g. signed) Windows build instead of the bundled one
 docker compose cp MKITS-Support.exe server:/data/agents/windows-x64/MKITS-Support.exe
-# Linux clients (AppImage) and Android (APK), once available
+# Linux clients (AppImage); Android (APK) once available
 docker compose cp MKITS-Support-x86_64.AppImage server:/data/agents/linux-x64/MKITS-Support.AppImage
 docker compose cp MKITS-Support-aarch64.AppImage server:/data/agents/linux-arm64/MKITS-Support.AppImage
 docker compose cp MKITS-Support.apk server:/data/agents/android/MKITS-Support.apk

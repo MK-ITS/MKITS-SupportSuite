@@ -1,6 +1,6 @@
 Package: mkits-agent
 Version: @VERSION@
-Architecture: amd64
+Architecture: @ARCH@
 Maintainer: MKITS SupportSuite project <https://github.com/MK-ITS/MKITS-SupportSuite/issues>
 Installed-Size: @SIZE@
 Depends: libc6 (>= 2.28), libx11-6, libxtst6, libxrandr2, libfontconfig1, libice6, libsm6, util-linux, systemd

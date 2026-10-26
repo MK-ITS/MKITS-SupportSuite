@@ -19,9 +19,9 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Windows-Agent als Dienst (unbeaufsichtigter Zugriff, Zustimmungsrichtlinien, Sitzungsfenster mit Chat/Dateien/Zwischenablage/Shell) | ✅ verfügbar (siehe §5.2) |
 | Agent-Auto-Update (signiert) | ✅ verfügbar, sobald der Release-Schlüssel eingerichtet ist |
 | MSI-Paket | ✖ nicht geplant – die EXE installiert sich selbst (ADR-0024) |
-| Linux-Adhoc-Client (AppImage, X11-Desktops): Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Terminal | ✅ verfügbar |
+| Linux-Adhoc-Client (AppImage für x86_64 und arm64, X11-Desktops): Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Terminal | ✅ verfügbar |
 | Dauerhafter Linux-Agent (systemd-Dienst, .deb; Bildschirm/Eingabe auf X11-Desktops, root-Shell) | ✅ verfügbar (siehe §5.2) |
-| Linux auf Wayland-Desktops, arm64 | 🔜 Phase 11 (M3) |
+| Linux auf Wayland-Desktops | 🔜 Phase 11 (M3) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
 
@@ -100,9 +100,9 @@ Es gibt kein MSI-Paket (ADR-0024); die EXE installiert sich selbst. Verwenden Si
 
 Exit-Codes: `0` OK, `2` ungültige Argumente, `5` nicht als Administrator, `6` Dienstfehler, `7` Dateifehler. Details stehen in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
 
-- **Linux** (Debian 12+, Ubuntu 22.04+, x64): `mkits-agent_amd64.deb` herunterladen (Link beim Token) und als root ausführen:
+- **Linux** (Debian 12+, Ubuntu 22.04+; x86_64 oder arm64, z. B. Raspberry Pi OS 64-bit): `mkits-agent_amd64.deb` bzw. `mkits-agent_arm64.deb` herunterladen (Links beim Token) und als root ausführen:
   ```bash
-  sudo apt install ./mkits-agent_amd64.deb
+  sudo apt install ./mkits-agent_amd64.deb   # bzw. ./mkits-agent_arm64.deb
   sudo mkits-agent --install --server https://support.example.com --token <token>
   ```
   Das Paket installiert den Agent nach `/opt/mkits-agent` und den systemd-Dienst **mkits-agent** (Start beim Booten, Neustart bei Fehlern); `--install` speichert Server und Token und registriert das Gerät. Konfiguration (`/etc/mkits-agent`) und Identität (`/var/lib/mkits-agent`) sind nur für root lesbar; das Token wird nach der Registrierung gelöscht. Log: `journalctl -u mkits-agent`. `--reenroll` erzwingt eine neue Registrierung, `sudo mkits-agent --uninstall` trennt das Gerät, `sudo apt purge mkits-agent` entfernt alles. **Updates:** wie unter Windows aktualisieren sich installierte Agents selbst vom Server (signiertes Paket, nur außerhalb von Sitzungen; Log: `journalctl -u 'mkits-agent-update-*'`) – vorausgesetzt, das Image ist mit dem Release-Schlüssel des Projekts signiert (ADR-0023). Andernfalls das neuere Paket manuell installieren (`sudo apt install ./mkits-agent_amd64.deb`); der Dienst startet damit neu.

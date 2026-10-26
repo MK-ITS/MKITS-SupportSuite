@@ -2,6 +2,7 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using MKITS.SupportSuite.Agent.Core.Devices;
 using MKITS.SupportSuite.Agent.Core.Updates;
 using MKITS.SupportSuite.Common;
@@ -17,8 +18,8 @@ namespace MKITS.SupportSuite.Agent.Linux.Permanent;
 /// </summary>
 internal static class AgentUpdater
 {
-    /// <summary>Update channel of the Debian package (server: <c>/api/agent-updates/linux-x64-deb</c>).</summary>
-    public const string Channel = "linux-x64-deb";
+    /// <summary>Update channel of the Debian package for this architecture (server: <c>/api/agent-updates/linux-x64-deb</c>).</summary>
+    public static string Channel { get; } = ChannelFor(RuntimeInformation.ProcessArchitecture);
 
     private static readonly TimeSpan FirstCheck = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan Interval = TimeSpan.FromHours(6);
@@ -49,6 +50,8 @@ internal static class AgentUpdater
             // service stopping
         }
     }
+
+    internal static string ChannelFor(Architecture architecture) => architecture == Architecture.Arm64 ? "linux-arm64-deb" : "linux-x64-deb";
 
     private static async Task CheckOnceAsync(AgentUpdateClient client, DeviceAgent agent, CancellationToken cancellationToken)
     {
