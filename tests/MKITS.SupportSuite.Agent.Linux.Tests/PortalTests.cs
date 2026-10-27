@@ -11,7 +11,7 @@ namespace MKITS.SupportSuite.Agent.Linux.Tests;
 /// <see cref="PortalSession"/> against a fake xdg-desktop-portal on a private session bus: the request/response
 /// handshake, the options sent, the parsed streams, the PipeWire descriptor and the input calls.
 /// </summary>
-public sealed class PortalTests(PipeWireFixture bus) : IClassFixture<PipeWireFixture>, IAsyncLifetime
+public sealed class PortalTests(PipeWireFixture bus) : IClassFixture<PipeWireFixture>, IAsyncLifetime, IDisposable
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
     private static readonly string[] ExpectedInput = ["NotifyPointerMotionAbsolute 42 10.5 20", "NotifyPointerButton 272 1", "NotifyKeyboardKeycode 30 0"];
@@ -31,11 +31,12 @@ public sealed class PortalTests(PipeWireFixture bus) : IClassFixture<PipeWireFix
         await _client.ConnectAsync();
     }
 
-    public Task DisposeAsync()
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    public void Dispose()
     {
         _client?.Dispose();
         _portalConnection?.Dispose();
-        return Task.CompletedTask;
     }
 
     [Fact]
@@ -110,68 +111,76 @@ public sealed class PortalTests(PipeWireFixture bus) : IClassFixture<PipeWireFix
             switch (request.MemberAsString)
             {
                 case "CreateSession":
-                {
-                    var options = reader.ReadDictionaryOfStringToVariantValue();
-                    Respond(context, sender, options["handle_token"].GetString(), 0, (ref MessageWriter w) => Entry(ref w, "session_handle", SessionHandle));
+                    CreateSession(context, sender, ref reader);
                     break;
-                }
-
                 case "SelectDevices":
-                {
-                    _ = reader.ReadObjectPathAsString();
-                    var options = reader.ReadDictionaryOfStringToVariantValue();
-                    SelectDevices = $"types={options["types"].GetUInt32()}"
-                        + (options.TryGetValue("persist_mode", out var persist) ? $" persist_mode={persist.GetUInt32()}" : string.Empty)
-                        + (options.TryGetValue("restore_token", out var token) ? $" restore_token={token.GetString()}" : string.Empty);
-                    Respond(context, sender, options["handle_token"].GetString(), 0, (ref MessageWriter _) => { });
+                    OnSelectDevices(context, sender, ref reader);
                     break;
-                }
-
                 case "SelectSources":
-                {
-                    _ = reader.ReadObjectPathAsString();
-                    var options = reader.ReadDictionaryOfStringToVariantValue();
-                    SelectSources = $"types={options["types"].GetUInt32()} multiple={options["multiple"].GetBool()} cursor_mode={options["cursor_mode"].GetUInt32()}";
-                    Respond(context, sender, options["handle_token"].GetString(), 0, (ref MessageWriter _) => { });
+                    OnSelectSources(context, sender, ref reader);
                     break;
-                }
-
                 case "Start":
-                {
-                    _ = reader.ReadObjectPathAsString();
-                    _ = reader.ReadString();
-                    var options = reader.ReadDictionaryOfStringToVariantValue();
-                    Respond(context, sender, options["handle_token"].GetString(), StartResponse, WriteStartResults);
+                    OnStart(context, sender, ref reader);
                     break;
-                }
-
                 case "OpenPipeWireRemote":
-                {
-                    using var file = File.OpenHandle("/dev/null");
-                    using var writer = context.CreateReplyWriter("h");
-                    writer.WriteHandle(file);
-                    context.Reply(writer.CreateMessage());
+                    OpenPipeWireRemote(context);
                     break;
-                }
-
                 case "NotifyPointerMotionAbsolute":
                     _ = reader.ReadObjectPathAsString();
                     _ = reader.ReadDictionaryOfStringToVariantValue();
                     Input.Enqueue(FormattableString.Invariant($"NotifyPointerMotionAbsolute {reader.ReadUInt32()} {reader.ReadDouble()} {reader.ReadDouble()}"));
                     break;
-
                 case "NotifyPointerButton" or "NotifyKeyboardKeycode":
                     _ = reader.ReadObjectPathAsString();
                     _ = reader.ReadDictionaryOfStringToVariantValue();
                     Input.Enqueue(FormattableString.Invariant($"{request.MemberAsString} {reader.ReadInt32()} {reader.ReadUInt32()}"));
                     break;
-
                 default:
                     context.ReplyError("org.freedesktop.DBus.Error.UnknownMethod", "not faked");
                     break;
             }
 
             return ValueTask.CompletedTask;
+        }
+
+        private static void OpenPipeWireRemote(MethodContext context)
+        {
+            using var file = File.OpenHandle("/dev/null");
+            using var writer = context.CreateReplyWriter("h");
+            writer.WriteHandle(file);
+            context.Reply(writer.CreateMessage());
+        }
+
+        private void CreateSession(MethodContext context, string sender, ref Reader reader)
+        {
+            var options = reader.ReadDictionaryOfStringToVariantValue();
+            Respond(context, sender, options["handle_token"].GetString(), 0, (ref MessageWriter w) => Entry(ref w, "session_handle", SessionHandle));
+        }
+
+        private void OnSelectDevices(MethodContext context, string sender, ref Reader reader)
+        {
+            _ = reader.ReadObjectPathAsString();
+            var options = reader.ReadDictionaryOfStringToVariantValue();
+            SelectDevices = $"types={options["types"].GetUInt32()}"
+                + (options.TryGetValue("persist_mode", out var persist) ? $" persist_mode={persist.GetUInt32()}" : string.Empty)
+                + (options.TryGetValue("restore_token", out var token) ? $" restore_token={token.GetString()}" : string.Empty);
+            Respond(context, sender, options["handle_token"].GetString(), 0, (ref MessageWriter _) => { });
+        }
+
+        private void OnSelectSources(MethodContext context, string sender, ref Reader reader)
+        {
+            _ = reader.ReadObjectPathAsString();
+            var options = reader.ReadDictionaryOfStringToVariantValue();
+            SelectSources = $"types={options["types"].GetUInt32()} multiple={options["multiple"].GetBool()} cursor_mode={options["cursor_mode"].GetUInt32()}";
+            Respond(context, sender, options["handle_token"].GetString(), 0, (ref MessageWriter _) => { });
+        }
+
+        private void OnStart(MethodContext context, string sender, ref Reader reader)
+        {
+            _ = reader.ReadObjectPathAsString();
+            _ = reader.ReadString();
+            var options = reader.ReadDictionaryOfStringToVariantValue();
+            Respond(context, sender, options["handle_token"].GetString(), StartResponse, WriteStartResults);
         }
 
         private static void WriteStartResults(ref MessageWriter w)
