@@ -18,6 +18,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | QRCoder | server (TOTP QR codes) | MIT | https://github.com/codebude/QRCoder |
 | Avalonia (incl. Avalonia.Desktop, Avalonia.Themes.Fluent) | Linux agent UI | MIT | https://github.com/AvaloniaUI/Avalonia |
 | SkiaSharp, HarfBuzzSharp (via Avalonia, native libraries bundled) | Linux agent UI | MIT | https://github.com/mono/SkiaSharp |
+| Tmds.DBus.Protocol | Linux agent (xdg-desktop-portal on Wayland; also used by Avalonia) | MIT | https://github.com/tmds/Tmds.DBus |
 | libjpeg-turbo (TurboJPEG library, bundled into the Linux AppImage) | Linux agent (JPEG encoding) | IJG / BSD-3-Clause / zlib | https://libjpeg-turbo.org |
 | SQLite (via SQLitePCLRaw bundle) | server | Public Domain (SQLite), Apache-2.0 (SQLitePCLRaw) | https://sqlite.org, https://github.com/ericsink/SQLitePCL.raw |
 

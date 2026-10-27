@@ -48,9 +48,9 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
     private bool _ended;
     private bool _started;
 
-    /// <summary>Ad-hoc client: shown right away, runs its own session.</summary>
-    public SessionWindow(AgentSessionOptions options, X11Display display)
-        : this(window => new AdHocSessionHost(options, display, window, window.UserHandlers), bridged: false)
+    /// <summary>Ad-hoc client: shown right away, opens the desktop (<paramref name="openDesktop"/>) and runs its own session.</summary>
+    public SessionWindow(AgentSessionOptions options, Func<CancellationToken, Task<IDesktopAccess>> openDesktop)
+        : this(window => new AdHocSessionHost(options, openDesktop, window, window.UserHandlers), bridged: false)
     {
     }
 
@@ -309,19 +309,19 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
     private async Task SendChatAsync()
     {
         var text = _chatInput.Text?.Trim();
-        if (string.IsNullOrEmpty(text) || _session is null)
+        if (string.IsNullOrEmpty(text) || _session?.Context is not { } context)
         {
             return;
         }
 
         _chatInput.Text = string.Empty;
         ShowMessage(Ui.Get("Chat_You"), text, DateTimeOffset.Now);
-        await _chat.SendAsync(_session.Context, Environment.UserName, text, _closing.Token);
+        await _chat.SendAsync(context, Environment.UserName, text, _closing.Token);
     }
 
     private async Task SendFileAsync()
     {
-        if (_session is null)
+        if (_session?.Context is not { } context)
         {
             return;
         }
@@ -334,16 +334,16 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
 
         var name = Path.GetFileName(path);
         ShowMessage(Ui.Get("Chat_You"), Ui.Format("File_Offered", name), DateTimeOffset.Now);
-        var sent = await _files.SendFileAsync(_session.Context, null, path, _closing.Token);
+        var sent = await _files.SendFileAsync(context, null, path, _closing.Token);
         ShowMessage(Ui.Get("App_Title"), Ui.Format(sent ? "File_Sent" : "File_NotSent", name), DateTimeOffset.Now);
     }
 
     private async Task PollClipboardAsync()
     {
         await RefreshClipboardAsync();
-        if (_sharing && _session is { } session)
+        if (_sharing && _session?.Context is { } context)
         {
-            await _clipboard.PollAsync(session.Context, _closing.Token);
+            await _clipboard.PollAsync(context, _closing.Token);
         }
     }
 

@@ -10,6 +10,7 @@ using MKITS.SupportSuite.Agent.Linux.Gui;
 using MKITS.SupportSuite.Agent.Linux.Permanent;
 using MKITS.SupportSuite.Agent.Linux.Platform;
 using MKITS.SupportSuite.Agent.Linux.Terminal;
+using MKITS.SupportSuite.Agent.Linux.Wayland;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Common.Sessions;
 
@@ -34,69 +35,84 @@ var terminal = args.Contains("--terminal", StringComparer.Ordinal) || string.IsN
 var options = FromArguments(args) ?? FromFileName();
 
 // Problems that make remote support impossible on this desktop, checked before anything connects.
+// Wayland: screen and input through xdg-desktop-portal + PipeWire (the desktop asks the user which screens to share).
+var wayland = WaylandDesktop.IsWaylandSession;
 string? problem = null;
 X11Display? display = null;
-if (string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase))
-{
-    problem = Ui.Get("Error_Wayland");
-}
-else if ((display = X11Display.Open()) is null)
-{
-    problem = Ui.Get("Error_NoDisplay");
-}
-else if (!JpegEncoder.IsAvailable)
+if (!JpegEncoder.IsAvailable)
 {
     problem = Ui.Get("Error_NoTurboJpeg");
 }
+else if (!wayland && (display = X11Display.Open()) is null)
+{
+    problem = Ui.Get("Error_NoDisplay");
+}
+
+Func<CancellationToken, Task<IDesktopAccess>> openDesktop = wayland
+    ? async cancellationToken => await WaylandDesktop.StartAsync(restoreToken: null, persist: false, cancellationToken)
+    : _ => Task.FromResult<IDesktopAccess>(new X11DesktopAccess(display!));
 
 using (display)
 {
     if (terminal)
     {
-        if (problem is not null || options is null || display is null)
+        if (problem is not null || options is null)
         {
             Console.Error.WriteLine(problem ?? Ui.Get("Usage"));
             return problem is null ? 2 : 3;
         }
 
-        return await RunTerminalAsync(options, display);
+        return await RunTerminalAsync(options, openDesktop);
     }
 
     // Graphical client: errors as a message window, missing target via the connect window.
     return App.Run(() =>
     {
-        if (problem is not null || display is null)
+        if (problem is not null)
         {
-            return new QuestionWindow(Ui.Get("App_Title"), problem ?? Ui.Get("Error_NoDisplay"), Ui.Get("Gui_Close"), null);
+            return new QuestionWindow(Ui.Get("App_Title"), problem, Ui.Get("Gui_Close"), null);
         }
 
         if (options is not null)
         {
-            return new SessionWindow(options, display);
+            return new SessionWindow(options, openDesktop);
         }
 
-        return new ConnectWindow(target => new SessionWindow(AgentSessionOptions.FromTarget(target, Machine(), "linux"), display).Show());
+        return new ConnectWindow(target => new SessionWindow(AgentSessionOptions.FromTarget(target, Machine(), "linux"), openDesktop).Show());
     }, args);
 }
 
-static async Task<int> RunTerminalAsync(AgentSessionOptions options, X11Display display)
+static async Task<int> RunTerminalAsync(AgentSessionOptions options, Func<CancellationToken, Task<IDesktopAccess>> openDesktop)
 {
-    var ui = new ConsoleUserInterface();
-    using var screen = new X11ScreenSource(display);
-    await using var streamer = new ScreenStreamer(screen);
-    await using var shells = new ShellHandler(new PtyShellHost());
-    await using var session = new AgentSession(
-        options, new ClientWebSocketConnector(), ui,
-        [streamer, new InputHandler(new X11InputInjector(display), screen), new ChatHandler(ui), shells]);
-
-    Console.CancelKeyPress += (_, e) =>
+    IDesktopAccess desktop;
+    try
     {
-        e.Cancel = true; // end cleanly: the supporter sees "ended by customer"
-        _ = session.EndAsync();
-    };
+        desktop = await openDesktop(CancellationToken.None);
+    }
+    catch (DesktopUnavailableException ex)
+    {
+        Console.Error.WriteLine(Ui.ForError(ex.Code));
+        return 3;
+    }
 
-    var result = await session.RunAsync(CancellationToken.None);
-    return result.Succeeded ? 0 : 1;
+    await using (desktop)
+    {
+        var ui = new ConsoleUserInterface();
+        await using var streamer = new ScreenStreamer(desktop.Screen);
+        await using var shells = new ShellHandler(new PtyShellHost());
+        await using var session = new AgentSession(
+            options, new ClientWebSocketConnector(), ui,
+            [streamer, new InputHandler(desktop.Input, desktop.Screen), new ChatHandler(ui), shells]);
+
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true; // end cleanly: the supporter sees "ended by customer"
+            _ = session.EndAsync();
+        };
+
+        var result = await session.RunAsync(CancellationToken.None);
+        return result.Succeeded ? 0 : 1;
+    }
 }
 
 static AgentSessionOptions? FromArguments(string[] args)

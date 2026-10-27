@@ -6,7 +6,9 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Usage" xml:space="preserve"><value>Usage: mkits-agent --server https://&lt;server&gt; --code &lt;session code&gt;</value></data>
-  <data name="Error_Wayland" xml:space="preserve"><value>This desktop uses Wayland. Screen sharing for Wayland follows in a later version – please log in with an X11 session (e.g. "Ubuntu on Xorg").</value></data>
+  <data name="Error_PORTAL_DECLINED" xml:space="preserve"><value>Screen sharing was not allowed in the desktop's dialog. Start the support client again and allow sharing the screen and remote control.</value></data>
+  <data name="Error_NO_PORTAL" xml:space="preserve"><value>This Wayland desktop offers no screen sharing for remote support (xdg-desktop-portal with RemoteDesktop is missing). Install xdg-desktop-portal-gnome or -kde, or log in with an X11 session.</value></data>
+  <data name="Error_NO_PIPEWIRE" xml:space="preserve"><value>PipeWire is missing, which Wayland screen sharing needs. Install it with: sudo apt install pipewire</value></data>
   <data name="Error_NoDisplay" xml:space="preserve"><value>No graphical desktop found (DISPLAY is not set or the X server is not reachable).</value></data>
   <data name="Error_NoTurboJpeg" xml:space="preserve"><value>libjpeg-turbo is missing. Install it with: sudo apt install libturbojpeg0 (Debian) or libturbojpeg (Ubuntu).</value></data>
   <data name="Status_Connecting" xml:space="preserve"><value>Connecting to {0} …</value></data>

@@ -25,6 +25,11 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.22" />
   </ItemGroup>
 
+  <ItemGroup Label="Linux agent: D-Bus (Wayland portals)">
+    <!-- Same version Avalonia.FreeDesktop 11.3 depends on (patched 0.21 line), so there is only one copy. -->
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+
   <ItemGroup Label="Server">
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
