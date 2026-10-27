@@ -26,5 +26,5 @@ internal static class AgentPaths
     /// <summary>Downloaded, verified package waiting to be installed (ADR-0023); root only like the data folder.</summary>
     public const string UpdateDirectory = DataDirectory + "/update";
 
-    public const string StagedUpdate = UpdateDirectory + "/mkits-agent_amd64.deb";
+    public const string StagedUpdate = UpdateDirectory + "/mkits-agent.deb";
 }

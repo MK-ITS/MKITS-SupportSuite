@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Builds the Linux ad-hoc client as AppImage: artifacts/linux/MKITS-Support-x86_64.AppImage
+# Builds the Linux ad-hoc client as AppImage: artifacts/linux/MKITS-Support-<x86_64|aarch64>.AppImage
+# TARGET_ARCH=arm64 builds for 64-bit ARM (cross build: needs the arm64 libturbojpeg, e.g. via dpkg multiarch).
 #
 # Requirements on the build machine: .NET SDK, libturbojpeg (bundled into the AppImage), curl.
 # appimagetool is downloaded unless APPIMAGETOOL points to it. Without FUSE (CI, containers) set
@@ -10,6 +11,8 @@
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
+# shellcheck source=arch.sh
+. "$repo/deploy/linux/arch.sh"
 out="${1:-$repo/artifacts/linux}"
 build_number="${BUILD_NUMBER:-0}"
 work="$(mktemp -d)"
@@ -19,13 +22,9 @@ appdir="$work/AppDir"
 mkdir -p "$appdir/usr/lib/mkits-agent" "$out"
 
 dotnet publish "$repo/src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj" \
-  -c Release -r linux-x64 --self-contained -p:BuildNumber="$build_number" -o "$appdir/usr/lib/mkits-agent"
+  -c Release -r "$rid" --self-contained -p:BuildNumber="$build_number" -o "$appdir/usr/lib/mkits-agent"
 
-turbojpeg="$(ldconfig -p | awk '/libturbojpeg\.so\.0 .*x86-64/ { print $NF; exit }')"
-if [ -z "$turbojpeg" ]; then
-  echo "libturbojpeg.so.0 not found – install libturbojpeg (Ubuntu) or libturbojpeg0 (Debian)" >&2
-  exit 1
-fi
+turbojpeg="$(find_turbojpeg)"
 cp -L "$turbojpeg" "$appdir/usr/lib/mkits-agent/libturbojpeg.so.0"
 
 cat > "$appdir/AppRun" <<'APPRUN'
@@ -40,9 +39,10 @@ cp "$repo/deploy/linux/mkits-support.png" "$appdir/"
 tool="${APPIMAGETOOL:-}"
 if [ -z "$tool" ]; then
   tool="$work/appimagetool"
-  curl -fsSL -o "$tool" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+  # the tool for the build machine; it fetches the AppImage runtime for the target ($ARCH)
+  curl -fsSL -o "$tool" "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(uname -m).AppImage"
   chmod +x "$tool"
 fi
 
-ARCH=x86_64 "$tool" --no-appstream "$appdir" "$out/MKITS-Support-x86_64.AppImage"
-echo "Built $out/MKITS-Support-x86_64.AppImage"
+ARCH="$appimage_arch" "$tool" --no-appstream "$appdir" "$out/MKITS-Support-$appimage_arch.AppImage"
+echo "Built $out/MKITS-Support-$appimage_arch.AppImage"

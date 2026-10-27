@@ -68,7 +68,7 @@ RUN --mount=type=secret,id=agent_update_key \
       echo "Agent update not signed (no release key or local build) – agents will not update to this build."; \
     fi
 
-# ---- Linux client (AppImage, x86_64) ----
+# ---- Linux client and agent package (x86_64 and arm64) ----
 # Same idea as the Windows client: the portal serves the client of the server's version (ADR-0019).
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS linux-client
 # The package is called libturbojpeg on Ubuntu (the SDK image's base) and libturbojpeg0 on Debian. dpkg-deb is part of the base.
@@ -76,6 +76,9 @@ RUN apt-get update \
  && (apt-get install -y --no-install-recommends libturbojpeg || apt-get install -y --no-install-recommends libturbojpeg0) \
  && apt-get install -y --no-install-recommends curl ca-certificates file \
  && rm -rf /var/lib/apt/lists/*
+# arm64 libjpeg-turbo for the cross builds (dpkg multiarch).
+COPY deploy/linux/install-arm64-turbojpeg.sh /tmp/
+RUN /tmp/install-arm64-turbojpeg.sh && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/Common/MKITS.SupportSuite.Common/MKITS.SupportSuite.Common.csproj src/Common/MKITS.SupportSuite.Common/
@@ -83,6 +86,7 @@ COPY src/Agent/MKITS.SupportSuite.Agent.Core/MKITS.SupportSuite.Agent.Core.cspro
 COPY src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj src/Agent/MKITS.SupportSuite.Agent.Linux/
 COPY src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj src/Tools/MKITS.SupportSuite.UpdateSigner/
 RUN dotnet restore src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj -r linux-x64 \
+ && dotnet restore src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj -r linux-arm64 \
  && dotnet restore src/Tools/MKITS.SupportSuite.UpdateSigner/MKITS.SupportSuite.UpdateSigner.csproj
 
 COPY proto/ proto/
@@ -95,15 +99,22 @@ COPY src/Agent/MKITS.SupportSuite.Agent.Linux/ src/Agent/MKITS.SupportSuite.Agen
 COPY src/Tools/MKITS.SupportSuite.UpdateSigner/ src/Tools/MKITS.SupportSuite.UpdateSigner/
 ARG BUILD_NUMBER=0
 # No FUSE during image builds: appimagetool runs extracted.
-RUN APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-appimage.sh /out/linux
+RUN APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-appimage.sh /out/linux \
+ && APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} TARGET_ARCH=arm64 TURBOJPEG=/usr/lib/aarch64-linux-gnu/libturbojpeg.so.0 \
+    deploy/linux/build-appimage.sh /out/linux-arm64
 # The installed agent as Debian package (ADR-0025), downloaded by Admins next to the enrollment token.
 RUN BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-deb.sh /out/linux-deb \
- && cp /out/linux-deb/mkits-agent_*_amd64.deb /out/linux/mkits-agent_amd64.deb
-# Signed update manifest for installed Linux agents (channel linux-x64-deb), as for Windows above.
+ && BUILD_NUMBER=${BUILD_NUMBER} TARGET_ARCH=arm64 TURBOJPEG=/usr/lib/aarch64-linux-gnu/libturbojpeg.so.0 \
+    deploy/linux/build-deb.sh /out/linux-deb \
+ && cp /out/linux-deb/mkits-agent_*_amd64.deb /out/linux/mkits-agent_amd64.deb \
+ && cp /out/linux-deb/mkits-agent_*_arm64.deb /out/linux-arm64/mkits-agent_arm64.deb
+# Signed update manifests for installed Linux agents (channels linux-x64-deb, linux-arm64-deb), as for Windows above.
 RUN --mount=type=secret,id=agent_update_key \
     if [ -s /run/secrets/agent_update_key ] && [ "${BUILD_NUMBER}" != "0" ]; then \
       dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
-        /out/linux/mkits-agent_amd64.deb linux-x64-deb "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key; \
+        /out/linux/mkits-agent_amd64.deb linux-x64-deb "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key \
+      && dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
+        /out/linux-arm64/mkits-agent_arm64.deb linux-arm64-deb "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key; \
     else \
       echo "Linux agent update not signed (no release key or local build)."; \
     fi
@@ -119,6 +130,8 @@ COPY --from=build /app/publish .
 COPY --from=windows-client /out/windows-x64/MKITS-Support.exe* agents/windows-x64/
 COPY --from=linux-client /out/linux/MKITS-Support-x86_64.AppImage agents/linux-x64/MKITS-Support.AppImage
 COPY --from=linux-client /out/linux/mkits-agent_amd64.deb* agents/linux-x64/
+COPY --from=linux-client /out/linux-arm64/MKITS-Support-aarch64.AppImage agents/linux-arm64/MKITS-Support.AppImage
+COPY --from=linux-client /out/linux-arm64/mkits-agent_arm64.deb* agents/linux-arm64/
 
 # Persistent data (SQLite database, recordings, keys) lives in /data – mount a volume there.
 # The HTTP port (8080) is set in appsettings.json (Kestrel:Endpoints).

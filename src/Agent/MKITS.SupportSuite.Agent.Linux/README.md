@@ -14,6 +14,7 @@ Linux agent (Debian 12+, Ubuntu 22.04+; x64 and arm64). ADR-0011: X11 and Waylan
 | `Permanent/` | installed agent (ADR-0025): `--install`/`--uninstall`, systemd service (`AgentService`), X display of the logged-on user (`DesktopLocator`, `XAuthority`, `SessionDesktop`), session window in the user's session (`UserSessionConnector`, `UserProcess`), root shell |
 | `../../../deploy/linux/build-appimage.sh` | AppImage (self-contained folder + bundled libjpeg-turbo); also built into the server image |
 | `../../../deploy/linux/build-deb.sh`, `mkits-agent.service`, `deb/` | `.deb` package of the installed agent with the systemd unit |
+| `../../../deploy/linux/arch.sh`, `install-arm64-turbojpeg.sh` | `TARGET_ARCH=arm64` for both build scripts (native on ARM, or cross on x86_64 with the arm64 libjpeg-turbo via multiarch) |
 
 Runtime dependencies (Debian / Ubuntu package names): `libx11-6`, `libxtst6`, `libxrandr2`, `libturbojpeg0` / `libturbojpeg`, `util-linux` (`setsid`, `runuser`).
 

@@ -19,9 +19,9 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Windows agent as a service (unattended access, consent policies, session window with chat/files/clipboard/shell) | ✅ available (see §5.2) |
 | Agent auto-update (signed) | ✅ available once the release key is set up |
 | MSI package | ✖ not planned – the EXE installs itself (ADR-0024) |
-| Linux ad-hoc client (AppImage, X11 desktops): screen, input, chat, files, clipboard, terminal | ✅ available |
+| Linux ad-hoc client (AppImage for x86_64 and arm64, X11 desktops): screen, input, chat, files, clipboard, terminal | ✅ available |
 | Permanent Linux agent (systemd service, .deb; screen/input on X11 desktops, root shell) | ✅ available (see §5.2) |
-| Linux on Wayland desktops, arm64 | 🔜 Phase 11 (M3) |
+| Linux on Wayland desktops | 🔜 Phase 11 (M3) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
 
@@ -100,9 +100,9 @@ There is no MSI package (ADR-0024); the EXE installs itself. Use a token with a 
 
 Exit codes: `0` ok, `2` invalid arguments, `5` not elevated, `6` service error, `7` file error. Details are in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
 
-- **Linux** (Debian 12+, Ubuntu 22.04+, x64): download `mkits-agent_amd64.deb` (link next to the token) and run as root:
+- **Linux** (Debian 12+, Ubuntu 22.04+; x86_64 or arm64, e.g. Raspberry Pi OS 64-bit): download `mkits-agent_amd64.deb` or `mkits-agent_arm64.deb` (links next to the token) and run as root:
   ```bash
-  sudo apt install ./mkits-agent_amd64.deb
+  sudo apt install ./mkits-agent_amd64.deb   # or ./mkits-agent_arm64.deb
   sudo mkits-agent --install --server https://support.example.com --token <token>
   ```
   The package installs the agent to `/opt/mkits-agent` and the systemd service **mkits-agent** (starts at boot, restarts on failure); `--install` stores server and token and enrolls the device. Configuration (`/etc/mkits-agent`) and identity (`/var/lib/mkits-agent`) are readable by root only; the token is deleted after enrollment. Log: `journalctl -u mkits-agent`. `--reenroll` forces a new enrollment, `sudo mkits-agent --uninstall` disconnects the device, `sudo apt purge mkits-agent` removes everything. **Updates:** like on Windows, installed agents update themselves from the server (signed package, only outside of sessions; log: `journalctl -u 'mkits-agent-update-*'`) – provided the image is signed with the project's release key (ADR-0023). Otherwise install the newer package manually (`sudo apt install ./mkits-agent_amd64.deb`); the service restarts with it.
