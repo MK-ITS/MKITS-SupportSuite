@@ -19,9 +19,9 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Windows agent as a service (unattended access, consent policies, session window with chat/files/clipboard/shell) | ✅ available (see §5.2) |
 | Agent auto-update (signed) | ✅ available once the release key is set up |
 | MSI package | ✖ not planned – the EXE installs itself (ADR-0024) |
-| Linux ad-hoc client (AppImage for x86_64 and arm64, X11 desktops): screen, input, chat, files, clipboard, terminal | ✅ available |
+| Linux ad-hoc client (AppImage for x86_64 and arm64; X11 and Wayland desktops – on Wayland the desktop asks which screens to share): screen, input, chat, files, clipboard, terminal | ✅ available |
 | Permanent Linux agent (systemd service, .deb; screen/input on X11 desktops, root shell) | ✅ available (see §5.2) |
-| Linux on Wayland desktops | 🔜 Phase 11 (M3) |
+| Permanent Linux agent on Wayland desktops, Linux login screen | 🔜 Phase 11 (M3) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
 

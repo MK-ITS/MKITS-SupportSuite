@@ -33,3 +33,4 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0023](0023-agent-auto-update.md) | Signed agent auto-update | Accepted |
 | [ADR-0024](0024-windows-deployment-without-msi.md) | Windows deployment without an MSI package | Accepted |
 | [ADR-0025](0025-linux-permanent-agent.md) | Permanent Linux agent (systemd service + session window) | Accepted |
+| [ADR-0026](0026-wayland-portal.md) | Wayland through xdg-desktop-portal and PipeWire | Accepted |

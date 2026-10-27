@@ -19,9 +19,9 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Windows-Agent als Dienst (unbeaufsichtigter Zugriff, Zustimmungsrichtlinien, Sitzungsfenster mit Chat/Dateien/Zwischenablage/Shell) | ✅ verfügbar (siehe §5.2) |
 | Agent-Auto-Update (signiert) | ✅ verfügbar, sobald der Release-Schlüssel eingerichtet ist |
 | MSI-Paket | ✖ nicht geplant – die EXE installiert sich selbst (ADR-0024) |
-| Linux-Adhoc-Client (AppImage für x86_64 und arm64, X11-Desktops): Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Terminal | ✅ verfügbar |
+| Linux-Adhoc-Client (AppImage für x86_64 und arm64; X11- und Wayland-Desktops – unter Wayland fragt der Desktop, welche Bildschirme freigegeben werden): Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Terminal | ✅ verfügbar |
 | Dauerhafter Linux-Agent (systemd-Dienst, .deb; Bildschirm/Eingabe auf X11-Desktops, root-Shell) | ✅ verfügbar (siehe §5.2) |
-| Linux auf Wayland-Desktops | 🔜 Phase 11 (M3) |
+| Dauerhafter Linux-Agent auf Wayland-Desktops, Linux-Anmeldebildschirm | 🔜 Phase 11 (M3) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
 

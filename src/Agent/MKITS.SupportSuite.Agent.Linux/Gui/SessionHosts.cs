@@ -12,8 +12,8 @@ namespace MKITS.SupportSuite.Agent.Linux.Gui;
 /// <summary>What runs behind the session window: an own ad-hoc session, or the bridge to the installed agent's service.</summary>
 internal interface ISessionHost : IAsyncDisposable
 {
-    /// <summary>Where chat messages, files and clipboard changes from this window are sent.</summary>
-    ISessionContext Context { get; }
+    /// <summary>Where chat messages, files and clipboard changes from this window are sent (<c>null</c> before the session runs).</summary>
+    ISessionContext? Context { get; }
 
     /// <summary>Runs until the session is over; returns an error code if it failed.</summary>
     Task<string?> RunAsync(CancellationToken cancellationToken);
@@ -23,41 +23,51 @@ internal interface ISessionHost : IAsyncDisposable
 }
 
 /// <summary>
-/// Ad-hoc client: the window's own connection to the server with X11 screen/input and the PTY shell (with the user's rights).
+/// Ad-hoc client: the window's own connection to the server with the desktop's screen/input (X11, or Wayland via the
+/// portal – opened first, so the desktop's sharing dialog comes before the connection) and the PTY shell (user's rights).
 /// </summary>
-internal sealed class AdHocSessionHost : ISessionHost
+internal sealed class AdHocSessionHost(
+    AgentSessionOptions options, Func<CancellationToken, Task<IDesktopAccess>> openDesktop, IAgentUserInterface ui, IEnumerable<ISessionChannelHandler> userHandlers)
+    : ISessionHost
 {
-    private readonly X11ScreenSource _screen;
-    private readonly ScreenStreamer _streamer;
-    private readonly ShellHandler _shells;
-    private readonly AgentSession _session;
+    private AgentSession? _session;
+    private IDesktopAccess? _desktop;
 
-    public AdHocSessionHost(AgentSessionOptions options, X11Display display, IAgentUserInterface ui, IEnumerable<ISessionChannelHandler> userHandlers)
-    {
-        _screen = new X11ScreenSource(display);
-        _streamer = new ScreenStreamer(_screen);
-        _shells = new ShellHandler(new PtyShellHost());
-        _session = new AgentSession(
-            options, new ClientWebSocketConnector(), ui,
-            [_streamer, new InputHandler(new X11InputInjector(display), _screen), .. userHandlers, _shells]);
-    }
-
-    public ISessionContext Context => _session;
+    public ISessionContext? Context => _session;
 
     public async Task<string?> RunAsync(CancellationToken cancellationToken)
     {
+        try
+        {
+            _desktop = await openDesktop(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DesktopUnavailableException ex)
+        {
+            return ex.Code;
+        }
+
+        await using var streamer = new ScreenStreamer(_desktop.Screen);
+        await using var shells = new ShellHandler(new PtyShellHost());
+        _session = new AgentSession(
+            options, new ClientWebSocketConnector(), ui,
+            [streamer, new InputHandler(_desktop.Input, _desktop.Screen), .. userHandlers, shells]);
         var result = await _session.RunAsync(cancellationToken).ConfigureAwait(false);
         return result.Succeeded ? null : result.ErrorCode ?? string.Empty;
     }
 
-    public Task EndAsync(CancellationToken cancellationToken) => _session.EndAsync();
+    public Task EndAsync(CancellationToken cancellationToken) => _session?.EndAsync() ?? Task.CompletedTask;
 
     public async ValueTask DisposeAsync()
     {
-        await _session.DisposeAsync().ConfigureAwait(false);
-        await _shells.DisposeAsync().ConfigureAwait(false);
-        await _streamer.DisposeAsync().ConfigureAwait(false);
-        _screen.Dispose();
+        if (_session is not null)
+        {
+            await _session.DisposeAsync().ConfigureAwait(false);
+        }
+
+        if (_desktop is not null)
+        {
+            await _desktop.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }
 
@@ -70,7 +80,7 @@ internal sealed class BridgeSessionHost(Stream stream, IAgentUserInterface ui, I
 {
     private readonly BridgeClient _client = new(stream, ui, userHandlers);
 
-    public ISessionContext Context => _client;
+    public ISessionContext? Context => _client;
 
     public async Task<string?> RunAsync(CancellationToken cancellationToken)
     {

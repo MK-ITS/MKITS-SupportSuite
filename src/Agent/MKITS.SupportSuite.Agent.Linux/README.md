@@ -9,6 +9,7 @@ Linux agent (Debian 12+, Ubuntu 22.04+; x64 and arm64). ADR-0011: X11 and Waylan
 | `Platform/X11ScreenSource` | monitors from XRandR, `XGetImage` per monitor, JPEG via libjpeg-turbo |
 | `Platform/X11InputInjector`, `KeyCodes` | XTest: pointer, buttons, wheel, keys by physical position (evdev code + 8), Unicode text via a temporarily mapped spare keycode |
 | `Platform/PtyShellHost` | shells on a pseudo terminal (`posix_openpt`, `posix_spawn`, `setsid --ctty`) |
+| `Wayland/` | Wayland (ADR-0026): `PortalSession` (xdg-desktop-portal RemoteDesktop + ScreenCast over D-Bus), `PipeWireCapture` (libpipewire, hand-built SPA format POD), `WaylandScreenSource`, `PortalInputInjector` |
 | `Gui/` | graphical ad-hoc client (Avalonia, code-only UI): session window, consent and file dialogs, connect window |
 | `Terminal/` | terminal ad-hoc client (`--terminal`, or automatically without a graphical desktop) |
 | `Permanent/` | installed agent (ADR-0025): `--install`/`--uninstall`, systemd service (`AgentService`), X display of the logged-on user (`DesktopLocator`, `XAuthority`, `SessionDesktop`), session window in the user's session (`UserSessionConnector`, `UserProcess`), root shell |
@@ -20,6 +21,6 @@ Runtime dependencies (Debian / Ubuntu package names): `libx11-6`, `libxtst6`, `l
 
 Installed agent: `sudo apt install ./mkits-agent_<version>_amd64.deb`, then `sudo mkits-agent --install --server https://support.example.com --token <enrollment token>` (`--reenroll` for a new identity, `--uninstall` to disconnect). Log: `journalctl -u mkits-agent`. Configuration in `/etc/mkits-agent`, identity in `/var/lib/mkits-agent` (root only). The remote shell of the installed agent runs as root.
 
-Try it on an X11 desktop: `mkits-agent --server https://support.example.com --code 12345678` (add `--terminal` for the terminal version). Customers get `MKITS-Support_<host>_<code>.AppImage` from the portal; on systems without FUSE run it with `--appimage-extract-and-run`. Wayland sessions are not supported yet (11.2): the client says so.
+Try it on an X11 desktop: `mkits-agent --server https://support.example.com --code 12345678` (add `--terminal` for the terminal version). Customers get `MKITS-Support_<host>_<code>.AppImage` from the portal; on systems without FUSE run it with `--appimage-extract-and-run`. On Wayland desktops (GNOME, KDE) the client uses the desktop portal: the desktop asks which screens to share and whether remote control is allowed (needs `xdg-desktop-portal` with the desktop's backend and PipeWire). The installed agent supports X11 only so far.
 
 Tests: `tests/MKITS.SupportSuite.Agent.Linux.Tests` start their own Xvfb (`sudo apt install xvfb libxtst6 libxrandr2 libturbojpeg`).

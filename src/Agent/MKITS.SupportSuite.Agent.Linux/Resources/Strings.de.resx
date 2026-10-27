@@ -6,7 +6,9 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Usage" xml:space="preserve"><value>Aufruf: mkits-agent --server https://&lt;server&gt; --code &lt;Sitzungscode&gt;</value></data>
-  <data name="Error_Wayland" xml:space="preserve"><value>Dieser Desktop verwendet Wayland. Bildschirmfreigabe unter Wayland folgt in einer späteren Version – bitte melden Sie sich mit einer X11-Sitzung an (z. B. „Ubuntu mit Xorg“).</value></data>
+  <data name="Error_PORTAL_DECLINED" xml:space="preserve"><value>Die Bildschirmfreigabe wurde im Dialog des Desktops nicht erlaubt. Starten Sie den Support-Client erneut und erlauben Sie die Freigabe des Bildschirms und die Fernsteuerung.</value></data>
+  <data name="Error_NO_PORTAL" xml:space="preserve"><value>Dieser Wayland-Desktop bietet keine Bildschirmfreigabe für Fernwartung an (xdg-desktop-portal mit RemoteDesktop fehlt). Installieren Sie xdg-desktop-portal-gnome bzw. -kde oder melden Sie sich mit einer X11-Sitzung an.</value></data>
+  <data name="Error_NO_PIPEWIRE" xml:space="preserve"><value>PipeWire fehlt, das für die Bildschirmfreigabe unter Wayland nötig ist. Installieren mit: sudo apt install pipewire</value></data>
   <data name="Error_NoDisplay" xml:space="preserve"><value>Kein grafischer Desktop gefunden (DISPLAY ist nicht gesetzt oder der X-Server ist nicht erreichbar).</value></data>
   <data name="Error_NoTurboJpeg" xml:space="preserve"><value>libjpeg-turbo fehlt. Installieren mit: sudo apt install libturbojpeg0 (Debian) bzw. libturbojpeg (Ubuntu).</value></data>
   <data name="Status_Connecting" xml:space="preserve"><value>Verbinde mit {0} …</value></data>
