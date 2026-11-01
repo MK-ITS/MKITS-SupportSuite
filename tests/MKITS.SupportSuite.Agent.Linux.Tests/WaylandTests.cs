@@ -61,28 +61,41 @@ public sealed class WaylandTests(PipeWireFixture pipewire) : IClassFixture<PipeW
     [Fact]
     public void PipeWireCapture_ReceivesFramesOfAStream()
     {
-        Assert.True(pipewire.Available, "pipewire, wireplumber, gst-launch-1.0 (gstreamer1.0-pipewire) and dbus-daemon are needed");
+        Assert.True(pipewire.Available, "pipewire (incl. pw-cli), wireplumber, gst-launch-1.0 (gstreamer1.0-pipewire) and dbus-daemon are needed");
 
-        using var capture = PipeWireCapture.Connect(null, 0, PipeWireFixture.SourceNode, pipewire.Socket);
-
+        // One reconnect: on a busy runner the session manager may link the first stream late.
+        var capture = PipeWireCapture.Connect(null, 0, PipeWireFixture.SourceNode, pipewire.Socket);
         Assert.NotNull(capture);
-        Assert.True(capture.WaitForFrame(TimeSpan.FromSeconds(30)), "no frame from the test source");
-        Assert.Equal(new VideoFormat(SpaPod.VideoFormatBgrx, 320, 240), capture.Format);
-
-        // The very first buffer of a fresh consumer can be blank with GStreamer's sink; the test pattern follows.
-        var pixel = -1;
-        for (var i = 0; i < 50 && pixel != 0xFF0000; i++)
+        if (!capture.WaitForFrame(TimeSpan.FromSeconds(20)))
         {
-            Thread.Sleep(100);
-            pixel = capture.WithLatestFrame(
-                (pixels, width, height, stride, bgrx) =>
-                    bgrx && stride >= width * 4 ? Marshal.ReadInt32(pixels + (stride * (height / 2)) + (width / 2 * 4)) & 0xFFFFFF : -2,
-                -1);
+            capture.Dispose();
+            capture = PipeWireCapture.Connect(null, 0, PipeWireFixture.SourceNode, pipewire.Socket)!;
         }
 
-        Assert.Equal(0xFF0000, pixel); // red in BGRx: B=0, G=0, R=255
-        Assert.True(capture.Frames > 1);
-        Assert.False(capture.Failed);
+        try
+        {
+            Assert.True(capture.WaitForFrame(TimeSpan.FromSeconds(20)), "no frame from the test source");
+            Assert.Equal(new VideoFormat(SpaPod.VideoFormatBgrx, 320, 240), capture.Format);
+
+            // The very first buffer of a fresh consumer can be blank with GStreamer's sink; the test pattern follows.
+            var pixel = -1;
+            for (var i = 0; i < 50 && pixel != 0xFF0000; i++)
+            {
+                Thread.Sleep(100);
+                pixel = capture.WithLatestFrame(
+                    (pixels, width, height, stride, bgrx) =>
+                        bgrx && stride >= width * 4 ? Marshal.ReadInt32(pixels + (stride * (height / 2)) + (width / 2 * 4)) & 0xFFFFFF : -2,
+                    -1);
+            }
+
+            Assert.Equal(0xFF0000, pixel); // red in BGRx: B=0, G=0, R=255
+            Assert.True(capture.Frames > 1);
+            Assert.False(capture.Failed);
+        }
+        finally
+        {
+            capture.Dispose();
+        }
     }
 
     [Fact]

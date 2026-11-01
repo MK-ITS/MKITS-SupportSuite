@@ -7,6 +7,16 @@ updates:
     groups:
       testing:
         patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "Microsoft.AspNetCore.Mvc.Testing"]
+      # Avalonia packages always move together (one PR instead of one per package).
+      avalonia:
+        patterns: ["Avalonia*"]
+    ignore:
+      # Avalonia 12 is a breaking major release; it also pulls Tmds.DBus.Protocol 0.9x, while the Linux agent pins the
+      # 0.21 line Avalonia 11 uses (ADR-0026). Upgrading both is a planned change, not a routine bump.
+      - dependency-name: "Avalonia*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Tmds.DBus.Protocol"
+        versions: [">=0.22"]
 
   - package-ecosystem: github-actions
     directory: "/"
