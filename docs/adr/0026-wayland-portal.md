@@ -23,8 +23,17 @@ stream, input goes through portal D-Bus calls. The desktop always asks the user 
 - **Input:** portal `NotifyPointerMotionAbsolute` (stream-relative logical coordinates), `NotifyPointerButton`
   (evdev button codes), `NotifyPointerAxisDiscrete`, `NotifyKeyboardKeycode` (evdev, same mapping as X11) and
   `NotifyKeyboardKeysym` for text; sent without waiting for replies, in order.
-- **Scope of this step:** the ad-hoc client (customer present). The installed agent on Wayland (needs the portal in
-  the user's session process and a restore token for unattended access) and the login screen follow separately.
+- **Ad-hoc client:** opens the portal session before connecting.
+- **Installed agent (ADR-0025):** the portal belongs to the user's session, so the session window process (started by
+  the service with the session's `WAYLAND_DISPLAY`, D-Bus address and XWayland display) opens it when a session is
+  assigned and runs the screen streamer and input handler there. For Wayland sessions the service's
+  `UserSessionBridge` forwards video, display and input as well (decided per session from logind's session type);
+  the service's own X11 screen/input handlers stay idle (`SwitchableHandler`). The session window asks for
+  persistence (`persist_mode` 2) and keeps the restore token in `~/.local/state/mkits-agent` (0600), so desktops that
+  support it skip their dialog next time. A frame from the user's process is no more trustworthy than that user's
+  desktop – which is what the supporter is looking at anyway; consent, permissions and encryption stay in the service.
+- **Not covered:** the login screen (no user session, no portal) and fully unattended first use – the desktop's
+  dialog must be answered once by someone at the computer.
 
 ## Consequences
 

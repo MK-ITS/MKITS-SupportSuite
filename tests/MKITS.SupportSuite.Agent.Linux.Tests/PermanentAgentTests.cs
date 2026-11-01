@@ -149,6 +149,41 @@ public sealed class PermanentAgentTests : IDisposable
     }
 
     [Fact]
+    public void DesktopLocator_SessionEnvironment_Wayland_KeepsOnlyASocketName()
+    {
+        var environment = new Dictionary<string, string>
+        {
+            ["WAYLAND_DISPLAY"] = "wayland-0",
+            ["DISPLAY"] = "remote:0",
+            ["XDG_SESSION_TYPE"] = "wayland",
+        };
+        var evil = new Dictionary<string, string> { ["WAYLAND_DISPLAY"] = "/tmp/evil" };
+
+        var variables = DesktopLocator.SessionEnvironment(environment, string.Empty, 1000);
+
+        Assert.Equal("wayland-0", variables["WAYLAND_DISPLAY"]);
+        Assert.False(variables.ContainsKey("DISPLAY")); // no checked X display (no XWayland)
+        Assert.False(DesktopLocator.SessionEnvironment(evil, string.Empty, 1000).ContainsKey("WAYLAND_DISPLAY"));
+    }
+
+    [Fact]
+    public void PortalTokenStore_SavesForTheUserOnly_AndRejectsJunk()
+    {
+        var path = Path.Combine(_directory, "state", "mkits-agent", "portal-restore-token");
+        var store = new Wayland.PortalTokenStore(path);
+
+        Assert.Null(store.Load());
+        store.Save("abc-123");
+        Assert.Equal("abc-123", store.Load());
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
+
+        File.WriteAllText(path, "bad\u0001token");
+        Assert.Null(store.Load());
+        store.Save(null);
+        Assert.False(File.Exists(path));
+    }
+
+        [Fact]
     public void UserSessionConnector_StartsTheWindowAsTheUser_WithAMinimalEnvironment()
     {
         var session = new LoginSession("2", 1000, "alice", "x11", ":0", true, false, "user");

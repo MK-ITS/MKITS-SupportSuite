@@ -109,7 +109,7 @@ internal sealed class SessionDesktop(
         {
             Report(problem, problem switch
             {
-                DesktopProblem.Wayland => "the logged-on user runs a Wayland session – screen and input are not available yet",
+                DesktopProblem.Wayland => "the logged-on user runs a Wayland session – screen and input go through the session window (portal)",
                 DesktopProblem.NoDisplay => "graphical session without a usable X display",
                 _ => "nobody is logged on graphically – screen and input are not available",
             });

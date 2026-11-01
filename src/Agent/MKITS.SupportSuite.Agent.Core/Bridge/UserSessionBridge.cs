@@ -30,16 +30,20 @@ public interface IUserSessionConnector
 /// on) these channels are not available and the <c>fallback</c> UI handles consent and notices.
 /// <para>
 /// <c>forwardedChannels</c> narrows the forwarded channels (the Linux service runs the shell itself); it can only pick
-/// from the user channels – screen and input never leave the service.
+/// from the user channels. Screen and input stay in the service – unless <c>desktopInUserSession</c> says, at the
+/// start of a session, that only the user's session can reach the desktop (Wayland: the portal belongs to the user's
+/// session); then video, display and input are forwarded too (<see cref="ForwardsDesktop"/>).
 /// </para>
 /// </summary>
-public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUserInterface fallback, IReadOnlyCollection<Channel>? forwardedChannels = null)
+public sealed class UserSessionBridge(
+    IUserSessionConnector connector, IAgentUserInterface fallback, IReadOnlyCollection<Channel>? forwardedChannels = null, Func<bool>? desktopInUserSession = null)
     : ISessionChannelHandler, IAgentUserInterface, IAsyncDisposable
 {
     /// <summary>How long a consent request waits for the user-session process to come up.</summary>
     internal static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(20);
 
     private static readonly HashSet<Channel> UserChannels = [Channel.Chat, Channel.Clipboard, Channel.File, Channel.Shell];
+    private static readonly HashSet<Channel> DesktopChannels = [Channel.Video, Channel.Display, Channel.Input];
 
     private readonly HashSet<Channel> _forwarded = forwardedChannels is null
         ? UserChannels
@@ -55,6 +59,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
     private IUserSessionConnection? _connection;
     private ISessionContext? _context;
     private int _nextConsentId;
+    private volatile bool _forwardsDesktop;
 
     /// <summary>Incremented whenever the connection is stopped; a connect attempt of an older generation is discarded.</summary>
     private int _generation;
@@ -70,11 +75,18 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
     /// <summary>Whether a user-session process is connected right now.</summary>
     public bool IsConnected => Volatile.Read(ref _connection) is not null;
 
+    /// <summary>
+    /// The current session's screen and input are handled in the user's session (decided at the session start); the
+    /// service's own screen and input handlers stay idle then (see <see cref="Features.SwitchableHandler"/>).
+    /// </summary>
+    public bool ForwardsDesktop => _forwardsDesktop;
+
     // ------------------------------------------------------------------ IAgentUserInterface (called by the session engine)
 
     public void OnSessionAssigned(string operatorName, ConsentPolicy policy)
     {
         fallback.OnSessionAssigned(operatorName, policy);
+        _forwardsDesktop = desktopInUserSession?.Invoke() ?? false;
         _assigned = (operatorName, policy);
         _status = null;
         _supporters = [];
@@ -154,7 +166,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
     {
         ArgumentNullException.ThrowIfNull(payload);
         _context = context;
-        if (!_forwarded.Contains(PayloadChannels.For(payload)))
+        if (!IsForwarded(PayloadChannels.For(payload)))
         {
             return Task.CompletedTask;
         }
@@ -176,6 +188,8 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
 
     public void OnViewerGone(string viewerId) =>
         _ = SendAsync(BridgeProtocol.Build(BridgeMessageType.ViewerGone, w => w.Write(viewerId)));
+
+    private bool IsForwarded(Channel channel) => _forwarded.Contains(channel) || (_forwardsDesktop && DesktopChannels.Contains(channel));
 
     public async ValueTask DisposeAsync()
     {
@@ -373,7 +387,7 @@ public sealed class UserSessionBridge(IUserSessionConnector connector, IAgentUse
             case BridgeMessageType.Payload:
                 var viewerId = BridgeProtocol.ReadString(reader);
                 var payload = SessionPayload.Parser.ParseFrom(reader.ReadBytes(Math.Clamp(reader.ReadInt32(), 0, BridgeProtocol.MaxMessageSize)));
-                if (_forwarded.Contains(PayloadChannels.For(payload)) && _context is { } context)
+                if (IsForwarded(PayloadChannels.For(payload)) && _context is { } context)
                 {
                     await context.SendAsync(viewerId.Length == 0 ? null : viewerId, payload, _disposed.Token).ConfigureAwait(false);
                 }

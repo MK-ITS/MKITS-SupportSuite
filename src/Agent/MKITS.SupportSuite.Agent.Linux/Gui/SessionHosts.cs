@@ -6,6 +6,8 @@ using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Agent.Linux.Platform;
+using MKITS.SupportSuite.Agent.Linux.Wayland;
+using MKITS.SupportSuite.Common.Protocol.V0;
 
 namespace MKITS.SupportSuite.Agent.Linux.Gui;
 
@@ -74,11 +76,31 @@ internal sealed class AdHocSessionHost(
 /// <summary>
 /// Installed agent (ADR-0025): the window runs in the user's session, started by the service, and talks to it over
 /// <paramref name="stream"/>. Chat, clipboard and files run here with the user's rights; screen, input and the shell
-/// stay in the service.
+/// stay in the service – except on Wayland, where only this process can reach the portal: then <paramref name="desktop"/>
+/// provides screen and input here (opened when the session is assigned) and the service forwards those channels (ADR-0026).
 /// </summary>
-internal sealed class BridgeSessionHost(Stream stream, IAgentUserInterface ui, IReadOnlyList<ISessionChannelHandler> userHandlers) : ISessionHost
+internal sealed class BridgeSessionHost : ISessionHost
 {
-    private readonly BridgeClient _client = new(stream, ui, userHandlers);
+    private readonly Stream _stream;
+    private readonly LazyWaylandDesktop? _desktop;
+    private readonly ScreenStreamer? _streamer;
+    private readonly BridgeClient _client;
+
+    public BridgeSessionHost(Stream stream, IAgentUserInterface ui, IReadOnlyList<ISessionChannelHandler> userHandlers, LazyWaylandDesktop? desktop)
+    {
+        _stream = stream;
+        _desktop = desktop;
+        List<ISessionChannelHandler> handlers = [.. userHandlers];
+        if (desktop is not null)
+        {
+            _streamer = new ScreenStreamer(desktop);
+            handlers.Add(_streamer);
+            handlers.Add(new InputHandler(desktop, desktop));
+            ui = new AssignmentHook(ui, desktop.Start);
+        }
+
+        _client = new BridgeClient(stream, ui, handlers);
+    }
 
     public ISessionContext? Context => _client;
 
@@ -94,6 +116,34 @@ internal sealed class BridgeSessionHost(Stream stream, IAgentUserInterface ui, I
     public async ValueTask DisposeAsync()
     {
         _client.Dispose();
-        await stream.DisposeAsync().ConfigureAwait(false);
+        if (_streamer is not null)
+        {
+            await _streamer.DisposeAsync().ConfigureAwait(false);
+        }
+
+        if (_desktop is not null)
+        {
+            await _desktop.DisposeAsync().ConfigureAwait(false);
+        }
+
+        await _stream.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>Opens the desktop as soon as a session is assigned (before consent and viewers), then passes everything on.</summary>
+    private sealed class AssignmentHook(IAgentUserInterface inner, Action assigned) : IAgentUserInterface
+    {
+        public Task<bool> RequestConsentAsync(ConsentPrompt prompt, CancellationToken cancellationToken) => inner.RequestConsentAsync(prompt, cancellationToken);
+
+        public void OnStatusChanged(AgentStatus status, string? detail) => inner.OnStatusChanged(status, detail);
+
+        public void OnSupportersChanged(IReadOnlyList<string> displayNames) => inner.OnSupportersChanged(displayNames);
+
+        public void OnSecurityCode(string supporterDisplayName, string securityCode) => inner.OnSecurityCode(supporterDisplayName, securityCode);
+
+        public void OnSessionAssigned(string operatorName, ConsentPolicy policy)
+        {
+            assigned();
+            inner.OnSessionAssigned(operatorName, policy);
+        }
     }
 }
