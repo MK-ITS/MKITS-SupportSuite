@@ -183,7 +183,7 @@ public sealed class PermanentAgentTests : IDisposable
         Assert.False(File.Exists(path));
     }
 
-        [Fact]
+    [Fact]
     public void UserSessionConnector_StartsTheWindowAsTheUser_WithAMinimalEnvironment()
     {
         var session = new LoginSession("2", 1000, "alice", "x11", ":0", true, false, "user");

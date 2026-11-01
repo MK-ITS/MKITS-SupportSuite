@@ -335,7 +335,7 @@ public sealed class UserSessionBridgeTests : IAsyncDisposable
         public void OnViewerGone(string viewerId) => Gone++;
     }
 
-        private sealed class EchoChat : ISessionChannelHandler
+    private sealed class EchoChat : ISessionChannelHandler
     {
         private int _count;
 

@@ -52,7 +52,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends xvfb libxtst6 libxrandr2 libturbojpeg \
+          sudo apt-get install -y -q --no-install-recommends xvfb libxtst6 libxrandr2 libjpeg-turbo-progs \
             dbus pipewire wireplumber gstreamer1.0-pipewire gstreamer1.0-plugins-base gstreamer1.0-tools
 
       - name: Restore
@@ -147,7 +147,7 @@ jobs:
       - name: Dependencies (Xvfb, XTest, XRandR, libjpeg-turbo, D-Bus, PipeWire)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends xvfb libxtst6 libxrandr2 libturbojpeg \
+          sudo apt-get install -y -q --no-install-recommends xvfb libxtst6 libxrandr2 libjpeg-turbo-progs \
             dbus pipewire wireplumber gstreamer1.0-pipewire gstreamer1.0-plugins-base gstreamer1.0-tools
 
       - name: Test
@@ -175,7 +175,7 @@ jobs:
       - name: Dependencies (libjpeg-turbo to bundle, Xvfb for the smoke test)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends libturbojpeg xvfb xauth libxtst6 libxrandr2
+          sudo apt-get install -y -q --no-install-recommends libjpeg-turbo-progs xvfb xauth libxtst6 libxrandr2
 
       - name: Build AppImage
         env:
@@ -226,7 +226,7 @@ jobs:
       - name: Dependencies (libjpeg-turbo to bundle)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends libturbojpeg
+          sudo apt-get install -y -q --no-install-recommends libjpeg-turbo-progs
 
       - name: Build package
         run: BUILD_NUMBER=1 deploy/linux/build-deb.sh artifacts/linux
