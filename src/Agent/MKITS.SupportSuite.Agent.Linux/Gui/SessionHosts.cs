@@ -75,8 +75,8 @@ internal sealed class AdHocSessionHost(
 
 /// <summary>
 /// Installed agent (ADR-0025): the window runs in the user's session, started by the service, and talks to it over
-/// <paramref name="stream"/>. Chat, clipboard and files run here with the user's rights; screen, input and the shell
-/// stay in the service – except on Wayland, where only this process can reach the portal: then <paramref name="desktop"/>
+/// the given stream. Chat, clipboard and files run here with the user's rights; screen, input and the shell
+/// stay in the service – except on Wayland, where only this process can reach the portal: then the given <see cref="LazyWaylandDesktop"/>
 /// provides screen and input here (opened when the session is assigned) and the service forwards those channels (ADR-0026).
 /// </summary>
 internal sealed class BridgeSessionHost : ISessionHost
