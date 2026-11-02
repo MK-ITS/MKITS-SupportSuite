@@ -202,6 +202,23 @@ public sealed class ScreenStreamerTests : IAsyncDisposable
         Assert.Equal([true, true], _screen.StreamCaptures.Select(c => c.Keyframe));
     }
 
+    [Fact]
+    public async Task H264Viewer_SwitchesToJpeg_StreamIsReleased()
+    {
+        _screen.Streams.Add(VideoCodec.H264);
+        await _streamer.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await AcceptAsync("v1", VideoCodec.H264);
+        await TickAsync();
+        await Ack("v1");
+
+        await AcceptAsync("v1", VideoCodec.Jpeg);
+        await AcceptAsync("v1", VideoCodec.Jpeg); // no stream left: nothing to release again
+        await TickAsync();
+
+        Assert.Equal(["v1"], _screen.Released);
+        Assert.Equal([VideoCodec.H264, VideoCodec.Jpeg], _context.Frames("v1").Select(f => f.Codec));
+    }
+
     private Task AcceptAsync(string viewerId, params VideoCodec[] codecs)
     {
         var settings = new QualitySettings();
