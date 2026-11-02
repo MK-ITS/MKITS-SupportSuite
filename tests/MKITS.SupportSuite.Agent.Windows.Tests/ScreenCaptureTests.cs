@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) MK-ITSolutions and contributors
 
+using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Windows.Platform;
 using MKITS.SupportSuite.Agent.Windows.Platform.Capture;
 using MKITS.SupportSuite.Common.Protocol.V0;
