@@ -190,7 +190,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 8 – Windows agent
 - [~] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback) – GDI capture, multi-monitor done (`GdiScreenSource`); DXGI open
-- [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; 8.2a (ADR-0027): codec negotiation (`QualitySettings.codecs`), per-viewer stream encoders in the screen source (`CaptureStream`), keyframe rules; Media Foundation encoder and WebCodecs viewer follow
+- [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; 8.2a (ADR-0027): codec negotiation (`QualitySettings.codecs`), per-viewer stream encoders in the screen source (`CaptureStream`), keyframe rules; 8.2b: Media Foundation software H.264 encoder in the GDI screen source (in-session agent; the SYSTEM helper and Linux still send JPEG)
 - [~] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen done; Ctrl+Alt+Del needs the service (8.4)
 - [~] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching – elevated ad-hoc mode (ADR-0021): temporary service, SYSTEM helper following the input desktop, SendSAS, helper restart on console switch; permanent service follows in Phase 10
 - [~] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated – ConPTY with user rights done (`ConPtyShellHost`); elevated shell needs the service (8.4)
@@ -310,3 +310,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-02 | PRs #41/#46/#47/#48 merged. Phase 11I (PR #52): Linux login screen – the installed agent shows and controls an X11 login screen (LightDM, SDDM, GDM on X11) when nobody is logged on; Wayland login screens documented as not possible. Phase 11 complete. |
 | 2026-11-02 | PR #52 merged. Phase 8.2a (PR #53): video codec negotiation and per-viewer streams (ADR-0027) – groundwork for H.264, JPEG unchanged. |
 | 2026-11-02 | Phase 9.1b (PR #54, stacked on #53): browser viewer decodes H.264 with WebCodecs (ADR-0027), JPEG fallback. |
+| 2026-11-02 | Phase 8.2b (PR #55, stacked on #54): Windows agent encodes H.264 with the Media Foundation software encoder (BGRX → NV12, per-viewer encoder). |
