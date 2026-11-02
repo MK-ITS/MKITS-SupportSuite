@@ -17,6 +17,7 @@ namespace MKITS.SupportSuite.Agent.Windows.Platform.MediaFoundation;
 internal sealed class H264Encoder : IDisposable
 {
     private const long FrameDuration = 10_000_000 / 30; // 100-ns units at the nominal 30 fps
+    private const int MaxStreamChanges = 3;
 
     private static readonly Lazy<bool> Started = new(() =>
     {
@@ -240,6 +241,7 @@ internal sealed class H264Encoder : IDisposable
     {
         keyframe = false;
         using var collected = new MemoryStream();
+        var streamChanges = 0;
         while (true)
         {
             var (sample, buffer) = CreateOutputSample(_outputSize);
@@ -261,7 +263,14 @@ internal sealed class H264Encoder : IDisposable
 
                 if (result == StreamChange)
                 {
-                    continue; // the encoder renegotiated its output type; ask again
+                    // The encoder wants a new output type: take the one it offers, then ask again (bounded).
+                    if (++streamChanges > MaxStreamChanges)
+                    {
+                        throw new InvalidOperationException("The H.264 encoder keeps changing its output type.");
+                    }
+
+                    AcceptOfferedOutputType();
+                    continue;
                 }
 
                 Marshal.ThrowExceptionForHR(result);
@@ -297,6 +306,21 @@ internal sealed class H264Encoder : IDisposable
 
         var unit = collected.ToArray();
         return keyframe && !AnnexB.HasNal(unit, 7) && SequenceHeader() is { Length: > 0 } header ? [.. header, .. unit] : unit;
+    }
+
+    private void AcceptOfferedOutputType()
+    {
+        Marshal.ThrowExceptionForHR(_transform.GetOutputAvailableType(0, 0, out var type));
+        try
+        {
+            _transform.SetOutputType(0, type, 0);
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(type);
+        }
+
+        _sequenceHeader = null; // belongs to the old output type
     }
 
     /// <summary>SPS/PPS from the output type (prepended to keyframes that do not carry them in-band).</summary>

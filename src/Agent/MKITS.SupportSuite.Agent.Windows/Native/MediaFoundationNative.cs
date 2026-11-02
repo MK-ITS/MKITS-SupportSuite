@@ -18,7 +18,6 @@ internal static partial class MediaFoundationNative
     internal const int StreamChange = unchecked((int)0xC00D6D61);  // MF_E_TRANSFORM_STREAM_CHANGE
     internal const int MessageNotifyBeginStreaming = 0x10000000;
     internal const int MessageNotifyStartOfStream = 0x10000003;
-    internal const int MessageCommandDrain = 0x00000001;
     internal const uint InterlaceProgressive = 2;
     internal const uint ProfileBaseline = 66; // eAVEncH264VProfile_Base
 
@@ -66,11 +65,6 @@ internal static partial class MediaFoundationNative
 
     [LibraryImport("mfplat.dll", EntryPoint = "MFCreateMemoryBuffer")]
     internal static partial int CreateMemoryBuffer(int maxLength, out nint buffer);
-
-    [LibraryImport("ole32.dll", EntryPoint = "CoCreateInstance")]
-    internal static partial int CoCreateInstance(in Guid clsid, nint outer, int context, in Guid iid, out nint instance);
-
-    internal const int ClassContextInprocServer = 1;
 }
 
 [ComImport]
