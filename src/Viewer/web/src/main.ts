@@ -52,8 +52,8 @@ function start(): void {
       securityCode: (value) => {
         code.textContent = `${t("Viewer_SecurityCode")} ${value}`;
         code.hidden = false;
-        // Start streaming with sensible defaults once the keys exist.
-        void session.send(create(SessionPayloadSchema, { body: { case: "qualitySettings", value: { maxFps: 15, preferQuality: false } } }));
+        // Start streaming once the keys exist (H.264 if the browser can decode it, else JPEG).
+        void display.startStreaming();
       },
       payload: (payload) => onPayload(payload),
       error: (errorCode) => setStatus(t(`Viewer_Error_${errorCode}`, errorCode)),
