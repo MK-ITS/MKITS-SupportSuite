@@ -27,6 +27,7 @@ internal static class Program
             case "--service" when args.Length > 1:
                 return Elevation.AdHocService.Run(args[1]);
             case "--helper" when args.Length > 1:
+                MakeDpiAware();
                 return Elevation.PrivilegedHelper.Run(args[1]);
 
             // Permanent agent (ADR-0022).
@@ -37,6 +38,7 @@ internal static class Program
             case "--agent-service":
                 return Permanent.AgentService.Run();
             case "--agent-helper" when args.Length > 1:
+                MakeDpiAware();
                 return Elevation.PrivilegedHelper.RunForAgent(args[1]);
             case "--apply-update":
                 return Permanent.AgentUpdater.Apply();
@@ -57,6 +59,12 @@ internal static class Program
         Application.Run(new MainForm(options));
         return 0;
     }
+
+    /// <summary>
+    /// The helpers capture the screen without WinForms (which sets this for the windowed roles): without it, Windows
+    /// scales their view of a high-DPI monitor and the captured image is cut off.
+    /// </summary>
+    private static void MakeDpiAware() => _ = Native.NativeMethods.SetProcessDpiAwarenessContext(Native.NativeMethods.DpiAwarenessPerMonitorV2);
 
     private static AgentSessionOptions? FromFileName() =>
         AdHocClientFileName.TryParse(Environment.ProcessPath) is { } target ? AgentSessionOptions.FromTarget(target, Machine(), "windows") : null;

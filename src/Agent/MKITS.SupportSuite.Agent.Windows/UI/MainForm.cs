@@ -32,7 +32,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
     private FileTransferHandler? _files;
     private ShellHandler? _shells;
     private ClipboardHandler? _clipboard;
-    private GdiScreenSourceHolder? _screen;
+    private ScreenSourceHolder? _screen;
     private Platform.SwitchableScreenSource? _screenSource;
     private Platform.SwitchableInputInjector? _inputInjector;
     private Elevation.HelperClient? _helper;
@@ -193,7 +193,7 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         var area = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1024, 768);
         Location = new Point(area.Right - Width - 16, area.Bottom - Height - 16);
 
-        _screen = new GdiScreenSourceHolder();
+        _screen = new ScreenSourceHolder();
         _chat = new ChatHandler(this);
         _files = new FileTransferHandler(this);
         _shells = new ShellHandler(new Platform.ConPtyShellHost());
@@ -378,10 +378,10 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         }
     }
 
-    /// <summary>Owns the GDI source so it is disposed with the window.</summary>
-    private sealed class GdiScreenSourceHolder : IDisposable
+    /// <summary>Owns the screen source so it is disposed with the window.</summary>
+    private sealed class ScreenSourceHolder : IDisposable
     {
-        public Platform.GdiScreenSource Source { get; } = new();
+        public Platform.DesktopScreenSource Source { get; } = new();
 
         public void Dispose() => Source.Dispose();
     }

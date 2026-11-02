@@ -45,6 +45,13 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     internal static partial int GetSystemMetrics(int index);
 
+    /// <summary>DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2: real pixel coordinates on scaled monitors.</summary>
+    internal const nint DpiAwarenessPerMonitorV2 = -4;
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool SetProcessDpiAwarenessContext(nint context);
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct Input
     {

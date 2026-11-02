@@ -209,7 +209,7 @@ internal static partial class PrivilegedHelper
             _thread.Start();
         }
 
-        public GdiScreenSource Screen { get; } = new();
+        public DesktopScreenSource Screen { get; } = new();
 
         public SendInputInjector Input { get; } = new();
 

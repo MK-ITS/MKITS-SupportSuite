@@ -18,14 +18,14 @@ public sealed class H264EncoderTests
     {
         if (!H264Encoder.IsAvailable)
         {
-            using var source = new GdiScreenSource();
+            using var source = new DesktopScreenSource();
             Assert.Empty(source.StreamCodecs);
             return;
         }
 
         const int Width = 320;
         const int Height = 240;
-        using var encoder = new H264Encoder(Width, Height, GdiScreenSource.Bitrate(Width, Height, 60));
+        using var encoder = new H264Encoder(Width, Height, DesktopScreenSource.Bitrate(Width, Height, 60));
         var frame = new byte[Width * Height * 4];
         var units = new List<(byte[] Data, bool Keyframe)>();
         for (var i = 0; i < 6; i++)
@@ -47,9 +47,9 @@ public sealed class H264EncoderTests
     [Fact]
     public void Bitrate_ScalesWithSizeAndQuality_WithinLimits()
     {
-        Assert.Equal(1920 * 1080 * 2, GdiScreenSource.Bitrate(1920, 1080, 60));
-        Assert.Equal(1920 * 1080 * 4, GdiScreenSource.Bitrate(1920, 1080, 85));
-        Assert.Equal(500_000, GdiScreenSource.Bitrate(64, 64, 60));
-        Assert.Equal(40_000_000, GdiScreenSource.Bitrate(7680, 4320, 85));
+        Assert.Equal(1920 * 1080 * 2, DesktopScreenSource.Bitrate(1920, 1080, 60));
+        Assert.Equal(1920 * 1080 * 4, DesktopScreenSource.Bitrate(1920, 1080, 85));
+        Assert.Equal(500_000, DesktopScreenSource.Bitrate(64, 64, 60));
+        Assert.Equal(40_000_000, DesktopScreenSource.Bitrate(7680, 4320, 85));
     }
 }
