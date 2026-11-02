@@ -190,7 +190,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 8 – Windows agent
 - [~] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback) – GDI capture, multi-monitor done (`GdiScreenSource`); DXGI open
-- [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; H.264 open
+- [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; 8.2a (ADR-0027): codec negotiation (`QualitySettings.codecs`), per-viewer stream encoders in the screen source (`CaptureStream`), keyframe rules; Media Foundation encoder and WebCodecs viewer follow
 - [~] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen done; Ctrl+Alt+Del needs the service (8.4)
 - [~] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching – elevated ad-hoc mode (ADR-0021): temporary service, SYSTEM helper following the input desktop, SendSAS, helper restart on console switch; permanent service follows in Phase 10
 - [~] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated – ConPTY with user rights done (`ConPtyShellHost`); elevated shell needs the service (8.4)
@@ -308,3 +308,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-10-27 | PR #39 merged. Phase 11G (PR #40): Wayland for the Linux ad-hoc client (ADR-0026) – xdg-desktop-portal RemoteDesktop/ScreenCast session (D-Bus), PipeWire frames (libpipewire P/Invoke, SPA POD built by hand), portal input; CI runs a fake portal and a private PipeWire with a GStreamer test source. |
 | 2026-11-01 | PR #40 merged. Phase 11H (PR #48): installed Linux agent on Wayland – the session window opens the portal (persistent, restore token) and streams screen/input; the service forwards those channels for Wayland sessions (ADR-0026 extended). |
 | 2026-11-02 | PRs #41/#46/#47/#48 merged. Phase 11I (PR #52): Linux login screen – the installed agent shows and controls an X11 login screen (LightDM, SDDM, GDM on X11) when nobody is logged on; Wayland login screens documented as not possible. Phase 11 complete. |
+| 2026-11-02 | PR #52 merged. Phase 8.2a (PR #53): video codec negotiation and per-viewer streams (ADR-0027) – groundwork for H.264, JPEG unchanged. |

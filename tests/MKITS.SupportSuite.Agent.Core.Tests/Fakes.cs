@@ -55,6 +55,30 @@ public sealed class FakeScreenSource : IScreenSource
         var monitor = Monitors.Single(m => m.Id == monitorId);
         return new EncodedFrame(VideoCodec.Jpeg, monitor.Width, monitor.Height, [Content, (byte)monitorId, (byte)quality], Keyframe: true);
     }
+
+    /// <summary>Stream codecs to offer (none by default, like a JPEG-only source).</summary>
+    public List<VideoCodec> Streams { get; } = [];
+
+    /// <summary>Stream captures: key, monitor, keyframe requested.</summary>
+    public List<(string Key, uint Monitor, bool Keyframe)> StreamCaptures { get; } = [];
+
+    public List<string> Released { get; } = [];
+
+    public IReadOnlyCollection<VideoCodec> StreamCodecs => Streams;
+
+    public EncodedFrame? CaptureStream(uint monitorId, string streamKey, VideoCodec codec, int quality, bool keyframe, CancellationToken cancellationToken)
+    {
+        StreamCaptures.Add((streamKey, monitorId, keyframe));
+        if (Unavailable)
+        {
+            return null;
+        }
+
+        var monitor = Monitors.Single(m => m.Id == monitorId);
+        return new EncodedFrame(codec, monitor.Width, monitor.Height, [Content, (byte)monitorId], keyframe);
+    }
+
+    public void ReleaseStream(string streamKey) => Released.Add(streamKey);
 }
 
 public sealed class RecordingInjector : IInputInjector
