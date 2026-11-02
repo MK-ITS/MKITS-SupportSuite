@@ -8,9 +8,10 @@ using MKITS.SupportSuite.Common.Protocol.V0;
 namespace MKITS.SupportSuite.Agent.Linux.Permanent;
 
 /// <summary>
-/// Screen and input of whoever is logged on graphically right now, for the system service. Follows logins, logouts
-/// and user switches: the desktop is looked up again every few seconds and whenever the X connection broke. Without
-/// a desktop (nobody logged on, Wayland, headless server) there are no monitors and input is dropped.
+/// Screen and input of whoever is logged on graphically right now – or of the login screen, if it runs on X11 – for
+/// the system service. Follows logins, logouts and user switches: the desktop is looked up again every few seconds
+/// and whenever the X connection broke. Without a desktop (Wayland login screen, headless server) there are no
+/// monitors and input is dropped.
 /// </summary>
 internal sealed class SessionDesktop(
     Func<LoginSession?> findSession,
@@ -28,7 +29,7 @@ internal sealed class SessionDesktop(
     private bool _disposed;
 
     public SessionDesktop()
-        : this(DesktopLocator.FindSession, DesktopLocator.Resolve)
+        : this(DesktopLocator.FindScreenSession, DesktopLocator.Resolve)
     {
     }
 

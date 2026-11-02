@@ -29,7 +29,9 @@ authorization cookie that belongs to the logged-on user.
   root (when the X server runs as root) or by that user, checked on the opened file, never blocking on FIFOs. A lost X
   server (logout) must not end the service: `XSetIOErrorExitHandler` (libX11 ≥ 1.7) marks the display broken and the
   next access reconnects to the new session. Wayland sessions: screen and input through the session window and the
-  desktop portal (ADR-0026).
+  desktop portal (ADR-0026). With nobody logged on, an X11 login screen (logind class `greeter`) is shown and controlled
+  the same way – its X server's `-auth` file is root's (LightDM, SDDM) or the greeter user's (GDM on X11); Wayland
+  login screens offer no way in. No session window is ever started for the greeter account.
 - **Session window:** chat, clipboard and files run in the user's session with the user's rights, through the existing
   `UserSessionBridge`. The service starts `mkits-agent --agent-user` with `runuser -u <user>` and a minimal environment
   (display, Xauthority, locale) and talks to it over its stdin/stdout – no socket another process could connect to.

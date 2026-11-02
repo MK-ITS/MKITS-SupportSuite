@@ -10,6 +10,9 @@ namespace MKITS.SupportSuite.Agent.Linux.Permanent;
 internal sealed record LoginSession(string Id, uint Uid, string UserName, string Type, string Display, bool Active, bool Remote, string Class)
 {
     public bool IsLocalUserSession => Active && !Remote && Class == "user";
+
+    /// <summary>The display manager's login screen (GDM, LightDM, SDDM) on the local seat.</summary>
+    public bool IsLocalGreeter => Active && !Remote && Class == "greeter";
 }
 
 /// <summary>Finds the session of the user sitting in front of the machine (systemd-logind via <c>loginctl</c>).</summary>
@@ -79,6 +82,16 @@ internal static class LoginSessions
         sessions.Where(s => s.IsLocalUserSession && (s.Type is "x11" or "wayland") && s.Uid != 0)
             .OrderBy(s => s.Type == "x11" ? 0 : 1)
             .FirstOrDefault();
+
+    /// <summary>
+    /// What the screen shows: the logged-on user's session, or else the login screen if it runs on X11 (11.3). Wayland
+    /// login screens (GDM's default) offer no way in – no portal without a user session.
+    /// </summary>
+    internal static LoginSession? SelectScreen(IEnumerable<LoginSession> sessions)
+    {
+        var list = sessions.ToList();
+        return SelectGraphical(list) ?? list.FirstOrDefault(s => s.IsLocalGreeter && s.Type == "x11" && s.Uid != 0);
+    }
 
     private static string? Run(params string[] arguments)
     {

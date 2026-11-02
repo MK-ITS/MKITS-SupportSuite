@@ -38,6 +38,9 @@ internal static partial class DesktopLocator
     /// <summary>The active local graphical session (cheap: <c>loginctl</c> only).</summary>
     public static LoginSession? FindSession() => LoginSessions.SelectGraphical(LoginSessions.Query());
 
+    /// <summary>The session whose screen the service shows: the user's, or the X11 login screen (cheap: <c>loginctl</c> only).</summary>
+    public static LoginSession? FindScreenSession() => LoginSessions.SelectScreen(LoginSessions.Query());
+
     public static (UserDesktop? Desktop, DesktopProblem Problem) Locate() =>
         FindSession() is { } session ? Resolve(session) : (null, DesktopProblem.NobodyLoggedOn);
 
