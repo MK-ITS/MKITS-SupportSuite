@@ -9,6 +9,7 @@ import {
   type VideoFrame,
   VideoCodec,
 } from "./gen/mkits/v0/session_pb";
+import { browserDecoderFactory, type DecoderFactory, H264Stream, supportsH264 } from "./video";
 
 /**
  * The area inside the canvas element that shows the image (CSS object-fit: contain letterboxes it).
@@ -55,8 +56,16 @@ export class RemoteDisplay {
   private moveScheduled = false;
   private drawing = Promise.resolve();
   private readonly context: CanvasRenderingContext2D;
+  private h264: H264Stream | null = null;
+  private lastSequence = 0n;
+  private codecs: VideoCodec[] = [];
+  private quality = { maxFps: 15, preferQuality: false };
 
-  constructor(private readonly canvas: HTMLCanvasElement, private readonly send: (payload: SessionPayload) => void) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    private readonly send: (payload: SessionPayload) => void,
+    private readonly decoders: DecoderFactory | null = browserDecoderFactory(),
+  ) {
     const context = canvas.getContext("2d");
     if (!context) {
       throw new Error("Canvas 2D not available");
@@ -78,10 +87,24 @@ export class RemoteDisplay {
     this.send(create(SessionPayloadSchema, { body: { case: "selectMonitor", value: { monitorId: id } } }));
   }
 
+  /**
+   * Starts the stream: announces H.264 if this browser can decode it (ADR-0027), otherwise the agent sends JPEG.
+   * Called once the end-to-end keys exist.
+   */
+  async startStreaming(): Promise<void> {
+    this.codecs = this.decoders && (await supportsH264()) ? [VideoCodec.H264, VideoCodec.JPEG] : [];
+    this.sendQuality();
+  }
+
   /** Decodes and draws one frame, then acknowledges it. Frames are drawn strictly in order. */
   showFrame(frame: VideoFrame): void {
+    const gap = this.lastSequence !== 0n && frame.frameSequence !== this.lastSequence + 1n;
+    this.lastSequence = frame.frameSequence;
     this.drawing = this.drawing.then(async () => {
-      if (frame.codec === VideoCodec.JPEG) {
+      if (frame.codec === VideoCodec.H264 && this.decoders) {
+        this.h264 ??= new H264Stream(this.decoders, (decoded) => this.drawDecoded(decoded), () => this.sendQuality());
+        this.h264.decode(frame.data, frame.keyframe, Number(frame.timestampUs), gap);
+      } else if (frame.codec === VideoCodec.JPEG) {
         const bitmap = await createImageBitmap(new Blob([frame.data as BlobPart], { type: "image/jpeg" }));
         if (this.canvas.width !== bitmap.width || this.canvas.height !== bitmap.height) {
           this.canvas.width = bitmap.width;
@@ -90,9 +113,26 @@ export class RemoteDisplay {
         this.context.drawImage(bitmap, 0, 0);
         bitmap.close();
       }
-      // H.264 (WebCodecs) follows with the H.264 encoder on the agent side.
       this.send(create(SessionPayloadSchema, { body: { case: "frameAck", value: { frameSequence: frame.frameSequence } } }));
     }).catch(() => undefined);
+  }
+
+  /** Re-sending the settings also asks the agent for a keyframe. */
+  private sendQuality(): void {
+    this.send(create(SessionPayloadSchema, { body: { case: "qualitySettings", value: { ...this.quality, codecs: this.codecs } } }));
+  }
+
+  private drawDecoded(decoded: { close(): void }): void {
+    const frame = decoded as unknown as globalThis.VideoFrame;
+    try {
+      if (this.canvas.width !== frame.displayWidth || this.canvas.height !== frame.displayHeight) {
+        this.canvas.width = frame.displayWidth;
+        this.canvas.height = frame.displayHeight;
+      }
+      this.context.drawImage(frame, 0, 0);
+    } finally {
+      frame.close();
+    }
   }
 
   private attachInput(): void {

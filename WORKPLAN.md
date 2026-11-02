@@ -197,7 +197,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" done (ADR-0021)
 
 ### Phase 9 – Browser viewer
-- [~] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling) done; WebCodecs/H.264 follows with the agent encoder
+- [x] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling); 9.1b: WebCodecs H.264 (announced only if the browser supports it, gap/decoder-error → keyframe request, deltas dropped until the next keyframe)
 - [x] 9.2 Mouse/keyboard mapping, special key toolbar – pointer (throttled moves, buttons, wheel), physical keys (`KeyboardEvent.code`), Ctrl+Alt+Del / Win / Alt+Tab
 - [~] 9.3 Multi-monitor, scaling, quality settings – monitor selection, fit-to-window, default quality; quality UI open
 - [x] 9.4 Chat, file transfer, clipboard, terminal (xterm.js) – chat, clipboard (buttons, browser permission) file transfer both ways (incremental SHA-256) and terminal (xterm.js, several shells) done
@@ -309,3 +309,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-01 | PR #40 merged. Phase 11H (PR #48): installed Linux agent on Wayland – the session window opens the portal (persistent, restore token) and streams screen/input; the service forwards those channels for Wayland sessions (ADR-0026 extended). |
 | 2026-11-02 | PRs #41/#46/#47/#48 merged. Phase 11I (PR #52): Linux login screen – the installed agent shows and controls an X11 login screen (LightDM, SDDM, GDM on X11) when nobody is logged on; Wayland login screens documented as not possible. Phase 11 complete. |
 | 2026-11-02 | PR #52 merged. Phase 8.2a (PR #53): video codec negotiation and per-viewer streams (ADR-0027) – groundwork for H.264, JPEG unchanged. |
+| 2026-11-02 | Phase 9.1b (PR #54, stacked on #53): browser viewer decodes H.264 with WebCodecs (ADR-0027), JPEG fallback. |
