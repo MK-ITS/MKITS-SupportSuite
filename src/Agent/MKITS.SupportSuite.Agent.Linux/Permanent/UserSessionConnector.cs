@@ -20,7 +20,7 @@ internal sealed class UserSessionConnector(
     private const string RunUser = "/usr/sbin/runuser";
 
     public UserSessionConnector()
-        : this(DesktopLocator.FindSession, DesktopLocator.Resolve, AgentPaths.Executable)
+        : this(DesktopLocator.FindSession, DesktopLocator.ResolveSessionWindow, AgentPaths.Executable)
     {
     }
 

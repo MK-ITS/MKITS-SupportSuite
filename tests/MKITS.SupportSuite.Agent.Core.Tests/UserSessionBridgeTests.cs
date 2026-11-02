@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using MKITS.SupportSuite.Agent.Core.Bridge;
+using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Common.Protocol.V0;
 
@@ -161,6 +162,49 @@ public sealed class UserSessionBridgeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task DesktopInUserSession_ForwardsScreenAndInputBothWays()
+    {
+        var bridge = new UserSessionBridge(_connector, _fallback, WithoutShell, desktopInUserSession: () => true);
+        bridge.OnSessionAssigned("ACME", ConsentPolicy.Notify);
+        var clientStream = await _connector.ClientStreamReady.Task.WaitAsync(Timeout);
+        var desktop = new RecordingHandler();
+        using var client = new BridgeClient(clientStream, _userUi, [desktop]);
+        var run = client.RunAsync(CancellationToken.None);
+        await Eventually(() => bridge.IsConnected);
+
+        await bridge.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await bridge.HandleAsync(_context, "v1", new SessionPayload { PointerEvent = new PointerEvent() }, CancellationToken.None);
+        await bridge.HandleAsync(_context, "v1", new SessionPayload { ShellOpen = new ShellOpen() }, CancellationToken.None);
+        await client.SendAsync("v1", new SessionPayload { VideoFrame = new VideoFrame() }, CancellationToken.None);
+
+        await Eventually(() => !desktop.Received.IsEmpty && !_context.Sent.IsEmpty);
+        Assert.True(bridge.ForwardsDesktop);
+        Assert.Equal(SessionPayload.BodyOneofCase.PointerEvent, Assert.Single(desktop.Received)); // the shell stays in the service
+        Assert.Equal(SessionPayload.BodyOneofCase.VideoFrame, Assert.Single(_context.Sent).Payload.BodyCase);
+        await bridge.DisposeAsync();
+        await run.WaitAsync(Timeout);
+    }
+
+    [Fact]
+    public async Task SwitchableHandler_PassesOnlyWhileEnabled_ButAlwaysDepartures()
+    {
+        var enabled = false;
+        var inner = new RecordingHandler();
+        var handler = new SwitchableHandler(() => enabled, inner);
+        var pointer = new SessionPayload { PointerEvent = new PointerEvent() };
+
+        await handler.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await handler.HandleAsync(_context, "v1", pointer, CancellationToken.None);
+        handler.OnViewerGone("v1");
+        enabled = true;
+        await handler.HandleAsync(_context, "v1", pointer, CancellationToken.None);
+
+        Assert.Equal(0, inner.Ready);
+        Assert.Equal(1, inner.Gone);
+        Assert.Single(inner.Received);
+    }
+
+    [Fact]
     public void NarrowedChannels_CannotIncludeScreenOrInput() =>
         Assert.Throws<ArgumentException>(() => new UserSessionBridge(_connector, _fallback, VideoToo));
 
@@ -266,6 +310,29 @@ public sealed class UserSessionBridgeTests : IAsyncDisposable
         }
 
         public void OnSessionAssigned(string operatorName, ConsentPolicy policy) => Assigned = (policy, operatorName);
+    }
+
+    private sealed class RecordingHandler : ISessionChannelHandler
+    {
+        public ConcurrentQueue<SessionPayload.BodyOneofCase> Received { get; } = new();
+
+        public int Ready { get; private set; }
+
+        public int Gone { get; private set; }
+
+        public Task HandleAsync(ISessionContext context, string viewerId, SessionPayload payload, CancellationToken cancellationToken)
+        {
+            Received.Enqueue(payload.BodyCase);
+            return Task.CompletedTask;
+        }
+
+        public Task OnViewerReadyAsync(ISessionContext context, string viewerId, CancellationToken cancellationToken)
+        {
+            Ready++;
+            return Task.CompletedTask;
+        }
+
+        public void OnViewerGone(string viewerId) => Gone++;
     }
 
     private sealed class EchoChat : ISessionChannelHandler

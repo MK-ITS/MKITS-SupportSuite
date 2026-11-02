@@ -22,7 +22,7 @@ public sealed class PortalTests(PipeWireFixture bus) : IClassFixture<PipeWireFix
 
     public async Task InitializeAsync()
     {
-        Assert.True(bus.Available, "dbus-daemon is needed");
+        Assert.True(bus.BusReady, "dbus-daemon is needed");
         _portalConnection = new Connection(bus.BusAddress);
         await _portalConnection.ConnectAsync();
         _portal = new FakePortal(_portalConnection);

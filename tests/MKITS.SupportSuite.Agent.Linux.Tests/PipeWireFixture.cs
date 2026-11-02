@@ -23,7 +23,7 @@ public sealed class PipeWireFixture : IDisposable
         Socket = Path.Combine(RuntimeDirectory, "pipewire-0");
         BusAddress = "unix:path=" + Path.Combine(RuntimeDirectory, "bus");
 
-        string[] tools = ["/usr/bin/pipewire", "/usr/bin/wireplumber", "/usr/bin/gst-launch-1.0", "/usr/bin/dbus-daemon"];
+        string[] tools = ["/usr/bin/pipewire", "/usr/bin/pw-cli", "/usr/bin/wireplumber", "/usr/bin/gst-launch-1.0", "/usr/bin/dbus-daemon"];
         if (!tools.All(File.Exists))
         {
             return; // the tests then fail with a clear message
@@ -31,14 +31,35 @@ public sealed class PipeWireFixture : IDisposable
 
         var bus = BusAddress;
         Start("/usr/bin/dbus-daemon", "--session", "--nofork", "--nopidfile", "--address=" + bus);
-        Wait(() => File.Exists(Path.Combine(RuntimeDirectory, "bus")));
+        BusReady = Wait(() => File.Exists(Path.Combine(RuntimeDirectory, "bus")), 10);
         Start("/usr/bin/pipewire");
-        Wait(() => File.Exists(Socket));
+        Wait(() => File.Exists(Socket), 30);
         Start("/usr/bin/wireplumber");
+        Wait(() => PipeWireList("Client").Contains("wireplumber", StringComparison.OrdinalIgnoreCase), 30); // the session manager links streams
         Start("/usr/bin/gst-launch-1.0", "videotestsrc", "is-live=true", "pattern=red", "!",
             "video/x-raw,format=BGRx,width=320,height=240,framerate=30/1", "!",
             "pipewiresink", "mode=provide", "stream-properties=p,node.name=" + SourceNode + ",media.class=Video/Source");
-        Available = true;
+        Available = Wait(() => PipeWireList("Node").Contains(SourceNode, StringComparison.Ordinal), 60); // busy CI runners can be slow
+
+        string PipeWireList(string type)
+        {
+            var list = new ProcessStartInfo("/usr/bin/pw-cli") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+            list.ArgumentList.Add("ls");
+            list.ArgumentList.Add(type);
+            list.Environment["XDG_RUNTIME_DIR"] = RuntimeDirectory;
+            list.Environment["PIPEWIRE_RUNTIME_DIR"] = RuntimeDirectory;
+            try
+            {
+                using var process = Process.Start(list)!;
+                var output = process.StandardOutput.ReadToEndAsync();
+                _ = process.StandardError.ReadToEndAsync();
+                return process.WaitForExit(5000) ? output.Result : string.Empty;
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                return string.Empty; // pw-cli missing (pipewire-bin)
+            }
+        }
 
         void Start(string file, params string[] arguments)
         {
@@ -60,7 +81,11 @@ public sealed class PipeWireFixture : IDisposable
         }
     }
 
+    /// <summary>The PipeWire test source is running (and with it the session bus).</summary>
     public bool Available { get; }
+
+    /// <summary>The private session bus is running.</summary>
+    public bool BusReady { get; }
 
     /// <summary>The private session bus (also used for the fake portal).</summary>
     public string BusAddress { get; }
@@ -96,11 +121,19 @@ public sealed class PipeWireFixture : IDisposable
         }
     }
 
-    private static void Wait(Func<bool> condition)
+    private static bool Wait(Func<bool> condition, int seconds)
     {
-        for (var i = 0; i < 100 && !condition(); i++)
+        var deadline = DateTime.UtcNow.AddSeconds(seconds);
+        while (!condition())
         {
-            Thread.Sleep(100);
+            if (DateTime.UtcNow > deadline)
+            {
+                return false;
+            }
+
+            Thread.Sleep(200);
         }
+
+        return true;
     }
 }

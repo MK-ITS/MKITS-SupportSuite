@@ -75,12 +75,15 @@ internal static class AgentService
             };
 
             using var desktop = new SessionDesktop();
-            await using var bridge = new UserSessionBridge(new UserSessionConnector(), new HeadlessUserInterface(), UserChannels);
+            // Wayland sessions: screen and input through the portal in the session window (ADR-0026).
+            await using var bridge = new UserSessionBridge(
+                new UserSessionConnector(), new HeadlessUserInterface(), UserChannels,
+                desktopInUserSession: () => DesktopLocator.FindSession()?.Type == "wayland");
             await using var streamer = new ScreenStreamer(desktop);
             await using var shells = new ShellHandler(new PtyShellHost());
             await using var agent = new DeviceAgent(
                 options, new ClientWebSocketConnector(), store, bridge,
-                [streamer, new InputHandler(desktop, desktop), bridge, shells]);
+                [new SwitchableHandler(() => !bridge.ForwardsDesktop, streamer, new InputHandler(desktop, desktop)), bridge, shells]);
             bridge.EndSessionRequested += (_, _) => _ = agent.EndSessionAsync();
             _ = AgentUpdater.RunAsync(server, agent, stopping.Token);
 

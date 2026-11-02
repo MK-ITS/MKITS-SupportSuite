@@ -12,6 +12,7 @@ using Avalonia.Threading;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Agent.Linux.Platform;
+using MKITS.SupportSuite.Agent.Linux.Wayland;
 using MKITS.SupportSuite.Common.Protocol.V0;
 
 namespace MKITS.SupportSuite.Agent.Linux.Gui;
@@ -95,7 +96,9 @@ internal sealed class SessionWindow : Window, IAgentUserInterface, IChatPresente
     /// </summary>
     public static SessionWindow StartBridged(Stream stream, Action ended)
     {
-        var window = new SessionWindow(w => new BridgeSessionHost(stream, w, w.UserHandlers), bridged: true);
+        // Wayland: screen and input through the portal in this process (the service cannot reach it).
+        var desktop = WaylandDesktop.IsWaylandSession ? LazyWaylandDesktop.ForInstalledAgent() : null;
+        var window = new SessionWindow(w => new BridgeSessionHost(stream, w, w.UserHandlers, desktop), bridged: true);
         var done = 0;
         void End()
         {

@@ -29,7 +29,7 @@ internal static partial class DesktopLocator
     /// <summary>Copied into the environment of the user-session process (never anything like <c>LD_PRELOAD</c>).</summary>
     internal static readonly string[] SessionVariables =
     [
-        "DISPLAY", "XAUTHORITY", "LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
+        "DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
         "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_SESSION_ID",
     ];
 
@@ -68,12 +68,53 @@ internal static partial class DesktopLocator
         return (new UserDesktop(session, user, display, FindCookie(session, user, display, environment), variables), DesktopProblem.None);
     }
 
+    /// <summary>
+    /// Like <see cref="Resolve"/>, but for starting the session window: Wayland sessions are fine too – the window then
+    /// runs on XWayland (if the session has it) and the screen goes through the portal in that process (ADR-0026).
+    /// The service itself never connects to such a display, so no cookie is looked up.
+    /// </summary>
+    public static (UserDesktop? Desktop, DesktopProblem Problem) ResolveSessionWindow(LoginSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        if (session.Type != "wayland")
+        {
+            return Resolve(session);
+        }
+
+        if (HostSystem.GetUser(session.Uid) is not { } user)
+        {
+            return (null, DesktopProblem.NoDisplay);
+        }
+
+        var environment = FindSessionEnvironment(session);
+        if (!environment.ContainsKey("WAYLAND_DISPLAY"))
+        {
+            return (null, DesktopProblem.NoDisplay);
+        }
+
+        var display = environment.GetValueOrDefault("DISPLAY") is { } xwayland && IsLocalDisplay(xwayland) ? xwayland : string.Empty;
+        return (new UserDesktop(session, user, display, null, SessionEnvironment(environment, display, session.Uid)), DesktopProblem.None);
+    }
+
     /// <summary>The whitelisted variables of the session for the process started there (internal for tests).</summary>
     internal static Dictionary<string, string> SessionEnvironment(IReadOnlyDictionary<string, string> environment, string display, uint uid)
     {
         ArgumentNullException.ThrowIfNull(environment);
         var variables = SessionVariables.Where(environment.ContainsKey).ToDictionary(k => k, k => environment[k], StringComparer.Ordinal);
-        variables["DISPLAY"] = display;
+        if (display.Length > 0)
+        {
+            variables["DISPLAY"] = display;
+        }
+        else
+        {
+            variables.Remove("DISPLAY"); // only a local display we checked
+        }
+
+        if (variables.TryGetValue("WAYLAND_DISPLAY", out var wayland) && (wayland.Contains('/', StringComparison.Ordinal) || wayland.Length > 64))
+        {
+            variables.Remove("WAYLAND_DISPLAY"); // a socket name in XDG_RUNTIME_DIR, never a path elsewhere
+        }
+
         variables.TryAdd("XDG_RUNTIME_DIR", $"/run/user/{uid}");
         return variables;
     }
@@ -127,7 +168,8 @@ internal static partial class DesktopLocator
                 continue;
             }
 
-            if (environment.GetValueOrDefault("XDG_SESSION_ID") != session.Id || !environment.ContainsKey("DISPLAY"))
+            if (environment.GetValueOrDefault("XDG_SESSION_ID") != session.Id
+                || !(environment.ContainsKey("DISPLAY") || environment.ContainsKey("WAYLAND_DISPLAY")))
             {
                 continue;
             }
