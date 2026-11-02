@@ -23,12 +23,33 @@ public interface IScreenSource
 
     /// <summary>Captures and encodes one monitor; <paramref name="quality"/> 1–100. <c>null</c> if capturing is not possible right now (e.g. secure desktop).</summary>
     EncodedFrame? Capture(uint monitorId, int quality, CancellationToken cancellationToken);
+
+    /// <summary>Video codecs this source can encode as a continuous stream (besides JPEG, which every source supports).</summary>
+    IReadOnlyCollection<VideoCodec> StreamCodecs => [];
+
+    /// <summary>
+    /// Captures and encodes the next frame of a continuous stream (e.g. H.264): one encoder per <paramref name="streamKey"/>,
+    /// frames depend on the previous ones, <paramref name="keyframe"/> forces a self-contained frame. <c>null</c> if
+    /// nothing could be captured. The capture stays in the process that captures (no raw frames cross process borders).
+    /// </summary>
+    EncodedFrame? CaptureStream(uint monitorId, string streamKey, VideoCodec codec, int quality, bool keyframe, CancellationToken cancellationToken) => null;
+
+    /// <summary>The stream ended (viewer gone, codec changed): its encoder can be released.</summary>
+    void ReleaseStream(string streamKey)
+    {
+    }
 }
 
 /// <summary>
 /// Streams the screen to every ready viewer with flow control (docs/protocol.md §5): at most
 /// <see cref="MaxFramesInFlight"/> unacknowledged frames per viewer, unchanged images are not sent again,
 /// frame rate and quality per viewer via <c>QualitySettings</c>, monitor via <c>SelectMonitor</c>.
+/// <para>
+/// Codec (ADR-0027): JPEG by default (captured once per monitor and quality, shared by viewers); a stream codec such as
+/// H.264 when the viewer accepts it and the source can encode it – then each viewer has its own encoder (its frames
+/// depend on each other, and viewers are throttled independently), starting with a keyframe and again after a monitor
+/// change or a new <c>QualitySettings</c>.
+/// </para>
 /// </summary>
 public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
 {
@@ -77,7 +98,33 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
         }
     }
 
-    public void OnViewerGone(string viewerId) => _viewers.TryRemove(viewerId, out _);
+    public void OnViewerGone(string viewerId)
+    {
+        if (_viewers.TryRemove(viewerId, out var viewer) && viewer.Codec != VideoCodec.Jpeg)
+        {
+            _source.ReleaseStream(viewerId);
+        }
+    }
+
+    /// <summary>The first codec the viewer accepts that the source can stream; JPEG otherwise (internal for tests).</summary>
+    internal VideoCodec ChooseCodec(IEnumerable<VideoCodec> accepted)
+    {
+        var available = _source.StreamCodecs;
+        foreach (var codec in accepted)
+        {
+            if (codec == VideoCodec.Jpeg)
+            {
+                return VideoCodec.Jpeg;
+            }
+
+            if (codec != VideoCodec.Unspecified && available.Contains(codec))
+            {
+                return codec;
+            }
+        }
+
+        return VideoCodec.Jpeg;
+    }
 
     public Task HandleAsync(ISessionContext context, string viewerId, SessionPayload payload, CancellationToken cancellationToken)
     {
@@ -104,6 +151,13 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
             case SessionPayload.BodyOneofCase.QualitySettings:
                 viewer.Fps = Math.Clamp(payload.QualitySettings.MaxFps == 0 ? DefaultFps : payload.QualitySettings.MaxFps, 1, MaxFps);
                 viewer.Quality = payload.QualitySettings.PreferQuality ? 85 : 60;
+                var codec = ChooseCodec(payload.QualitySettings.Codecs);
+                if (codec != viewer.Codec && viewer.Codec != VideoCodec.Jpeg)
+                {
+                    _source.ReleaseStream(viewerId);
+                }
+
+                viewer.Codec = codec;
                 viewer.ForceNextFrame();
                 break;
             default:
@@ -130,22 +184,41 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
 
             viewer.MarkAttempt(now);
 
-            var key = (viewer.MonitorId, viewer.Quality);
-            if (!captured.TryGetValue(key, out var frame))
+            EncodedFrame? frame;
+            if (viewer.Codec != VideoCodec.Jpeg)
             {
-                frame = _source.Capture(viewer.MonitorId, viewer.Quality, cancellationToken);
-                captured[key] = frame;
-            }
+                // Own encoder per viewer: every encoded frame must reach this viewer's decoder.
+                var keyframe = viewer.TakeForce();
+                frame = _source.CaptureStream(viewer.MonitorId, viewerId, viewer.Codec, viewer.Quality, keyframe, cancellationToken);
+                if (frame is null)
+                {
+                    if (keyframe)
+                    {
+                        viewer.ForceNextFrame(); // still owed
+                    }
 
-            if (frame is null)
-            {
-                continue;
+                    continue;
+                }
             }
-
-            var hash = SHA256.HashData(frame.Data);
-            if (!viewer.ShouldSend(hash, now))
+            else
             {
-                continue;
+                var key = (viewer.MonitorId, viewer.Quality);
+                if (!captured.TryGetValue(key, out frame))
+                {
+                    frame = _source.Capture(viewer.MonitorId, viewer.Quality, cancellationToken);
+                    captured[key] = frame;
+                }
+
+                if (frame is null)
+                {
+                    continue;
+                }
+
+                var hash = SHA256.HashData(frame.Data);
+                if (!viewer.ShouldSend(hash, now))
+                {
+                    continue;
+                }
             }
 
             var sequence = viewer.NextSequence();
@@ -221,6 +294,8 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
 
         public int Quality { get; set; } = 60;
 
+        public VideoCodec Codec { get; set; } = VideoCodec.Jpeg;
+
         public int InFlight
         {
             get
@@ -281,6 +356,17 @@ public sealed class ScreenStreamer : ISessionChannelHandler, IAsyncDisposable
                 {
                     _acknowledged = sequence;
                 }
+            }
+        }
+
+        /// <summary>Whether the next frame must be a keyframe (and clears the request).</summary>
+        public bool TakeForce()
+        {
+            lock (_lock)
+            {
+                var force = _force;
+                _force = false;
+                return force;
             }
         }
 

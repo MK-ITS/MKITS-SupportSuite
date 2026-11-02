@@ -93,6 +93,11 @@ Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within
 - **Permissions** (permanent devices, per device group): a viewer may only send *and* receive on channels it has the permission for – `VIDEO`/`DISPLAY`/`CHAT`: *view*, `INPUT`: *control*, `CLIPBOARD`: *clipboard*, `FILE`: *files*, `SHELL`: *shell*; unknown channels need all permissions. The relay only needs the plaintext channel header for this; the agent rejects payloads that do not match their channel, so a viewer cannot smuggle a payload through another channel. The controlling viewer is the first granted viewer with *control*. Ad-hoc sessions grant all permissions to the owner and Admins. `ViewerJoined.permissions` and `ConsentRequest.requested_permissions` tell the agent what a viewer may do.
 - **Consent policy** (`SessionAssigned.consent_policy`): *ask* → `ConsentRequest` per viewer; *notify* → no question, the agent shows a visible banner; *silent* → no question, no banner. Ad-hoc sessions always ask.
 
+**Codec (ADR-0027):** `QualitySettings.codecs` lists the codecs the viewer decodes (most preferred first; empty = JPEG
+only). The agent uses the first one it can stream (e.g. H.264, one encoder per viewer, keyframe first) or JPEG. Re-sending
+`QualitySettings` asks for a keyframe; a viewer does so after a gap in `frame_sequence` or a decoder error and drops
+delta frames until the next keyframe.
+
 **Flow control (video):** the viewer acknowledges every frame with `FrameAck{sequence}`. The agent keeps at most **N = 3** unacknowledged frames in flight and skips capture otherwise; after a skip it sends the next frame as a keyframe if the gap exceeded 1 s. The relay additionally drops video frames (never other channels) for a peer whose send queue exceeds 4 MiB, and disconnects a peer whose queue exceeds 16 MiB (it cannot keep up).
 
 **Input coordinates** are normalized to `0..65535` per monitor, so viewer scaling never needs agent-side knowledge.

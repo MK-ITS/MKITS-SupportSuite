@@ -148,6 +148,84 @@ public sealed class ScreenStreamerTests : IAsyncDisposable
         Assert.Empty(_context.Frames("v1"));
     }
 
+    [Fact]
+    public async Task H264Viewer_GetsItsOwnStream_StartingWithAKeyframe()
+    {
+        _screen.Streams.Add(VideoCodec.H264);
+        await _streamer.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await _streamer.OnViewerReadyAsync(_context, "v2", CancellationToken.None);
+        await AcceptAsync("v1", VideoCodec.H264, VideoCodec.Jpeg);
+
+        await TickAsync();
+        await TickAsync(); // unchanged content: a stream still sends (the encoder decides how small)
+        await _streamer.HandleAsync(_context, "v1", new SessionPayload { SelectMonitor = new SelectMonitor { MonitorId = 2 } }, CancellationToken.None);
+        await Ack("v1");
+        await TickAsync();
+
+        var h264 = _context.Frames("v1");
+        Assert.All(h264, f => Assert.Equal(VideoCodec.H264, f.Codec));
+        Assert.Equal([true, false, true], h264.Select(f => f.Keyframe)); // keyframe again after the monitor change
+        Assert.Equal(2u, h264[^1].MonitorId);
+        Assert.All(_context.Frames("v2"), f => Assert.Equal(VideoCodec.Jpeg, f.Codec)); // the other viewer stays on JPEG
+        Assert.All(_screen.StreamCaptures, c => Assert.Equal("v1", c.Key));
+    }
+
+    [Fact]
+    public async Task H264_NotOfferedBySource_FallsBackToJpeg_AndStreamsAreReleased()
+    {
+        await _streamer.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await AcceptAsync("v1", VideoCodec.H264);
+        await TickAsync();
+        Assert.Equal(VideoCodec.Jpeg, Assert.Single(_context.Frames("v1")).Codec);
+
+        _screen.Streams.Add(VideoCodec.H264);
+        await AcceptAsync("v1", VideoCodec.H264);
+        _streamer.OnViewerGone("v1");
+
+        Assert.Equal(["v1"], _screen.Released);
+        Assert.Equal(VideoCodec.Jpeg, _streamer.ChooseCodec([]));
+        Assert.Equal(VideoCodec.Jpeg, _streamer.ChooseCodec([VideoCodec.Jpeg, VideoCodec.H264])); // the viewer's order counts
+    }
+
+    [Fact]
+    public async Task H264_CaptureFails_KeyframeIsStillOwed()
+    {
+        _screen.Streams.Add(VideoCodec.H264);
+        await _streamer.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await AcceptAsync("v1", VideoCodec.H264);
+        _screen.Unavailable = true;
+        await TickAsync();
+        _screen.Unavailable = false;
+        await TickAsync();
+
+        Assert.True(Assert.Single(_context.Frames("v1")).Keyframe);
+        Assert.Equal([true, true], _screen.StreamCaptures.Select(c => c.Keyframe));
+    }
+
+    [Fact]
+    public async Task H264Viewer_SwitchesToJpeg_StreamIsReleased()
+    {
+        _screen.Streams.Add(VideoCodec.H264);
+        await _streamer.OnViewerReadyAsync(_context, "v1", CancellationToken.None);
+        await AcceptAsync("v1", VideoCodec.H264);
+        await TickAsync();
+        await Ack("v1");
+
+        await AcceptAsync("v1", VideoCodec.Jpeg);
+        await AcceptAsync("v1", VideoCodec.Jpeg); // no stream left: nothing to release again
+        await TickAsync();
+
+        Assert.Equal(["v1"], _screen.Released);
+        Assert.Equal([VideoCodec.H264, VideoCodec.Jpeg], _context.Frames("v1").Select(f => f.Codec));
+    }
+
+    private Task AcceptAsync(string viewerId, params VideoCodec[] codecs)
+    {
+        var settings = new QualitySettings();
+        settings.Codecs.AddRange(codecs);
+        return _streamer.HandleAsync(_context, viewerId, new SessionPayload { QualitySettings = settings }, CancellationToken.None);
+    }
+
     private async Task TickAsync(TimeSpan? advance = null)
     {
         _time.Advance(advance ?? TimeSpan.FromSeconds(1));

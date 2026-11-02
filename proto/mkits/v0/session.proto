@@ -80,6 +80,9 @@ message QualitySettings {
   uint32 max_fps = 1;
   uint32 max_bitrate_kbps = 2;
   bool prefer_quality = 3;        // false = prefer speed
+  // Codecs the viewer can decode, most preferred first; empty = JPEG only (older viewers). The agent picks the first one
+  // it can encode. Sending QualitySettings again also asks for a fresh keyframe (e.g. after a decoder error).
+  repeated VideoCodec codecs = 4;
 }
 
 message FrameAck { uint64 frame_sequence = 1; }
