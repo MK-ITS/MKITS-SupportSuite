@@ -309,5 +309,5 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-01 | PR #40 merged. Phase 11H (PR #48): installed Linux agent on Wayland – the session window opens the portal (persistent, restore token) and streams screen/input; the service forwards those channels for Wayland sessions (ADR-0026 extended). |
 | 2026-11-02 | PRs #41/#46/#47/#48 merged. Phase 11I (PR #52): Linux login screen – the installed agent shows and controls an X11 login screen (LightDM, SDDM, GDM on X11) when nobody is logged on; Wayland login screens documented as not possible. Phase 11 complete. |
 | 2026-11-02 | PR #52 merged. Phase 8.2a (PR #53): video codec negotiation and per-viewer streams (ADR-0027) – groundwork for H.264, JPEG unchanged. |
-| 2026-11-02 | Phase 9.1b (PR #54, stacked on #53): browser viewer decodes H.264 with WebCodecs (ADR-0027), JPEG fallback. |
-| 2026-11-02 | Phase 8.2b (PR #55, stacked on #54): Windows agent encodes H.264 with the Media Foundation software encoder (BGRX → NV12, per-viewer encoder). |
+| 2026-11-02 | PR #53 merged. Phase 9.1b (PR #54): browser viewer decodes H.264 with WebCodecs (ADR-0027), JPEG fallback. |
+| 2026-11-02 | Phase 8.2b (PR #55, merged into the #54 branch, lands with #54): Windows agent encodes H.264 with the Media Foundation software encoder (BGRX → NV12, per-viewer encoder). |
