@@ -33,7 +33,7 @@
   <ItemGroup Label="Server">
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.14" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
     <PackageVersion Include="MailKit" Version="4.16.0" />
     <PackageVersion Include="MimeKit" Version="4.16.0" />
     <PackageVersion Include="QRCoder" Version="1.8.1" />
