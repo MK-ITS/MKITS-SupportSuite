@@ -102,6 +102,19 @@ public sealed class PermanentAgentTests : IDisposable
         Assert.Null(LoginSessions.SelectGraphical([greeter, ssh, inactive]));
     }
 
+    [Fact]
+    public void LoginSessions_SelectScreen_FallsBackToAnX11LoginScreen()
+    {
+        var x11Greeter = new LoginSession("c1", 120, "lightdm", "x11", ":0", true, false, "greeter");
+        var waylandGreeter = new LoginSession("c2", 121, "gdm", "wayland", string.Empty, true, false, "greeter");
+        var user = new LoginSession("2", 1000, "alice", "x11", ":1", true, false, "user");
+
+        Assert.Equal(user, LoginSessions.SelectScreen([x11Greeter, user])); // the user's session wins
+        Assert.Equal(x11Greeter, LoginSessions.SelectScreen([x11Greeter]));
+        Assert.Null(LoginSessions.SelectScreen([waylandGreeter]));          // no portal at a Wayland login screen
+        Assert.Null(LoginSessions.SelectGraphical([x11Greeter]));           // never a session window for the greeter user
+    }
+
     // ------------------------------------------------------------------ desktop lookup
 
     [Theory]
