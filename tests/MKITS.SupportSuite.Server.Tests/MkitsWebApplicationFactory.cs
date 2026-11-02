@@ -56,7 +56,7 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
         {
             // Pooled SQLite connections keep the file open (blocks deletion on Windows).
             // Background work of the stopped host may release its last connection a moment later (Windows file locks).
-            for (var attempt = 1; ; attempt++)
+            for (var attempt = 1; attempt <= 25; attempt++)
             {
                 SqliteConnection.ClearAllPools();
                 try
@@ -64,8 +64,10 @@ public sealed class MkitsWebApplicationFactory : WebApplicationFactory<Program>
                     Directory.Delete(DataDirectory, recursive: true);
                     break;
                 }
-                catch (IOException) when (attempt < 10)
+                catch (IOException)
                 {
+                    // Still locked after 5 s on a busy runner: leave the temporary directory behind rather than
+                    // failing a test whose assertions all passed (it lives in the temp folder only).
                     Thread.Sleep(200);
                 }
             }
