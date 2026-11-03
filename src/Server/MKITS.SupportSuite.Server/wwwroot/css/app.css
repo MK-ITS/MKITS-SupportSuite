@@ -261,6 +261,10 @@ button.danger { background: var(--danger-text); color: #fff; border-color: var(-
 .file-offer button { margin: 0.25rem 0.25rem 0 0; }
 .viewer-stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .viewer-stage #viewer-canvas { flex: 1; min-height: 0; }
+/* 1:1 – one remote pixel per CSS pixel, scrolling instead of scaling (9.3). */
+.viewer-stage.actual-size { overflow: auto; display: block; }
+.viewer-stage.actual-size #viewer-canvas { flex: none; width: auto; height: auto; max-width: none; object-fit: none; }
+#viewer-actual-size[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--primary); }
 .viewer-terminals { height: 40%; min-height: 12rem; display: flex; gap: 0.25rem; padding: 0.25rem; background: #111; overflow-x: auto; }
 .viewer-terminal { flex: 1; min-width: 20rem; display: flex; flex-direction: column; }
 .viewer-terminal-header { display: flex; justify-content: space-between; align-items: center; color: #ddd; font-size: 0.85rem; padding: 0 0.25rem 0.25rem; }

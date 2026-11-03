@@ -2,7 +2,7 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 import { describe, expect, it } from "vitest";
-import { buttonMask, contentBox, modifierBits, normalize } from "../src/display";
+import { buttonMask, contentBox, modifierBits, normalize, qualityFor } from "../src/display";
 
 describe("display helpers", () => {
   it("normalizes canvas coordinates to 0..65535 and clamps", () => {
@@ -21,5 +21,12 @@ describe("display helpers", () => {
   it("maps modifiers and buttons", () => {
     expect(modifierBits({ shiftKey: true, ctrlKey: true, altKey: false, metaKey: true })).toBe(11);
     expect(buttonMask(1 | 2 | 64)).toBe(3);
+  });
+
+  it("maps quality presets and falls back to balanced", () => {
+    expect(qualityFor("speed")).toEqual({ maxFps: 10, preferQuality: false });
+    expect(qualityFor("balanced")).toEqual({ maxFps: 15, preferQuality: false });
+    expect(qualityFor("best")).toEqual({ maxFps: 30, preferQuality: true });
+    expect(qualityFor("<script>")).toEqual(qualityFor("balanced"));
   });
 });

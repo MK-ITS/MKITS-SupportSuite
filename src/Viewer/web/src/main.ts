@@ -25,6 +25,22 @@ function element<T extends HTMLElement>(id: string): T {
   return found as T;
 }
 
+function readSetting(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null; // storage blocked (private mode, policy)
+  }
+}
+
+function writeSetting(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // not remembered – the setting still applies to this session
+  }
+}
+
 function start(): void {
   const root = element<HTMLElement>("viewer");
   const texts = JSON.parse(element<HTMLScriptElement>("viewer-texts").textContent ?? "{}") as Texts;
@@ -183,6 +199,31 @@ function start(): void {
   };
 
   monitors.addEventListener("change", () => display.selectMonitor(Number(monitors.value)));
+
+  // Quality and scaling are this supporter's preferences: remembered in this browser only (best effort).
+  const quality = element<HTMLSelectElement>("viewer-quality");
+  quality.value = readSetting("mkits.viewer.quality") ?? "balanced";
+  if (quality.selectedIndex < 0) {
+    quality.value = "balanced";
+  }
+  display.setQuality(quality.value);
+  quality.addEventListener("change", () => {
+    display.setQuality(quality.value);
+    writeSetting("mkits.viewer.quality", quality.value);
+  });
+
+  const actualSize = element<HTMLButtonElement>("viewer-actual-size");
+  const stage = element<HTMLElement>("viewer-stage");
+  const applyScale = (actual: boolean) => {
+    stage.classList.toggle("actual-size", actual);
+    actualSize.setAttribute("aria-pressed", String(actual));
+  };
+  applyScale(readSetting("mkits.viewer.actualSize") === "true");
+  actualSize.addEventListener("click", () => {
+    const actual = !stage.classList.contains("actual-size");
+    applyScale(actual);
+    writeSetting("mkits.viewer.actualSize", String(actual));
+  });
 
   for (const button of root.querySelectorAll<HTMLButtonElement>("button[data-special]")) {
     button.addEventListener("click", () => {

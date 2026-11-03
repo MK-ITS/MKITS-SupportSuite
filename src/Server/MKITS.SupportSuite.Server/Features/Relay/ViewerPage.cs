@@ -121,6 +121,12 @@ public static class ViewerPage
                 <span id="viewer-status" role="status" aria-live="polite"></span>
                 <span id="viewer-code" class="security-code" title="{T("Viewer_SecurityCodeHint")}" hidden></span>
                 <select id="viewer-monitor" aria-label="{T("Viewer_Monitor")}" hidden></select>
+                <select id="viewer-quality" aria-label="{T("Viewer_Quality")}" title="{T("Viewer_Quality")}">
+                  <option value="speed">{T("Viewer_Quality_Speed")}</option>
+                  <option value="balanced" selected>{T("Viewer_Quality_Balanced")}</option>
+                  <option value="best">{T("Viewer_Quality_Best")}</option>
+                </select>
+                <button type="button" class="secondary" id="viewer-actual-size" aria-pressed="false" title="{T("Viewer_ActualSizeHint")}">{T("Viewer_ActualSize")}</button>
                 <button type="button" class="secondary" data-special="CTRL_ALT_DEL">Ctrl+Alt+Del</button>
                 <button type="button" class="secondary" data-special="WIN">Win</button>
                 <button type="button" class="secondary" data-special="ALT_TAB">Alt+Tab</button>
@@ -132,7 +138,7 @@ public static class ViewerPage
                 <button type="button" class="danger" id="viewer-end">{T("Sessions_Action_End")}</button>
               </header>
               <main class="viewer-main">
-                <div class="viewer-stage">
+                <div class="viewer-stage" id="viewer-stage">
                   <canvas id="viewer-canvas" aria-label="{T("Viewer_ScreenLabel")}"></canvas>
                   <section id="viewer-terminals" class="viewer-terminals" aria-label="{T("Viewer_Terminal")}" hidden></section>
                 </div>
