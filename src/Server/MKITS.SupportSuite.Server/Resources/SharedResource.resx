@@ -250,6 +250,12 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_SecurityCode" xml:space="preserve"><value>Security code:</value></data>
   <data name="Viewer_SecurityCodeHint" xml:space="preserve"><value>Compare this code with the customer (e.g. by phone). If it differs, end the session.</value></data>
   <data name="Viewer_Monitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="Viewer_Quality" xml:space="preserve"><value>Picture quality</value></data>
+  <data name="Viewer_Quality_Speed" xml:space="preserve"><value>Low bandwidth</value></data>
+  <data name="Viewer_Quality_Balanced" xml:space="preserve"><value>Balanced</value></data>
+  <data name="Viewer_Quality_Best" xml:space="preserve"><value>Best quality</value></data>
+  <data name="Viewer_ActualSize" xml:space="preserve"><value>1:1</value></data>
+  <data name="Viewer_ActualSizeHint" xml:space="preserve"><value>Show the remote screen at its actual size (scroll instead of scaling)</value></data>
   <data name="Viewer_Primary" xml:space="preserve"><value>primary</value></data>
   <data name="Viewer_ClipboardSend" xml:space="preserve"><value>Send clipboard</value></data>
   <data name="Viewer_ClipboardCopy" xml:space="preserve"><value>Copy customer clipboard</value></data>

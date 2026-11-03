@@ -45,6 +45,21 @@ export function buttonMask(browserButtons: number): number {
   return browserButtons & 0x1f;
 }
 
+/** Quality presets offered in the toolbar (9.3); the agent clamps the frame rate to what it supports. */
+export type QualityPreset = "speed" | "balanced" | "best";
+
+/** Frame rate and image quality of a preset; unknown values fall back to "balanced". */
+export function qualityFor(preset: string): { maxFps: number; preferQuality: boolean } {
+  switch (preset) {
+    case "speed":
+      return { maxFps: 10, preferQuality: false }; // slow or metered connections
+    case "best":
+      return { maxFps: 30, preferQuality: true }; // smooth and sharp, several times the bandwidth
+    default:
+      return { maxFps: 15, preferQuality: false };
+  }
+}
+
 /**
  * Draws received frames on a canvas (scaled to fit) and turns mouse/keyboard events on the canvas into input
  * payloads. Acknowledges every drawn frame (flow control) via `send`.
@@ -59,7 +74,8 @@ export class RemoteDisplay {
   private h264: H264Stream | null = null;
   private lastSequence = 0n;
   private codecs: VideoCodec[] = [];
-  private quality = { maxFps: 15, preferQuality: false };
+  private started = false;
+  private quality = qualityFor("balanced");
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -93,6 +109,7 @@ export class RemoteDisplay {
    */
   async startStreaming(): Promise<void> {
     this.codecs = this.decoders && (await supportsH264()) ? [VideoCodec.H264, VideoCodec.JPEG] : [];
+    this.started = true;
     this.sendQuality();
   }
 
@@ -115,6 +132,14 @@ export class RemoteDisplay {
       }
       this.send(create(SessionPayloadSchema, { body: { case: "frameAck", value: { frameSequence: frame.frameSequence } } }));
     }).catch(() => undefined);
+  }
+
+  /** Applies a quality preset; sent right away once streaming has started. */
+  setQuality(preset: string): void {
+    this.quality = qualityFor(preset);
+    if (this.started) {
+      this.sendQuality();
+    }
   }
 
   /** Re-sending the settings also asks the agent for a keyframe. */

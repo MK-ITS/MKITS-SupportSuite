@@ -250,6 +250,12 @@ Sie können die Sperre unter Administration → IP-Sperren aufheben.</value></da
   <data name="Viewer_SecurityCode" xml:space="preserve"><value>Sicherheitscode:</value></data>
   <data name="Viewer_SecurityCodeHint" xml:space="preserve"><value>Vergleichen Sie diesen Code mit dem Kunden (z. B. telefonisch). Weicht er ab, beenden Sie die Sitzung.</value></data>
   <data name="Viewer_Monitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="Viewer_Quality" xml:space="preserve"><value>Bildqualität</value></data>
+  <data name="Viewer_Quality_Speed" xml:space="preserve"><value>Geringe Bandbreite</value></data>
+  <data name="Viewer_Quality_Balanced" xml:space="preserve"><value>Ausgewogen</value></data>
+  <data name="Viewer_Quality_Best" xml:space="preserve"><value>Beste Qualität</value></data>
+  <data name="Viewer_ActualSize" xml:space="preserve"><value>1:1</value></data>
+  <data name="Viewer_ActualSizeHint" xml:space="preserve"><value>Bildschirm in Originalgröße zeigen (scrollen statt skalieren)</value></data>
   <data name="Viewer_Primary" xml:space="preserve"><value>Hauptmonitor</value></data>
   <data name="Viewer_ClipboardSend" xml:space="preserve"><value>Zwischenablage senden</value></data>
   <data name="Viewer_ClipboardCopy" xml:space="preserve"><value>Zwischenablage des Kunden kopieren</value></data>

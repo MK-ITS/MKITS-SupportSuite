@@ -199,7 +199,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 ### Phase 9 – Browser viewer
 - [x] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling); 9.1b: WebCodecs H.264 (announced only if the browser supports it, gap/decoder-error → keyframe request, deltas dropped until the next keyframe)
 - [x] 9.2 Mouse/keyboard mapping, special key toolbar – pointer (throttled moves, buttons, wheel), physical keys (`KeyboardEvent.code`), Ctrl+Alt+Del / Win / Alt+Tab
-- [~] 9.3 Multi-monitor, scaling, quality settings – monitor selection, fit-to-window, default quality; quality UI open
+- [x] 9.3 Multi-monitor, scaling, quality settings – monitor selection, fit-to-window or 1:1 (scrolling), quality presets (low bandwidth 10 fps / balanced 15 fps / best 30 fps + higher image quality), remembered per browser
 - [x] 9.4 Chat, file transfer, clipboard, terminal (xterm.js) – chat, clipboard (buttons, browser permission) file transfer both ways (incremental SHA-256) and terminal (xterm.js, several shells) done
 - [x] 9.5 E2E crypto via WebCrypto – `src/Viewer/web/src/crypto.ts`, byte-compatible with C# (shared test vector `proto/testvectors/e2e-v0.json`)
 
@@ -313,3 +313,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-02 | Phase 8.2b (PR #55, merged into the #54 branch, lands with #54): Windows agent encodes H.264 with the Media Foundation software encoder (BGRX → NV12, per-viewer encoder). |
 | 2026-11-02 | PRs #54/#55 merged. Phase 8.1 (PR #56): DXGI Desktop Duplication with GDI fallback (`DesktopScreenSource`, `Platform/Capture`), helpers per-monitor DPI aware. |
 | 2026-11-03 | PR #56 merged. Phase 8.2c (PR #57): H.264 through the SYSTEM helper (elevated ad-hoc mode, permanent agent); request handling moved to `HelperRequestHandler` (testable). |
+| 2026-11-03 | PR #57 merged. Phase 9.3 (PR #58): viewer quality presets and 1:1 view. |
