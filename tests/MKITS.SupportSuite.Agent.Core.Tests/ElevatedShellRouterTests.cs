@@ -37,6 +37,19 @@ public sealed class ElevatedShellRouterTests
     }
 
     [Fact]
+    public async Task NormalOpen_WithAnElevatedId_IsRefusedNotSplit()
+    {
+        await using var router = new ElevatedShellRouter(_inner, new ShellHandler(host: null, _elevatedHost));
+        await Send(router, new SessionPayload { ShellOpen = new ShellOpen { ShellId = "x", Cols = 80, Rows = 24, Elevated = true } });
+
+        await Send(router, new SessionPayload { ShellOpen = new ShellOpen { ShellId = "x", Cols = 80, Rows = 24 } });
+
+        Assert.Empty(_inner.Received);
+        Assert.Single(_elevatedHost.Started);
+        Assert.Contains(_context.Sent, s => s.Payload.BodyCase == SessionPayload.BodyOneofCase.ShellExit && s.Payload.ShellExit.ExitCode == -1);
+    }
+
+    [Fact]
     public async Task ViewerEvents_ReachBothSides()
     {
         await using var router = new ElevatedShellRouter(_inner, new ShellHandler(host: null, _elevatedHost));

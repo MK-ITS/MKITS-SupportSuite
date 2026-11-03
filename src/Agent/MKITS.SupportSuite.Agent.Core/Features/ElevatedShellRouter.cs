@@ -25,6 +25,10 @@ public sealed class ElevatedShellRouter(ISessionChannelHandler inner, ShellHandl
             case SessionPayload.BodyOneofCase.ShellOpen when payload.ShellOpen.Elevated:
                 _elevatedShells[Key(viewerId, payload.ShellOpen.ShellId)] = 0;
                 return elevated.HandleAsync(context, viewerId, payload, cancellationToken);
+            case SessionPayload.BodyOneofCase.ShellOpen when _elevatedShells.ContainsKey(Key(viewerId, payload.ShellOpen.ShellId)):
+                // A second shell under an id that is already elevated: the elevated handler refuses the duplicate id, so
+                // later data for that id can never be split between two shells.
+                return elevated.HandleAsync(context, viewerId, payload, cancellationToken);
             case SessionPayload.BodyOneofCase.ShellData:
                 return Route(context, viewerId, payload, payload.ShellData.ShellId, closes: false, cancellationToken);
             case SessionPayload.BodyOneofCase.ShellResize:
@@ -36,8 +40,11 @@ public sealed class ElevatedShellRouter(ISessionChannelHandler inner, ShellHandl
         }
     }
 
-    public Task OnViewerReadyAsync(ISessionContext context, string viewerId, CancellationToken cancellationToken) =>
-        inner.OnViewerReadyAsync(context, viewerId, cancellationToken);
+    public async Task OnViewerReadyAsync(ISessionContext context, string viewerId, CancellationToken cancellationToken)
+    {
+        await elevated.OnViewerReadyAsync(context, viewerId, cancellationToken).ConfigureAwait(false);
+        await inner.OnViewerReadyAsync(context, viewerId, cancellationToken).ConfigureAwait(false);
+    }
 
     public void OnViewerGone(string viewerId)
     {

@@ -12,6 +12,9 @@ namespace MKITS.SupportSuite.Agent.Windows.Elevation;
 /// source, quality, wheel deltas and terminal sizes are clamped, strings are length-limited, H.264 streams are limited
 /// in number and key length (each holds an encoder), and only the known shell types can be started. Not thread-safe – the helper calls it from its desktop thread.
 /// </summary>
+/// <param name="screen">Capture for the client.</param>
+/// <param name="input">Input injection for the client.</param>
+/// <param name="requestCtrlAltDel">Asks the service for Ctrl+Alt+Del (SendSAS only works there).</param>
 /// <param name="shells">Elevated shells for the client (ADR-0028); <c>null</c> refuses them.</param>
 internal sealed class HelperRequestHandler(IScreenSource screen, IInputInjector input, Action requestCtrlAltDel, IHelperShells? shells = null)
 {
@@ -88,10 +91,10 @@ internal sealed class HelperRequestHandler(IScreenSource screen, IInputInjector 
 
                 return null;
             case HelperRequest.ShellStart:
-                var type = HelperProtocol.ReadString(reader);
+                var shellType = HelperProtocol.ReadString(reader);
                 var columns = Math.Clamp(reader.ReadInt32(), 20, 500);
                 var rows = Math.Clamp(reader.ReadInt32(), 5, 200);
-                var started = shells is not null && shells.Types.Contains(type, StringComparer.Ordinal) ? shells.Start(type, columns, rows) : null;
+                var started = shells is not null && shells.Types.Contains(shellType, StringComparer.Ordinal) ? shells.Start(shellType, columns, rows) : null;
                 return HelperProtocol.Build(HelperRequest.ShellStart, w =>
                 {
                     w.Write(started is not null);
