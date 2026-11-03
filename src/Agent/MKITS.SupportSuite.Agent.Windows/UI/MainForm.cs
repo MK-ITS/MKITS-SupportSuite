@@ -196,7 +196,8 @@ internal sealed class MainForm : Form, IAgentUserInterface, IChatPresenter, ICli
         _screen = new ScreenSourceHolder();
         _chat = new ChatHandler(this);
         _files = new FileTransferHandler(this);
-        _shells = new ShellHandler(new Platform.ConPtyShellHost());
+        // Administrator shells only while administrator mode (the SYSTEM helper) is on (ADR-0028).
+        _shells = new ShellHandler(new Platform.ConPtyShellHost(), new Elevation.HelperShellHost(() => _helper));
         _clipboard = new ClipboardHandler(this);
         _screenSource = new Platform.SwitchableScreenSource(_screen.Source);
         _inputInjector = new Platform.SwitchableInputInjector(new Platform.SendInputInjector());

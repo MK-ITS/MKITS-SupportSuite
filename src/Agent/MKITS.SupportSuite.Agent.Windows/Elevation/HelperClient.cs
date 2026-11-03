@@ -209,6 +209,43 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
 
     public void Special(SpecialKeyKind kind) => Send(HelperProtocol.Build(HelperRequest.Special, w => w.Write((int)kind)));
 
+    /// <summary>Starts an elevated shell in the helper (ADR-0028); <c>null</c> if the helper refused or is gone.</summary>
+    public HelperShellProcess? StartShell(string type, int columns, int rows)
+    {
+        var response = Request(HelperProtocol.Build(HelperRequest.ShellStart, w =>
+        {
+            w.Write(type);
+            w.Write(columns);
+            w.Write(rows);
+        }));
+        if (response is null)
+        {
+            return null;
+        }
+
+        using var reader = new BinaryReader(new MemoryStream(response));
+        try
+        {
+            _ = reader.ReadByte();
+            return reader.ReadBoolean()
+                ? new HelperShellProcess(this, new HelperShellHandles(reader.ReadInt32(), reader.ReadInt64(), reader.ReadInt64(), reader.ReadInt64()))
+                : null;
+        }
+        catch (EndOfStreamException)
+        {
+            return null;
+        }
+    }
+
+    public void ResizeShell(int id, int columns, int rows) => Send(HelperProtocol.Build(HelperRequest.ShellResize, w =>
+    {
+        w.Write(id);
+        w.Write(columns);
+        w.Write(rows);
+    }));
+
+    public void CloseShell(int id) => Send(HelperProtocol.Build(HelperRequest.ShellClose, w => w.Write(id)));
+
     /// <summary>Ends administrator mode: the helper exits and the service removes itself.</summary>
     public void Shutdown() => Send(HelperProtocol.Build(HelperRequest.Shutdown));
 

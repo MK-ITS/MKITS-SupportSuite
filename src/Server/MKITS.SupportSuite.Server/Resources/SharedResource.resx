@@ -290,6 +290,9 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_TerminalClose" xml:space="preserve"><value>Close</value></data>
   <data name="Viewer_TerminalExited" xml:space="preserve"><value>Shell exited with code</value></data>
   <data name="Viewer_TerminalRefused" xml:space="preserve"><value>The shell could not be started</value></data>
+  <data name="Viewer_TerminalElevated" xml:space="preserve"><value>Admin terminal</value></data>
+  <data name="Viewer_TerminalElevatedHint" xml:space="preserve"><value>Terminal with administrator rights (Windows: SYSTEM, Linux: root). Ad-hoc sessions need administrator mode on the customer's side.</value></data>
+  <data name="Viewer_TerminalElevatedRefused" xml:space="preserve"><value>not available – the customer has to switch on administrator mode first</value></data>
   <data name="Nav_Devices" xml:space="preserve"><value>Devices</value></data>
   <data name="Nav_DeviceAdmin" xml:space="preserve"><value>Device administration</value></data>
   <data name="MyDevices_Title" xml:space="preserve"><value>Devices</value></data>

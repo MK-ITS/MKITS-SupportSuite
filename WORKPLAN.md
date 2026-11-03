@@ -193,7 +193,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; 8.2a (ADR-0027): codec negotiation (`QualitySettings.codecs`), per-viewer stream encoders in the screen source (`CaptureStream`), keyframe rules; 8.2b: Media Foundation software H.264 encoder in the screen source; 8.2c: H.264 through the SYSTEM helper (UAC, lock screen, permanent agent) – pipe requests `StreamCodecs`/`CaptureStream`/`ReleaseStream`, ≤ 8 streams per helper, streams released on the old side when the session switches between own capture and helper (Linux still sends JPEG)
 - [~] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen done; Ctrl+Alt+Del needs the service (8.4)
 - [~] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching – elevated ad-hoc mode (ADR-0021): temporary service, SYSTEM helper following the input desktop, SendSAS, helper restart on console switch; permanent service follows in Phase 10
-- [~] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated – ConPTY with user rights done (`ConPtyShellHost`); elevated shell needs the service (8.4)
+- [x] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated – ConPTY with user rights (`ConPtyShellHost`); elevated shells (ADR-0028): ad-hoc through the SYSTEM helper while administrator mode is on (pipe handles duplicated into the client), installed agent in the service (`ElevatedShellRouter`); pseudo console closed when the shell exits, so the viewer gets the exit code
 - [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" done (ADR-0021)
 
 ### Phase 9 – Browser viewer
@@ -314,3 +314,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-02 | PRs #54/#55 merged. Phase 8.1 (PR #56): DXGI Desktop Duplication with GDI fallback (`DesktopScreenSource`, `Platform/Capture`), helpers per-monitor DPI aware. |
 | 2026-11-03 | PR #56 merged. Phase 8.2c (PR #57): H.264 through the SYSTEM helper (elevated ad-hoc mode, permanent agent); request handling moved to `HelperRequestHandler` (testable). |
 | 2026-11-03 | PR #57 merged. Phase 9.3 (PR #58): viewer quality presets and 1:1 view. |
+| 2026-11-03 | PR #58 merged. Phase 8.5 (PR #59): elevated remote shell (ADR-0028) – viewer "Admin terminal", Windows helper/service, Linux service. |

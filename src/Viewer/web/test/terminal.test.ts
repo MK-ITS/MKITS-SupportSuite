@@ -94,6 +94,18 @@ describe("RemoteTerminals", () => {
     expect(terminals[1]!.written.some((w) => w.includes("Viewer_TerminalRefused"))).toBe(true);
   });
 
+  it("asks for an elevated shell and explains a refusal", () => {
+    const remote = create_();
+    remote.open(true);
+
+    const open = sent[0];
+    expect(open?.body.case === "shellOpen" && open.body.value.elevated).toBe(true);
+    expect(container.querySelector(".viewer-terminal.elevated .viewer-terminal-header span")?.textContent).toBe("Viewer_TerminalElevated 1");
+
+    remote.handle(create(SessionPayloadSchema, { body: { case: "shellExit", value: { shellId: "sh1", exitCode: -1 } } }));
+    expect(terminals[0]!.written.some((w) => w.includes("Viewer_TerminalElevatedRefused"))).toBe(true);
+  });
+
   it("forwards a resize only when the size changed and the shell is running", () => {
     const remote = create_();
     remote.open();

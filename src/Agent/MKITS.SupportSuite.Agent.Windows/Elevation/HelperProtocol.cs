@@ -21,12 +21,15 @@ internal enum HelperRequest : byte
     StreamCodecs = 10,
     CaptureStream = 11,
     ReleaseStream = 12,
+    ShellStart = 13,
+    ShellResize = 14,
+    ShellClose = 15,
 }
 
 /// <summary>
 /// Length-prefixed binary messages over the helper pipe: <c>u32 length (LE) ‖ payload</c>, payload starts with a
 /// <see cref="HelperRequest"/> byte. Only <see cref="HelperRequest.GetMonitors"/>, <see cref="HelperRequest.Capture"/>,
-/// <see cref="HelperRequest.StreamCodecs"/> and <see cref="HelperRequest.CaptureStream"/> have responses; responses
+/// <see cref="HelperRequest.StreamCodecs"/>, <see cref="HelperRequest.CaptureStream"/> and <see cref="HelperRequest.ShellStart"/> have responses; responses
 /// arrive in request order. Everything is size-limited – the helper runs as SYSTEM and treats
 /// every message as hostile.
 /// </summary>
