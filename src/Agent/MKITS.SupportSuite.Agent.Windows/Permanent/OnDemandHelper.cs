@@ -30,6 +30,23 @@ internal sealed class OnDemandHelper : IScreenSource, IInputInjector, IDisposabl
     public EncodedFrame? Capture(uint monitorId, int quality, CancellationToken cancellationToken) =>
         Helper()?.Capture(monitorId, quality, cancellationToken);
 
+    /// <summary>A replaced helper (new console session) starts its streams with a keyframe on its own.</summary>
+    public IReadOnlyCollection<VideoCodec> StreamCodecs => Helper()?.StreamCodecs ?? [];
+
+    public EncodedFrame? CaptureStream(uint monitorId, string streamKey, VideoCodec codec, int quality, bool keyframe, CancellationToken cancellationToken) =>
+        Helper()?.CaptureStream(monitorId, streamKey, codec, quality, keyframe, cancellationToken);
+
+    public void ReleaseStream(string streamKey)
+    {
+        HelperClient? client;
+        lock (_gate)
+        {
+            client = _running?.Client; // never start a helper just to release a stream
+        }
+
+        client?.ReleaseStream(streamKey);
+    }
+
     public void MovePointer(int x, int y) => Helper()?.MovePointer(x, y);
 
     public void SetButton(PointerButtons button, bool down) => Helper()?.SetButton(button, down);

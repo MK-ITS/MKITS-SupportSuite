@@ -21,13 +21,15 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
 {
     private static readonly TimeSpan MonitorCacheTime = TimeSpan.FromSeconds(2);
 
-    private readonly NamedPipeClientStream _pipe;
+    private readonly Stream _pipe;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private IReadOnlyList<MonitorDescriptor> _monitors = [];
+    private IReadOnlyCollection<VideoCodec>? _streamCodecs;
     private DateTime _monitorsLoaded;
     private int _broken;
 
-    private HelperClient(NamedPipeClientStream pipe) => _pipe = pipe;
+    /// <param name="pipe">The connected pipe (internal for tests).</param>
+    internal HelperClient(Stream pipe) => _pipe = pipe;
 
     public event EventHandler? Disconnected;
 
@@ -131,31 +133,53 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
         return monitors;
     }
 
-    public EncodedFrame? Capture(uint monitorId, int quality, CancellationToken cancellationToken)
-    {
-        var response = Request(HelperProtocol.Build(HelperRequest.Capture, w =>
+    public EncodedFrame? Capture(uint monitorId, int quality, CancellationToken cancellationToken) =>
+        ReadFrame(Request(HelperProtocol.Build(HelperRequest.Capture, w =>
         {
             w.Write(monitorId);
             w.Write(quality);
-        }));
-        if (response is null)
-        {
-            return null;
-        }
+        })));
 
-        using var reader = new BinaryReader(new MemoryStream(response));
-        _ = reader.ReadByte();
-        if (!reader.ReadBoolean())
+    /// <summary>What the helper can stream (asked once per helper; empty while it cannot be reached).</summary>
+    public IReadOnlyCollection<VideoCodec> StreamCodecs
+    {
+        get
         {
-            return null;
-        }
+            if (_streamCodecs is { } known)
+            {
+                return known;
+            }
 
-        var codec = (VideoCodec)reader.ReadInt32();
-        var width = reader.ReadInt32();
-        var height = reader.ReadInt32();
-        var data = reader.ReadBytes(reader.ReadInt32());
-        return new EncodedFrame(codec, width, height, data, Keyframe: true);
+            var response = Request(HelperProtocol.Build(HelperRequest.StreamCodecs));
+            if (response is null)
+            {
+                return [];
+            }
+
+            using var reader = new BinaryReader(new MemoryStream(response));
+            _ = reader.ReadByte();
+            var count = Math.Clamp(reader.ReadInt32(), 0, 8);
+            var codecs = new List<VideoCodec>(count);
+            for (var i = 0; i < count; i++)
+            {
+                codecs.Add((VideoCodec)reader.ReadInt32());
+            }
+
+            return _streamCodecs = codecs;
+        }
     }
+
+    public EncodedFrame? CaptureStream(uint monitorId, string streamKey, VideoCodec codec, int quality, bool keyframe, CancellationToken cancellationToken) =>
+        ReadFrame(Request(HelperProtocol.Build(HelperRequest.CaptureStream, w =>
+        {
+            w.Write(monitorId);
+            w.Write(streamKey);
+            w.Write((int)codec);
+            w.Write(quality);
+            w.Write(keyframe);
+        })));
+
+    public void ReleaseStream(string streamKey) => Send(HelperProtocol.Build(HelperRequest.ReleaseStream, w => w.Write(streamKey)));
 
     public void MovePointer(int x, int y) => Send(HelperProtocol.Build(HelperRequest.MovePointer, w =>
     {
@@ -192,6 +216,28 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
     {
         _pipe.Dispose();
         _lock.Dispose();
+    }
+
+    private static EncodedFrame? ReadFrame(byte[]? response)
+    {
+        if (response is null)
+        {
+            return null;
+        }
+
+        using var reader = new BinaryReader(new MemoryStream(response));
+        _ = reader.ReadByte();
+        if (!reader.ReadBoolean())
+        {
+            return null;
+        }
+
+        var codec = (VideoCodec)reader.ReadInt32();
+        var width = reader.ReadInt32();
+        var height = reader.ReadInt32();
+        var keyframe = reader.ReadBoolean();
+        var data = reader.ReadBytes(reader.ReadInt32());
+        return new EncodedFrame(codec, width, height, data, keyframe);
     }
 
     private void Send(byte[] message) => _ = Request(message, expectResponse: false);

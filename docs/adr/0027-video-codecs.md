@@ -27,8 +27,10 @@ and encoding run in a helper process (ADR-0021/0022) – raw frames must not cro
 - **Encoders:** H.264 Annex B. Windows: Media Foundation's H.264 encoder (licensed with the operating system), in the
   process that captures: the software encoder MFT (always present when Media Foundation is installed), constrained
   baseline, low-latency mode, BGRX converted to NV12 on the CPU; a keyframe is forced by starting a new encoder. A
-  hardware encoder and GPU colour conversion can follow with DXGI capture (8.1). Linux and Android follow separately (JPEG until then); the choice of a royalty-free or
-  OS-provided encoder is made there.
+  hardware encoder and GPU colour conversion can follow. The SYSTEM helper encodes in its own process and sends the
+  access units over its pipe (8.2c); switching between own capture and helper releases the old side's encoder and
+  starts the new side with a keyframe. Linux and Android follow separately (JPEG until then); the choice of a
+  royalty-free or OS-provided encoder is made there.
 
 ## Consequences
 

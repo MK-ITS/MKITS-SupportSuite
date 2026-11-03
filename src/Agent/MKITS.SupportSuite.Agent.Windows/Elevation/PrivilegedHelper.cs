@@ -5,9 +5,7 @@ using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Windows.Platform;
-using MKITS.SupportSuite.Common.Protocol.V0;
 using static MKITS.SupportSuite.Agent.Windows.Native.ServiceNative;
 
 namespace MKITS.SupportSuite.Agent.Windows.Elevation;
@@ -87,14 +85,18 @@ internal static partial class PrivilegedHelper
             byte[]? response;
             try
             {
-                response = await desktop.InvokeAsync(() => Handle(message, desktop)).ConfigureAwait(false);
+                response = await desktop.InvokeAsync(() =>
+                {
+                    desktop.FollowInputDesktop();
+                    return desktop.Handler.Handle(message);
+                }).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException or ArgumentException)
             {
                 return 5; // malformed request
             }
 
-            if (response == Shutdown)
+            if (response == HelperRequestHandler.Shutdown)
             {
                 return 0;
             }
@@ -103,81 +105,6 @@ internal static partial class PrivilegedHelper
             {
                 await HelperProtocol.WriteAsync(pipe, response, CancellationToken.None).ConfigureAwait(false);
             }
-        }
-    }
-
-    private static readonly byte[] Shutdown = [];
-
-    /// <summary>Runs on the desktop thread.</summary>
-    private static byte[]? Handle(byte[] message, DesktopThread desktop)
-    {
-        using var reader = new BinaryReader(new MemoryStream(message));
-        var type = (HelperRequest)reader.ReadByte();
-        desktop.FollowInputDesktop();
-
-        switch (type)
-        {
-            case HelperRequest.GetMonitors:
-                var monitors = desktop.Screen.GetMonitors();
-                return HelperProtocol.Build(HelperRequest.GetMonitors, w =>
-                {
-                    w.Write(monitors.Count);
-                    foreach (var m in monitors)
-                    {
-                        w.Write(m.Id);
-                        w.Write(m.Name);
-                        w.Write(m.Left);
-                        w.Write(m.Top);
-                        w.Write(m.Width);
-                        w.Write(m.Height);
-                        w.Write(m.Primary);
-                    }
-                });
-            case HelperRequest.Capture:
-                var frame = desktop.Screen.Capture(reader.ReadUInt32(), Math.Clamp(reader.ReadInt32(), 1, 100), CancellationToken.None);
-                return HelperProtocol.Build(HelperRequest.Capture, w =>
-                {
-                    w.Write(frame is not null);
-                    if (frame is not null)
-                    {
-                        w.Write((int)frame.Codec);
-                        w.Write(frame.Width);
-                        w.Write(frame.Height);
-                        w.Write(frame.Data.Length);
-                        w.Write(frame.Data);
-                    }
-                });
-            case HelperRequest.MovePointer:
-                desktop.Input.MovePointer(reader.ReadInt32(), reader.ReadInt32());
-                return null;
-            case HelperRequest.SetButton:
-                desktop.Input.SetButton((PointerButtons)reader.ReadInt32(), reader.ReadBoolean());
-                return null;
-            case HelperRequest.Wheel:
-                desktop.Input.Wheel(Math.Clamp(reader.ReadInt32(), -10, 10), Math.Clamp(reader.ReadInt32(), -10, 10));
-                return null;
-            case HelperRequest.Key:
-                desktop.Input.Key(HelperProtocol.ReadString(reader), reader.ReadBoolean());
-                return null;
-            case HelperRequest.Text:
-                desktop.Input.Text(HelperProtocol.ReadString(reader));
-                return null;
-            case HelperRequest.Special:
-                var kind = (SpecialKeyKind)reader.ReadInt32();
-                if (kind == SpecialKeyKind.CtrlAltDel)
-                {
-                    SasClient.Request(); // SendSAS only works from the service
-                }
-                else
-                {
-                    desktop.Input.Special(kind);
-                }
-
-                return null;
-            case HelperRequest.Shutdown:
-                return Shutdown;
-            default:
-                throw new InvalidDataException("Unknown request.");
         }
     }
 
@@ -194,6 +121,7 @@ internal static partial class PrivilegedHelper
         private readonly System.Collections.Concurrent.BlockingCollection<Action> _work = [];
         private readonly Thread _thread;
         private nint _desktop;
+        private HelperRequestHandler? _handler;
 
         public DesktopThread()
         {
@@ -212,6 +140,8 @@ internal static partial class PrivilegedHelper
         public DesktopScreenSource Screen { get; } = new();
 
         public SendInputInjector Input { get; } = new();
+
+        public HelperRequestHandler Handler => _handler ??= new HelperRequestHandler(Screen, Input, SasClient.Request);
 
         public Task<T> InvokeAsync<T>(Func<T> func)
         {

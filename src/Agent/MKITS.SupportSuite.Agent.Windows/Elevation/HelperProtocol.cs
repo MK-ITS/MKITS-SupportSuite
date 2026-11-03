@@ -18,12 +18,16 @@ internal enum HelperRequest : byte
     Text = 7,
     Special = 8,
     Shutdown = 9,
+    StreamCodecs = 10,
+    CaptureStream = 11,
+    ReleaseStream = 12,
 }
 
 /// <summary>
 /// Length-prefixed binary messages over the helper pipe: <c>u32 length (LE) ‖ payload</c>, payload starts with a
-/// <see cref="HelperRequest"/> byte. Only <see cref="HelperRequest.GetMonitors"/> and <see cref="HelperRequest.Capture"/>
-/// have responses; responses arrive in request order. Everything is size-limited – the helper runs as SYSTEM and treats
+/// <see cref="HelperRequest"/> byte. Only <see cref="HelperRequest.GetMonitors"/>, <see cref="HelperRequest.Capture"/>,
+/// <see cref="HelperRequest.StreamCodecs"/> and <see cref="HelperRequest.CaptureStream"/> have responses; responses
+/// arrive in request order. Everything is size-limited – the helper runs as SYSTEM and treats
 /// every message as hostile.
 /// </summary>
 internal static class HelperProtocol
