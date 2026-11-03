@@ -122,6 +122,9 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
     public IReadOnlyCollection<string> ReadyViewerIds => _engine.ReadyViewerIds;
 
     /// <inheritdoc />
+    public Common.Protocol.ViewerPermissions PermissionsOf(string viewerId) => _engine.PermissionsOf(viewerId);
+
+    /// <inheritdoc />
     public Task SendAsync(string? viewerId, SessionPayload payload, CancellationToken cancellationToken) =>
         _engine.SendAsync(viewerId, payload, cancellationToken);
 

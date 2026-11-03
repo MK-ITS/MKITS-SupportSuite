@@ -292,7 +292,7 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Viewer_TerminalRefused" xml:space="preserve"><value>The shell could not be started</value></data>
   <data name="Viewer_TerminalElevated" xml:space="preserve"><value>Admin terminal</value></data>
   <data name="Viewer_TerminalElevatedHint" xml:space="preserve"><value>Terminal with administrator rights (Windows: SYSTEM, Linux: root). Ad-hoc sessions need administrator mode on the customer's side.</value></data>
-  <data name="Viewer_TerminalElevatedRefused" xml:space="preserve"><value>not available – the customer has to switch on administrator mode first</value></data>
+  <data name="Viewer_TerminalElevatedRefused" xml:space="preserve"><value>not available – ad-hoc sessions need administrator mode on the customer’s side, installed agents the “Admin shell” permission</value></data>
   <data name="Nav_Devices" xml:space="preserve"><value>Devices</value></data>
   <data name="Nav_DeviceAdmin" xml:space="preserve"><value>Device administration</value></data>
   <data name="MyDevices_Title" xml:space="preserve"><value>Devices</value></data>
@@ -353,6 +353,7 @@ You can lift the ban under Administration → IP bans.</value></data>
   <data name="Permission_Control" xml:space="preserve"><value>Control</value></data>
   <data name="Permission_Files" xml:space="preserve"><value>Files</value></data>
   <data name="Permission_Shell" xml:space="preserve"><value>Shell</value></data>
+  <data name="Permission_ShellAdmin" xml:space="preserve"><value>Admin shell (SYSTEM/root)</value></data>
   <data name="Permission_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
   <data name="Tokens_Title" xml:space="preserve"><value>Enrollment tokens</value></data>
   <data name="Tokens_Intro" xml:space="preserve"><value>The agent installer needs an enrollment token to join this group. Treat tokens like passwords.</value></data>

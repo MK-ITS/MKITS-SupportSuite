@@ -3,6 +3,7 @@
 
 using Google.Protobuf;
 using MKITS.SupportSuite.Agent.Core.Features;
+using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
 using ByteChannel = System.Threading.Channels.Channel;
 
@@ -99,6 +100,35 @@ public sealed class ShellHandlerTests : IAsyncDisposable
         Assert.Equal("bash", Assert.Single(elevatedHost.Started).Type);
         var refused = await WaitForAsync(SessionPayload.BodyOneofCase.ShellExit);
         Assert.Equal(("b", -1), (refused.ShellExit.ShellId, refused.ShellExit.ExitCode));
+    }
+
+    [Theory]
+    [InlineData(true, false)] // Windows: elevated request to the elevated host
+    [InlineData(false, true)] // Linux service: the normal host is root too
+    public async Task AdminShells_NeedTheShellAdminPermission(bool elevated, bool hostIsAdmin)
+    {
+        var admin = new FakeShellHost();
+        await using var handler = new ShellHandler(hostIsAdmin ? admin : null, admin, hostIsAdmin);
+        var open = new SessionPayload { ShellOpen = new ShellOpen { ShellId = "s1", Cols = 80, Rows = 24, Elevated = elevated } };
+
+        _context.Permissions = ViewerPermissions.All & ~ViewerPermissions.ShellAdmin;
+        await handler.HandleAsync(_context, "v1", open, CancellationToken.None);
+        Assert.Empty(admin.Started); // never downgraded to something else either
+        Assert.Equal(-1, (await WaitForAsync(SessionPayload.BodyOneofCase.ShellExit)).ShellExit.ExitCode);
+
+        _context.Permissions = ViewerPermissions.View | ViewerPermissions.Shell | ViewerPermissions.ShellAdmin;
+        await handler.HandleAsync(_context, "v1", open, CancellationToken.None);
+        Assert.Single(admin.Started);
+    }
+
+    [Fact]
+    public async Task UserShells_NeedNoAdminPermission()
+    {
+        _context.Permissions = ViewerPermissions.View | ViewerPermissions.Shell;
+
+        await Send(new SessionPayload { ShellOpen = new ShellOpen { ShellId = "s1", Cols = 80, Rows = 24 } });
+
+        Assert.Single(_host.Started);
     }
 
     private Task Send(SessionPayload payload) => _handler.HandleAsync(_context, "v1", payload, CancellationToken.None);

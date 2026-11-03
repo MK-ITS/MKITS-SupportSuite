@@ -211,6 +211,18 @@ public sealed class DeviceServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Permissions_ShellAdmin_ImpliesShellAndView()
+    {
+        var deviceId = await EnrollAsync();
+        var groupId = (await _service.ListGroupsAsync())[0].Id;
+
+        Assert.Null(await _service.SetPermissionAsync(_admin, groupId, _supporter, DevicePermissions.ShellAdmin));
+
+        Assert.Equal(DevicePermissions.View | DevicePermissions.Shell | DevicePermissions.ShellAdmin, await _service.GetPermissionsAsync(_supporter, isAdmin: false, deviceId));
+        Assert.Equal(["view", "shell", "shell_admin"], DeviceService.PermissionNames(DevicePermissions.View | DevicePermissions.Shell | DevicePermissions.ShellAdmin));
+    }
+
+    [Fact]
     public async Task DeleteGroup_WithDevices_IsRefused_AfterMoveSucceeds()
     {
         var deviceId = await EnrollAsync();

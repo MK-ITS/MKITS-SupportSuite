@@ -30,7 +30,8 @@ the helper's request/response pipe.
 - **Linux installed agent:** shells already run as root (ADR-0025); elevated requests use the same host. The Linux
   ad-hoc client cannot elevate and refuses.
 - **Permissions:** an elevated shell needs the same `shell` permission as a normal one; on permanent devices that
-  permission already means administrative access (the agent runs as SYSTEM/root).
+  permission already means administrative access (the agent runs as SYSTEM/root). *Superseded by ADR-0029: elevated
+  (and Linux service) shells need the separate `shell_admin` permission.*
 
 ## Consequences
 

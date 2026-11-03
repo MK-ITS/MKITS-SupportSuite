@@ -80,9 +80,10 @@ internal static class AgentService
                 new UserSessionConnector(), new HeadlessUserInterface(), UserChannels,
                 desktopInUserSession: () => DesktopLocator.FindSession()?.Type == "wayland");
             await using var streamer = new ScreenStreamer(desktop);
-            // The service's shells run as root anyway (ADR-0025), so "administrator" shells are the same (ADR-0028).
+            // The service's shells run as root anyway (ADR-0025), so "administrator" shells are the same (ADR-0028) –
+            // and all of them need the "admin shell" permission (ADR-0029).
             var pty = new PtyShellHost();
-            await using var shells = new ShellHandler(pty, elevatedHost: pty);
+            await using var shells = new ShellHandler(pty, elevatedHost: pty, hostIsAdmin: true);
             await using var agent = new DeviceAgent(
                 options, new ClientWebSocketConnector(), store, bridge,
                 [new SwitchableHandler(() => !bridge.ForwardsDesktop, streamer, new InputHandler(desktop, desktop)), bridge, shells]);

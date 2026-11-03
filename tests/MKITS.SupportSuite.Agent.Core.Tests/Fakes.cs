@@ -17,6 +17,10 @@ public sealed class RecordingContext : ISessionContext
 
     public IReadOnlyCollection<string> ReadyViewerIds => Viewers;
 
+    public MKITS.SupportSuite.Common.Protocol.ViewerPermissions Permissions { get; set; } = MKITS.SupportSuite.Common.Protocol.ViewerPermissions.All;
+
+    public MKITS.SupportSuite.Common.Protocol.ViewerPermissions PermissionsOf(string viewerId) => Permissions;
+
     public Task SendAsync(string? viewerId, SessionPayload payload, CancellationToken cancellationToken)
     {
         Sent.Enqueue((viewerId, payload));

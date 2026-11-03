@@ -72,4 +72,10 @@ public interface ISessionContext
 
     /// <summary>Viewers that finished the key exchange (can receive payloads right now).</summary>
     IReadOnlyCollection<string> ReadyViewerIds { get; }
+
+    /// <summary>
+    /// What a viewer may do (for checks inside a channel, e.g. admin shells – ADR-0029). Unknown viewers, and contexts
+    /// that do not know the permissions, have none.
+    /// </summary>
+    Common.Protocol.ViewerPermissions PermissionsOf(string viewerId) => Common.Protocol.ViewerPermissions.None;
 }
