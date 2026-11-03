@@ -42,7 +42,7 @@ public sealed class ElevatedShellRouter(ISessionChannelHandler inner, ShellHandl
 
     public async Task OnViewerReadyAsync(ISessionContext context, string viewerId, CancellationToken cancellationToken)
     {
-        await elevated.OnViewerReadyAsync(context, viewerId, cancellationToken).ConfigureAwait(false);
+        await ((ISessionChannelHandler)elevated).OnViewerReadyAsync(context, viewerId, cancellationToken).ConfigureAwait(false);
         await inner.OnViewerReadyAsync(context, viewerId, cancellationToken).ConfigureAwait(false);
     }
 
