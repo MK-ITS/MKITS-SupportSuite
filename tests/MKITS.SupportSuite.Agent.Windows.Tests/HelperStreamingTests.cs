@@ -82,6 +82,41 @@ public sealed class HelperStreamingTests
         Assert.Equal(VideoCodec.Jpeg, fallback!.Codec);
     }
 
+    [Fact]
+    public async Task HelperClient_MalformedFrameResponse_IsNoFrame()
+    {
+        var name = $"mkits-test-{Guid.NewGuid():N}";
+        await using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        var pipe = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous);
+        await Task.WhenAll(server.WaitForConnectionAsync(), pipe.ConnectAsync());
+        using var client = new HelperClient(pipe);
+        var answers = Task.Run(async () =>
+        {
+            foreach (var length in new[] { int.MaxValue, -1, 2 })
+            {
+                _ = await HelperProtocol.ReadAsync(server, CancellationToken.None);
+                await HelperProtocol.WriteAsync(server, HelperProtocol.Build(HelperRequest.Capture, w =>
+                {
+                    w.Write(true);
+                    w.Write((int)VideoCodec.Jpeg);
+                    w.Write(64);
+                    w.Write(48);
+                    w.Write(true);
+                    w.Write(length);
+                    w.Write((byte)1); // one byte of data, whatever the header claims
+                }), CancellationToken.None);
+            }
+        });
+
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Null(client.Capture(1, 60, CancellationToken.None));
+        }
+
+        await answers;
+        Assert.False(client.IsBroken);
+    }
+
     private static byte[] StreamRequest(string key, VideoCodec codec) => HelperProtocol.Build(HelperRequest.CaptureStream, w =>
     {
         w.Write(1u);

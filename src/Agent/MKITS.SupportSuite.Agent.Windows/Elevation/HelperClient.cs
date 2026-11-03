@@ -225,19 +225,32 @@ internal sealed partial class HelperClient : IScreenSource, IInputInjector, IDis
             return null;
         }
 
-        using var reader = new BinaryReader(new MemoryStream(response));
-        _ = reader.ReadByte();
-        if (!reader.ReadBoolean())
+        var stream = new MemoryStream(response);
+        using var reader = new BinaryReader(stream);
+        try
+        {
+            _ = reader.ReadByte();
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var codec = (VideoCodec)reader.ReadInt32();
+            var width = reader.ReadInt32();
+            var height = reader.ReadInt32();
+            var keyframe = reader.ReadBoolean();
+            var length = reader.ReadInt32();
+            if (length < 0 || length != stream.Length - stream.Position)
+            {
+                return null; // malformed: never allocate what the message does not contain
+            }
+
+            return new EncodedFrame(codec, width, height, reader.ReadBytes(length), keyframe);
+        }
+        catch (EndOfStreamException)
         {
             return null;
         }
-
-        var codec = (VideoCodec)reader.ReadInt32();
-        var width = reader.ReadInt32();
-        var height = reader.ReadInt32();
-        var keyframe = reader.ReadBoolean();
-        var data = reader.ReadBytes(reader.ReadInt32());
-        return new EncodedFrame(codec, width, height, data, keyframe);
     }
 
     private void Send(byte[] message) => _ = Request(message, expectResponse: false);
