@@ -96,12 +96,14 @@ internal sealed class AgentService : ServiceBase
             };
 
             // Chat, clipboard, files and shell run in the user's session with the user's rights; the bridge also shows the
-            // session window there. Without a logged-on user the service's message boxes are the fallback.
+            // session window there. Without a logged-on user the service's message boxes are the fallback. Shells opened
+            // as "administrator" run here in the service, as SYSTEM (ADR-0028).
             await using var bridge = new UserSessionBridge(new UserSessionConnector(), new ServiceUserInterface(helper));
+            await using var router = new ElevatedShellRouter(bridge, new ShellHandler(host: null, elevatedHost: new ConPtyShellHost()));
             await using var streamer = new ScreenStreamer(helper);
             await using var agent = new DeviceAgent(
                 options, new ClientWebSocketConnector(), store, bridge,
-                [streamer, new InputHandler(helper, helper), bridge]);
+                [streamer, new InputHandler(helper, helper), router]);
             bridge.EndSessionRequested += (_, _) => _ = agent.EndSessionAsync();
             _ = AgentUpdater.RunAsync(server, agent, cancellationToken);
 

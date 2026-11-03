@@ -91,6 +91,11 @@ function start(): void {
       terminals.open();
     }
   });
+  element<HTMLButtonElement>("viewer-terminal-elevated").addEventListener("click", () => {
+    if (session.ready) {
+      terminals.open(true);
+    }
+  });
 
   const formatSize = (bytes: number) => (bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
   const progressItems = new Map<string, HTMLLIElement>();

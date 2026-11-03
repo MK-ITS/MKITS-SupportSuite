@@ -81,7 +81,7 @@ Handshake timeouts: `Hello` within 10 s after the upgrade, `Authenticate` within
 | 4 | `CLIPBOARD` | both | `ClipboardText` (UTF-8, ≤ 1 MiB); files via channel 5 |
 | 5 | `FILE` | both | `FileOffer`, `FileDecision{accepted}`, `FileChunk` (64 KiB), `FileComplete{sha256}`, `FileCancel` |
 | 6 | `CHAT` | both | `ChatMessage{author, text, timestamp}` |
-| 7 | `SHELL` | both | `ShellOpen{type, cols, rows, elevated}`, `ShellData`, `ShellResize`, `ShellExit{code}` |
+| 7 | `SHELL` | both | `ShellOpen{type, cols, rows, elevated}`, `ShellData`, `ShellResize`, `ShellExit{code}` – `elevated` asks for administrator/root rights (ADR-0028); refused with code -1 if the agent cannot elevate |
 
 **Routing rules (enforced by the relay):**
 

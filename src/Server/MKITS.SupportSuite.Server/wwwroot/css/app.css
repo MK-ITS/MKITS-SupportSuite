@@ -269,4 +269,5 @@ button.danger { background: var(--danger-text); color: #fff; border-color: var(-
 .viewer-terminal { flex: 1; min-width: 20rem; display: flex; flex-direction: column; }
 .viewer-terminal-header { display: flex; justify-content: space-between; align-items: center; color: #ddd; font-size: 0.85rem; padding: 0 0.25rem 0.25rem; }
 .viewer-terminal-header button { margin-top: 0; padding: 0.1rem 0.5rem; }
+.viewer-terminal.elevated .viewer-terminal-header { color: #ff9a8a; font-weight: 600; }
 .viewer-terminal-host { flex: 1; min-height: 0; }

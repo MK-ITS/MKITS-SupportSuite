@@ -16,7 +16,7 @@ public sealed class HelperStreamingTests
     public async Task HelperClient_StreamsThroughThePipe()
     {
         var screen = new FakeSource(VideoCodec.H264);
-        await using var helper = await LoopbackHelper.StartAsync(screen);
+        await using var helper = await LoopbackHelper.StartAsync(new HelperRequestHandler(screen, new FakeInput(), () => { }));
 
         Assert.Equal([VideoCodec.H264], helper.Client.StreamCodecs);
         var first = helper.Client.CaptureStream(1, "viewer-1", VideoCodec.H264, 60, keyframe: true, CancellationToken.None);
@@ -128,50 +128,7 @@ public sealed class HelperStreamingTests
 
     private static bool HasFrame(byte[]? response) => response is { Length: > 1 } && response[1] != 0;
 
-    /// <summary>A helper on a local pipe, serving with <see cref="HelperRequestHandler"/> like the real one.</summary>
-    private sealed class LoopbackHelper : IAsyncDisposable
-    {
-        private readonly NamedPipeServerStream _server;
-        private readonly Task _serving;
-
-        private LoopbackHelper(NamedPipeServerStream server, HelperClient client, Task serving)
-        {
-            _server = server;
-            Client = client;
-            _serving = serving;
-        }
-
-        public HelperClient Client { get; }
-
-        public static async Task<LoopbackHelper> StartAsync(IScreenSource screen)
-        {
-            var name = $"mkits-test-{Guid.NewGuid():N}";
-            var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            var pipe = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous);
-            await Task.WhenAll(server.WaitForConnectionAsync(), pipe.ConnectAsync());
-            var handler = new HelperRequestHandler(screen, new FakeInput(), () => { });
-            var serving = Task.Run(async () =>
-            {
-                while (await HelperProtocol.ReadAsync(server, CancellationToken.None) is { } message)
-                {
-                    if (handler.Handle(message) is { Length: > 0 } response)
-                    {
-                        await HelperProtocol.WriteAsync(server, response, CancellationToken.None);
-                    }
-                }
-            });
-            return new LoopbackHelper(server, new HelperClient(pipe), serving);
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            Client.Dispose();
-            await _serving;
-            await _server.DisposeAsync();
-        }
-    }
-
-    private sealed class FakeSource(params VideoCodec[] streams) : IScreenSource
+    internal sealed class FakeSource(params VideoCodec[] streams) : IScreenSource
     {
         public List<string> Released { get; } = [];
 
@@ -193,7 +150,7 @@ public sealed class HelperStreamingTests
         public void ReleaseStream(string streamKey) => Released.Add(streamKey);
     }
 
-    private sealed class FakeInput : IInputInjector
+    internal sealed class FakeInput : IInputInjector
     {
         public void MovePointer(int x, int y)
         {

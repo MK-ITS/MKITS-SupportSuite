@@ -9,10 +9,11 @@ using static MKITS.SupportSuite.Agent.Windows.Native.ConPtyNative;
 
 namespace MKITS.SupportSuite.Agent.Windows.Platform;
 
-/// <summary>PowerShell and cmd in a pseudo console (ConPTY), with the rights of the current user.</summary>
+/// <summary>PowerShell and cmd in a pseudo console (ConPTY), with the rights of the current process.</summary>
 public sealed class ConPtyShellHost : IShellHost
 {
-    private static readonly Dictionary<string, string> CommandLines = new(StringComparer.Ordinal)
+    /// <summary>The only programs a viewer can start (also used by the helper's elevated shells).</summary>
+    internal static readonly Dictionary<string, string> CommandLines = new(StringComparer.Ordinal)
     {
         ["powershell"] = "powershell.exe -NoLogo",
         ["cmd"] = "cmd.exe",
@@ -37,6 +38,7 @@ internal sealed class ConPtyShell : IShellProcess
     private readonly RegisteredWaitHandle _exitWait;
     private readonly ProcessWaitHandle _waitHandle;
     private int _disposed;
+    private int _consoleClosed;
 
     private ConPtyShell(nint pseudoConsole, SafeProcessHandle process, FileStream input, FileStream output)
     {
@@ -51,6 +53,14 @@ internal sealed class ConPtyShell : IShellProcess
     public Stream Output => _output;
 
     public Task<int> Exited => _exited.Task;
+
+    /// <summary>The write end of the shell's input (for handing it to another process, ADR-0028).</summary>
+    internal SafeHandle InputHandle => _input.SafeFileHandle;
+
+    /// <summary>The read end of the shell's output.</summary>
+    internal SafeHandle OutputHandle => _output.SafeFileHandle;
+
+    internal SafeProcessHandle ProcessHandle => _process;
 
     public static ConPtyShell Start(string commandLine, int columns, int rows)
     {
@@ -140,16 +150,7 @@ internal sealed class ConPtyShell : IShellProcess
         }
 
         await _input.DisposeAsync().ConfigureAwait(false);
-
-        // ClosePseudoConsole can block until the output pipe is drained (older Windows builds): close it in the background.
-        try
-        {
-            await Task.Run(() => ClosePseudoConsole(_pseudoConsole)).WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-        }
-        catch (TimeoutException)
-        {
-            // the pseudo console is released when the process exits
-        }
+        await CloseConsoleAsync().ConfigureAwait(false);
 
         await _output.DisposeAsync().ConfigureAwait(false);
         _exitWait.Unregister(null);
@@ -160,10 +161,35 @@ internal sealed class ConPtyShell : IShellProcess
     private void OnExited()
     {
         _exited.TrySetResult(GetExitCodeProcess(_process, out var code) ? unchecked((int)code) : -1);
+
+        // The pseudo console keeps the output pipe open after the shell exited: close it, so readers see the end of
+        // the output (and the viewer gets the exit code).
+        _ = CloseConsoleAsync();
+    }
+
+    /// <summary>
+    /// Closes the pseudo console once. ClosePseudoConsole can block until the output pipe is drained (older Windows
+    /// builds): it runs in the background and is given up on after a few seconds.
+    /// </summary>
+    private async Task CloseConsoleAsync()
+    {
+        if (Interlocked.Exchange(ref _consoleClosed, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() => ClosePseudoConsole(_pseudoConsole)).WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // the pseudo console is released when the process exits
+        }
     }
 
     /// <summary>Lets the thread pool wait for the process handle.</summary>
-    private sealed class ProcessWaitHandle : WaitHandle
+    internal sealed class ProcessWaitHandle : WaitHandle
     {
         public ProcessWaitHandle(SafeProcessHandle process)
         {

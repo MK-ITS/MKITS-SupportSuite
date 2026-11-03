@@ -28,16 +28,20 @@ public interface IShellHost
     /// <summary>Shell types this platform offers, e.g. <c>powershell</c>, <c>cmd</c> or <c>bash</c>, <c>sh</c>. The first is the default.</summary>
     IReadOnlyList<string> AvailableShells { get; }
 
-    /// <summary>Starts a shell with the user rights of the agent process (the ad-hoc client never elevates on its own).</summary>
+    /// <summary>Starts a shell with this host's rights (user rights, or administrator/root for an elevated host).</summary>
     IShellProcess Start(string type, int columns, int rows);
 }
 
 /// <summary>
 /// Remote shell (docs/protocol.md §5, channel SHELL): opens shells on request of a viewer, pipes input and output,
 /// reports the exit code and closes all shells of a viewer when it leaves. Only shell types the platform offers can
-/// be started – the viewer can never choose an arbitrary program.
+/// be started – the viewer can never choose an arbitrary program. <c>ShellOpen.elevated</c> selects
+/// <paramref name="elevatedHost"/> (ADR-0028); without one – or without a normal <paramref name="host"/> – such
+/// requests are refused (exit code -1).
 /// </summary>
-public sealed class ShellHandler(IShellHost host) : ISessionChannelHandler, IAsyncDisposable
+/// <param name="host">Shells with the rights of the logged-on user; <c>null</c> if this handler only serves elevated shells.</param>
+/// <param name="elevatedHost">Administrator/root shells; <c>null</c> if this agent cannot elevate (right now).</param>
+public sealed class ShellHandler(IShellHost? host, IShellHost? elevatedHost = null) : ISessionChannelHandler, IAsyncDisposable
 {
     internal const int MaxShellsPerViewer = 3;
     internal const int OutputChunkSize = 16 * 1024;
@@ -107,12 +111,14 @@ public sealed class ShellHandler(IShellHost host) : ISessionChannelHandler, IAsy
     private async Task OpenAsync(ISessionContext context, string viewerId, ShellOpen open, CancellationToken cancellationToken)
     {
         var shellId = open.ShellId;
-        var type = string.IsNullOrEmpty(open.Type) ? (host.AvailableShells.Count > 0 ? host.AvailableShells[0] : null) : open.Type;
+        var selected = open.Elevated ? elevatedHost : host;
+        var available = selected?.AvailableShells ?? [];
+        var type = string.IsNullOrEmpty(open.Type) ? (available.Count > 0 ? available[0] : null) : open.Type;
         var key = Key(viewerId, shellId);
         var perViewer = _shells.Keys.Count(k => k.StartsWith(viewerId + "/", StringComparison.Ordinal));
 
-        if (string.IsNullOrEmpty(shellId) || shellId.Length > 64 || _shells.ContainsKey(key) || perViewer >= MaxShellsPerViewer
-            || type is null || !host.AvailableShells.Contains(type, StringComparer.Ordinal))
+        if (selected is null || string.IsNullOrEmpty(shellId) || shellId.Length > 64 || _shells.ContainsKey(key) || perViewer >= MaxShellsPerViewer
+            || type is null || !available.Contains(type, StringComparer.Ordinal))
         {
             await SendExitAsync(context, viewerId, shellId, -1, cancellationToken).ConfigureAwait(false);
             return;
@@ -121,7 +127,7 @@ public sealed class ShellHandler(IShellHost host) : ISessionChannelHandler, IAsy
         IShellProcess process;
         try
         {
-            process = host.Start(type, Clamp(open.Cols, 20, 500), Clamp(open.Rows, 5, 200));
+            process = selected.Start(type, Clamp(open.Cols, 20, 500), Clamp(open.Rows, 5, 200));
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception or PlatformNotSupportedException)
         {

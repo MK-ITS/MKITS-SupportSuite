@@ -11,6 +11,7 @@ interface OpenShell {
   fit: FitAddon;
   panel: HTMLElement;
   exited: boolean;
+  elevated: boolean;
 }
 
 /**
@@ -34,8 +35,11 @@ export class RemoteTerminals {
     });
   }
 
-  /** Opens a terminal panel and asks the agent for its default shell. */
-  open(): void {
+  /**
+   * Opens a terminal panel and asks the agent for its default shell – with administrator/root rights if `elevated`
+   * (ADR-0028; the agent refuses if it cannot elevate right now).
+   */
+  open(elevated = false): void {
     const shellId = `sh${++this.counter}`;
     const panel = document.createElement("div");
     panel.className = "viewer-terminal";
@@ -43,7 +47,10 @@ export class RemoteTerminals {
     const header = document.createElement("div");
     header.className = "viewer-terminal-header";
     const title = document.createElement("span");
-    title.textContent = `${this.t("Viewer_Terminal")} ${this.counter}`;
+    title.textContent = `${this.t(elevated ? "Viewer_TerminalElevated" : "Viewer_Terminal")} ${this.counter}`;
+    if (elevated) {
+      panel.classList.add("elevated");
+    }
     const close = document.createElement("button");
     close.type = "button";
     close.className = "secondary";
@@ -65,9 +72,9 @@ export class RemoteTerminals {
     terminal.onData((data) => this.send(create(SessionPayloadSchema, { body: { case: "shellData", value: { shellId, data: this.encoder.encode(data) } } })));
     terminal.focus();
 
-    const shell: OpenShell = { terminal, fit, panel, exited: false };
+    const shell: OpenShell = { terminal, fit, panel, exited: false, elevated };
     this.shells.set(shellId, shell);
-    this.send(create(SessionPayloadSchema, { body: { case: "shellOpen", value: { shellId, type: "", cols: terminal.cols, rows: terminal.rows, elevated: false } } }));
+    this.send(create(SessionPayloadSchema, { body: { case: "shellOpen", value: { shellId, type: "", cols: terminal.cols, rows: terminal.rows, elevated } } }));
   }
 
   handle(payload: SessionPayload): void {
@@ -80,7 +87,8 @@ export class RemoteTerminals {
         if (shell && !shell.exited) {
           shell.exited = true;
           const code = payload.body.value.exitCode;
-          shell.terminal.write(`\r\n\x1b[2m[${code === -1 ? this.t("Viewer_TerminalRefused") : `${this.t("Viewer_TerminalExited")} ${code}`}]\x1b[0m\r\n`);
+          const refused = this.t(shell.elevated ? "Viewer_TerminalElevatedRefused" : "Viewer_TerminalRefused");
+          shell.terminal.write(`\r\n\x1b[2m[${code === -1 ? refused : `${this.t("Viewer_TerminalExited")} ${code}`}]\x1b[0m\r\n`);
         }
         break;
       }

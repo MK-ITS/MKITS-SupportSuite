@@ -47,7 +47,7 @@ internal static partial class PrivilegedHelper
             return 3; // somebody else connected – refuse to serve
         }
 
-        using var desktopThread = new DesktopThread();
+        using var desktopThread = new DesktopThread(new HelperShells(config.ClientProcessId));
         return ServeAsync(pipe, desktopThread).GetAwaiter().GetResult();
     }
 
@@ -120,11 +120,13 @@ internal static partial class PrivilegedHelper
     {
         private readonly System.Collections.Concurrent.BlockingCollection<Action> _work = [];
         private readonly Thread _thread;
+        private readonly HelperShells _shells;
         private nint _desktop;
         private HelperRequestHandler? _handler;
 
-        public DesktopThread()
+        public DesktopThread(HelperShells shells)
         {
+            _shells = shells;
             _thread = new Thread(() =>
             {
                 foreach (var action in _work.GetConsumingEnumerable())
@@ -141,7 +143,7 @@ internal static partial class PrivilegedHelper
 
         public SendInputInjector Input { get; } = new();
 
-        public HelperRequestHandler Handler => _handler ??= new HelperRequestHandler(Screen, Input, SasClient.Request);
+        public HelperRequestHandler Handler => _handler ??= new HelperRequestHandler(Screen, Input, SasClient.Request, _shells);
 
         public Task<T> InvokeAsync<T>(Func<T> func)
         {
@@ -189,6 +191,7 @@ internal static partial class PrivilegedHelper
             _work.CompleteAdding();
             _thread.Join(TimeSpan.FromSeconds(5));
             Screen.Dispose();
+            _shells.Dispose();
             _work.Dispose();
         }
     }

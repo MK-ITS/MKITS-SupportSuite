@@ -39,6 +39,7 @@ public static class ViewerPage
         "Viewer_FileOffered", "Viewer_FileAccept", "Viewer_FileDecline", "Viewer_FileDownload", "Viewer_FileFailed",
         "Viewer_FileOffering", "Viewer_FileSent", "Viewer_FileNotSent",
         "Viewer_Terminal", "Viewer_TerminalClose", "Viewer_TerminalExited", "Viewer_TerminalRefused",
+        "Viewer_TerminalElevated", "Viewer_TerminalElevatedRefused",
         "Viewer_Status_WAITING_FOR_AGENT", "Viewer_Status_WAITING_FOR_VIEWER", "Viewer_Status_AWAITING_CONSENT",
         "Viewer_Status_ACTIVE", "Viewer_Status_SUSPENDED", "Viewer_Status_ENDED",
         "Viewer_Error_CONSENT_DENIED", "Viewer_Error_SESSION_ENDED", "Viewer_Error_AUTH_FAILED", "Viewer_Error_RATE_LIMITED",
@@ -134,6 +135,7 @@ public static class ViewerPage
                 <button type="button" class="secondary" id="viewer-clipboard-copy" hidden>{T("Viewer_ClipboardCopy")}</button>
                 <button type="button" class="secondary" id="viewer-file-send">{T("Viewer_FileSend")}</button>
                 <button type="button" class="secondary" id="viewer-terminal-open">{T("Viewer_Terminal")}</button>
+                <button type="button" class="secondary" id="viewer-terminal-elevated" title="{T("Viewer_TerminalElevatedHint")}">{T("Viewer_TerminalElevated")}</button>
                 <input type="file" id="viewer-file-input" hidden>
                 <button type="button" class="danger" id="viewer-end">{T("Sessions_Action_End")}</button>
               </header>

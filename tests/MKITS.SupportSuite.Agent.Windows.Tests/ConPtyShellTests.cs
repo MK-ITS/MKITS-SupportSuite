@@ -45,7 +45,7 @@ public sealed class ConPtyShellTests
         await shell.WriteAsync(Encoding.UTF8.GetBytes("exit 7\r\n"), timeout.Token);
 
         Assert.Equal(7, await shell.Exited.WaitAsync(timeout.Token));
-        _ = reader;
+        await reader.WaitAsync(timeout.Token); // the output ends after the exit (the viewer then gets the exit code)
     }
 
     [Fact]

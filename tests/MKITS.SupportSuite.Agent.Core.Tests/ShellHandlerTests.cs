@@ -78,6 +78,29 @@ public sealed class ShellHandlerTests : IAsyncDisposable
         Assert.True(_host.Started[1].Disposed);
     }
 
+    [Fact]
+    public async Task Elevated_WithoutElevatedHost_IsRefused()
+    {
+        await Send(new SessionPayload { ShellOpen = new ShellOpen { ShellId = "s1", Cols = 80, Rows = 24, Elevated = true } });
+
+        Assert.Empty(_host.Started);
+        Assert.Equal(-1, (await WaitForAsync(SessionPayload.BodyOneofCase.ShellExit)).ShellExit.ExitCode);
+    }
+
+    [Fact]
+    public async Task Elevated_UsesTheElevatedHost_NormalNeedsTheNormalHost()
+    {
+        var elevatedHost = new FakeShellHost();
+        await using var handler = new ShellHandler(host: null, elevatedHost);
+
+        await handler.HandleAsync(_context, "v1", new SessionPayload { ShellOpen = new ShellOpen { ShellId = "a", Cols = 80, Rows = 24, Elevated = true } }, CancellationToken.None);
+        await handler.HandleAsync(_context, "v1", new SessionPayload { ShellOpen = new ShellOpen { ShellId = "b", Cols = 80, Rows = 24 } }, CancellationToken.None);
+
+        Assert.Equal("bash", Assert.Single(elevatedHost.Started).Type);
+        var refused = await WaitForAsync(SessionPayload.BodyOneofCase.ShellExit);
+        Assert.Equal(("b", -1), (refused.ShellExit.ShellId, refused.ShellExit.ExitCode));
+    }
+
     private Task Send(SessionPayload payload) => _handler.HandleAsync(_context, "v1", payload, CancellationToken.None);
 
     private async Task<string> WaitForOutputAsync(string shellId)
@@ -113,7 +136,7 @@ public sealed class ShellHandlerTests : IAsyncDisposable
         throw new TimeoutException(bodyCase.ToString());
     }
 
-    private sealed class FakeShellHost : IShellHost
+    internal sealed class FakeShellHost : IShellHost
     {
         public List<FakeShell> Started { get; } = [];
 
@@ -128,7 +151,7 @@ public sealed class ShellHandlerTests : IAsyncDisposable
     }
 
     /// <summary>Echoes input to output; exits on request.</summary>
-    private sealed class FakeShell(string type, int columns, int rows) : IShellProcess
+    internal sealed class FakeShell(string type, int columns, int rows) : IShellProcess
     {
         private readonly ChannelStream _output = new();
         private readonly TaskCompletionSource<int> _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
