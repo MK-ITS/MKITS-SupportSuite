@@ -184,7 +184,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 7 – Agent core (C#, shared Windows/Linux)
 - [~] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto – `AgentSession` (handshake, code/resume auth, consent callback, key exchange per viewer, encrypted dispatch, reconnect) done, tested end-to-end against the relay
-- [ ] 7.2 Configuration, logging, ad-hoc vs. permanent mode
+- [x] 7.2 Configuration, logging, ad-hoc vs. permanent mode – ad-hoc (`AgentSession`) and permanent (`DeviceAgent`) modes; `agent.json` per platform (server, token until enrollment, optional `LogLevel`, kept on reinstall); core logging through `ILogger` (connection failures with their reason, enrollment, sessions, supporters with permissions, consent, dropped payloads at Debug) into the platform sinks (Windows `agent.log`, Linux journal) via `LineLoggerProvider`
 - [x] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY) – `IScreenSource`, `IInputInjector`, `IClipboard`, `IChatPresenter`, `IFileTransferUi`, `IShellHost` done
 - [x] 7.4 Chat, file transfer, clipboard, remote shell implementations – `ScreenStreamer` (flow control, change detection, per-viewer fps/monitor), `InputHandler` (coordinate mapping, stuck-key release), `ClipboardHandler`, `ChatHandler`, `FileTransferHandler` (consent per file, sanitized names, in-order chunks, SHA-256, no overwrite), `ShellHandler` (platform-defined shells only, ≤ 3 per viewer, closed when the viewer leaves) done
 
@@ -316,3 +316,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-03 | PR #57 merged. Phase 9.3 (PR #58): viewer quality presets and 1:1 view. |
 | 2026-11-03 | PR #58 merged. Phase 8.5 (PR #59): elevated remote shell (ADR-0028) – viewer "Admin terminal", Windows helper/service, Linux service. |
 | 2026-11-03 | PR #59 merged. ADR-0029 (PR #60): separate permission `shell_admin` for administrator shells (Windows elevated shells, all Linux service shells). |
+| 2026-11-04 | PR #60 merged. Phase 7.2 (PR #61): agent logging (`ILogger` in the core, log level in `agent.json`). |

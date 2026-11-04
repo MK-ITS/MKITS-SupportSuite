@@ -3,7 +3,10 @@
 
 using System.Collections.Concurrent;
 using Google.Protobuf;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MKITS.SupportSuite.Agent.Core.Connection;
+using MKITS.SupportSuite.Agent.Core.Logging;
 using MKITS.SupportSuite.Common.Crypto;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
@@ -21,14 +24,17 @@ internal sealed class SessionEngine : ISessionContext
     private readonly IReadOnlyList<ISessionChannelHandler> _handlers;
     private readonly string _serverHost;
     private readonly Func<byte[], byte[]>? _signEphemeralKey;
+    private readonly ILogger _log;
     private readonly ConcurrentDictionary<string, ViewerState> _viewers = new(StringComparer.Ordinal);
     private FrameSocket? _socket;
     private string? _sessionId;
     private string _operatorName = string.Empty;
 
     /// <summary>Permanent devices pass <c>signEphemeralKey</c> to sign their ephemeral key with the device key (docs/protocol.md §6.5).</summary>
-    public SessionEngine(IAgentUserInterface ui, IReadOnlyList<ISessionChannelHandler> handlers, string serverHost, Func<byte[], byte[]>? signEphemeralKey = null)
+    public SessionEngine(
+        IAgentUserInterface ui, IReadOnlyList<ISessionChannelHandler> handlers, string serverHost, Func<byte[], byte[]>? signEphemeralKey = null, ILogger? logger = null)
     {
+        _log = logger ?? NullLogger.Instance;
         _ui = ui;
         _handlers = handlers;
         _serverHost = serverHost;
@@ -61,6 +67,7 @@ internal sealed class SessionEngine : ISessionContext
                 if (_sessionId != frame.SessionAssigned.SessionId)
                 {
                     ResetViewers();
+                    _log.SessionAssigned(frame.SessionAssigned.SessionId, frame.SessionAssigned.OperatorName);
                 }
 
                 _sessionId = frame.SessionAssigned.SessionId;
@@ -73,12 +80,18 @@ internal sealed class SessionEngine : ISessionContext
                 return true;
             case Frame.BodyOneofCase.ViewerJoined:
                 var joined = frame.ViewerJoined;
-                _viewers[joined.ViewerId] = new ViewerState(joined.ViewerId, joined.DisplayName, ParsePermissions(joined.Permissions));
+                var permissions = ParsePermissions(joined.Permissions);
+                _viewers[joined.ViewerId] = new ViewerState(joined.ViewerId, joined.DisplayName, permissions);
+                if (_log.IsEnabled(LogLevel.Information))
+                {
+                    _log.ViewerJoined(joined.DisplayName, string.Join(", ", ChannelPermissions.ToNames(permissions)));
+                }
                 PublishSupporters();
                 return true;
             case Frame.BodyOneofCase.ViewerLeft:
                 if (_viewers.TryRemove(frame.ViewerLeft.ViewerId, out var left))
                 {
+                    _log.ViewerLeft(left.DisplayName);
                     NotifyViewerGone(left.Id);
                     left.Dispose();
                 }
@@ -192,6 +205,7 @@ internal sealed class SessionEngine : ISessionContext
                 _ui.OnStatusChanged(AgentStatus.Active, null);
                 break;
             case SessionStatus.Ended:
+                _log.SessionEnded(_sessionId, string.IsNullOrEmpty(state.EndReason) ? "ended" : state.EndReason);
                 onEnded?.Invoke(string.IsNullOrEmpty(state.EndReason) ? "ended" : state.EndReason);
                 break;
             default:
@@ -213,6 +227,7 @@ internal sealed class SessionEngine : ISessionContext
             return;
         }
 
+        _log.ConsentAnswered(request.SupporterDisplayName, granted ? "granted" : "declined");
         if (_socket is { } socket)
         {
             try
@@ -246,6 +261,7 @@ internal sealed class SessionEngine : ISessionContext
         }
         catch (System.Security.Cryptography.CryptographicException)
         {
+            _log.KeyExchangeFailed(viewer.DisplayName);
             return; // invalid key from the viewer – no session plane for it
         }
 
@@ -259,6 +275,7 @@ internal sealed class SessionEngine : ISessionContext
         await socket.SendAsync(new Frame { KeyExchange = answer }, cancellationToken).ConfigureAwait(false);
 
         _ui.OnSecurityCode(viewer.DisplayName, SessionCrypto.ComputeSecurityCode(sessionId, own.PublicKey, viewerKey));
+        _log.ViewerReady(viewer.DisplayName);
 
         foreach (var handler in _handlers)
         {
@@ -268,16 +285,22 @@ internal sealed class SessionEngine : ISessionContext
 
     private async Task OnSessionDataAsync(SessionData data, CancellationToken cancellationToken)
     {
-        if (!_viewers.TryGetValue(data.ViewerId, out var viewer) || viewer.Cipher is not { } cipher
-            || !viewer.Permissions.HasFlag(ChannelPermissions.Required(data.Channel)))
+        if (!_viewers.TryGetValue(data.ViewerId, out var viewer) || viewer.Cipher is not { } cipher)
         {
+            return;
+        }
+
+        if (!viewer.Permissions.HasFlag(ChannelPermissions.Required(data.Channel)))
+        {
+            _log.PayloadDropped(viewer.DisplayName, data.Channel, "no permission");
             return;
         }
 
         var plaintext = cipher.Decrypt(data.Channel, data.Sequence, data.Ciphertext.Span);
         if (plaintext is null)
         {
-            return; // forged, replayed or for an old key
+            _log.PayloadDropped(viewer.DisplayName, data.Channel, "not decryptable (forged, replayed or old key)");
+            return;
         }
 
         SessionPayload payload;
@@ -287,11 +310,13 @@ internal sealed class SessionEngine : ISessionContext
         }
         catch (InvalidProtocolBufferException)
         {
+            _log.PayloadDropped(viewer.DisplayName, data.Channel, "malformed");
             return;
         }
 
         if (!PayloadChannels.Matches(data.Channel, payload))
         {
+            _log.PayloadDropped(viewer.DisplayName, data.Channel, "payload does not belong to the channel");
             return;
         }
 

@@ -6,6 +6,7 @@ using MKITS.SupportSuite.Agent.Core.Bridge;
 using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Devices;
 using MKITS.SupportSuite.Agent.Core.Features;
+using MKITS.SupportSuite.Agent.Core.Logging;
 using MKITS.SupportSuite.Agent.Linux.Platform;
 using MKITS.SupportSuite.Common.Protocol.V0;
 
@@ -59,11 +60,14 @@ internal static class AgentService
             Directory.CreateDirectory(AgentPaths.DataDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             var store = new EnrollmentAwareStore(
                 new FileDeviceIdentityStore(AgentPaths.IdentityFile),
-                onSaved: () => new AgentConfig(config.ServerUri, null).Save(AgentPaths.ConfigFile)); // the token is not needed any more
+                onSaved: () => (config with { Token = null }).Save(AgentPaths.ConfigFile)); // the token is not needed any more
 
+            // The journal adds timestamps itself.
+            using var logs = new LineLoggerProvider(AgentLog.Write, LineLoggerProvider.ParseLevel(config.LogLevel), timestamps: false);
             var options = new DeviceAgentOptions
             {
                 ServerUri = server,
+                LoggerFactory = logs,
                 EnrollmentToken = config.Token,
                 Machine = new MachineInfo
                 {

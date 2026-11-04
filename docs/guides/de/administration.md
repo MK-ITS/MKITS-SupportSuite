@@ -99,6 +99,8 @@ Es gibt kein MSI-Paket (ADR-0024); die EXE installiert sich selbst. Verwenden Si
 
 Exit-Codes: `0` OK, `2` ungültige Argumente, `5` nicht als Administrator, `6` Dienstfehler, `7` Dateifehler. Details stehen in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
 
+**Protokollumfang:** Das Agent-Protokoll enthält Verbindungen, Registrierung, Sitzungen, das Kommen und Gehen von Supportern (mit ihren Berechtigungen) und Zustimmungsentscheidungen – niemals Tokens, Codes oder Sitzungsinhalte. Für mehr Details `"LogLevel": "Debug"` in der Agent-Konfiguration ergänzen (`agent.json` im Datenordner unter Windows, `/etc/mkits-agent/agent.json` unter Linux) und den Dienst neu starten; `"Warning"` protokolliert nur Probleme. Eine Neuinstallation behält die Einstellung.
+
 - **Linux** (Debian 12+, Ubuntu 22.04+; x86_64 oder arm64, z. B. Raspberry Pi OS 64-bit): `mkits-agent_amd64.deb` bzw. `mkits-agent_arm64.deb` herunterladen (Links beim Token) und als root ausführen:
   ```bash
   sudo apt install ./mkits-agent_amd64.deb   # bzw. ./mkits-agent_arm64.deb

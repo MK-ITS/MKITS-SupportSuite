@@ -99,6 +99,8 @@ There is no MSI package (ADR-0024); the EXE installs itself. Use a token with a 
 
 Exit codes: `0` ok, `2` invalid arguments, `5` not elevated, `6` service error, `7` file error. Details are in `%ProgramData%\MKITS-SupportSuite\agent\agent.log`.
 
+**Log level:** the agent log records connections, enrollment, sessions, joining and leaving supporters (with their permissions) and consent decisions – never tokens, codes or session contents. For more detail add `"LogLevel": "Debug"` to the agent configuration (`agent.json` in the data folder on Windows, `/etc/mkits-agent/agent.json` on Linux) and restart the service; `"Warning"` records only problems. Reinstalling keeps the setting.
+
 - **Linux** (Debian 12+, Ubuntu 22.04+; x86_64 or arm64, e.g. Raspberry Pi OS 64-bit): download `mkits-agent_amd64.deb` or `mkits-agent_arm64.deb` (links next to the token) and run as root:
   ```bash
   sudo apt install ./mkits-agent_amd64.deb   # or ./mkits-agent_arm64.deb

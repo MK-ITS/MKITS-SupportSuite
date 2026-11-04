@@ -2,7 +2,10 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 using Google.Protobuf;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MKITS.SupportSuite.Agent.Core.Connection;
+using MKITS.SupportSuite.Agent.Core.Logging;
 using MKITS.SupportSuite.Agent.Core.Sessions;
 using MKITS.SupportSuite.Common;
 using MKITS.SupportSuite.Common.Protocol;
@@ -36,6 +39,7 @@ public sealed class DeviceAgent : IAsyncDisposable
     private readonly IAgentUserInterface _ui;
     private readonly IReadOnlyList<ISessionChannelHandler> _handlers;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger _log;
     private SessionEngine? _engine;
     private DeviceIdentity? _identity;
     private volatile FrameSocket? _socket;
@@ -60,6 +64,7 @@ public sealed class DeviceAgent : IAsyncDisposable
         _ui = ui;
         _handlers = handlers.ToList();
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _log = (ILogger?)options.LoggerFactory?.CreateLogger<DeviceAgent>() ?? NullLogger.Instance;
     }
 
     /// <summary>The enrolled device id (after enrollment or loading the identity).</summary>
@@ -88,7 +93,7 @@ public sealed class DeviceAgent : IAsyncDisposable
                 }
             }
 
-            _engine = new SessionEngine(_ui, _handlers, _options.ServerUri.Host, _identity.Sign);
+            _engine = new SessionEngine(_ui, _handlers, _options.ServerUri.Host, _identity.Sign, _options.LoggerFactory?.CreateLogger<SessionEngine>());
             var delay = _options.MinReconnectDelay;
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -104,17 +109,21 @@ public sealed class DeviceAgent : IAsyncDisposable
                         // SessionAssigned again after the reconnect and announces the viewers again.
                         _engine.EndSession();
                         _ui.OnStatusChanged(AgentStatus.Reconnecting, null);
+                        _log.Reconnecting(delay);
                         break;
                     case ErrorCodes.NotAuthorized:
+                        _log.ServerRefused(outcome); // waiting for approval, or disabled
                         _ui.OnStatusChanged(AgentStatus.PendingApproval, null);
                         await Task.Delay(_options.ApprovalPollInterval, _timeProvider, cancellationToken).ConfigureAwait(false);
                         continue;
                     case ErrorCodes.AuthFailed:
+                        _log.ServerRefused(outcome);
                         _ui.OnStatusChanged(AgentStatus.Ended, outcome);
                         await Task.Delay(_options.RejectedRetryInterval, _timeProvider, cancellationToken).ConfigureAwait(false);
                         continue;
                     default:
                         _ui.OnStatusChanged(AgentStatus.Reconnecting, outcome);
+                        _log.Reconnecting(delay);
                         break;
                 }
 
@@ -172,12 +181,14 @@ public sealed class DeviceAgent : IAsyncDisposable
             {
                 var identity = DeviceIdentity.FromKey(id, key);
                 _store.Save(identity);
+                _log.Enrolled(id);
                 return identity;
             }
 
             key.Dispose();
             if (error is ErrorCodes.AuthFailed or ErrorCodes.IpBlocked)
             {
+                _log.EnrollmentRefused(error);
                 _ui.OnStatusChanged(AgentStatus.Ended, error);
                 return null;
             }
@@ -255,6 +266,7 @@ public sealed class DeviceAgent : IAsyncDisposable
         }
 
         _ui.OnStatusChanged(AgentStatus.Idle, null);
+        _log.Connected(_options.ServerUri.Host);
         return null;
     }
 
@@ -267,6 +279,7 @@ public sealed class DeviceAgent : IAsyncDisposable
         }
         catch (Exception ex) when (ex is System.Net.WebSockets.WebSocketException or HttpRequestException or IOException)
         {
+            _log.ConnectFailed(_options.AgentEndpoint, ex); // TLS, DNS, proxy, firewall … – the reason is only here
             return (null, null, ErrorCodes.Internal);
         }
 
@@ -287,6 +300,7 @@ public sealed class DeviceAgent : IAsyncDisposable
         if (ack?.BodyCase != Frame.BodyOneofCase.HelloAck)
         {
             await socket.DisposeAsync().ConfigureAwait(false);
+            _log.ServerRefused(ack?.Error?.Code ?? ErrorCodes.ProtocolMismatch);
             return (null, null, ack?.Error?.Code ?? ErrorCodes.ProtocolMismatch);
         }
 

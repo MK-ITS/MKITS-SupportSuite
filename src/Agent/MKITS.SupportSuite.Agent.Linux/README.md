@@ -19,7 +19,7 @@ Linux agent (Debian 12+, Ubuntu 22.04+; x64 and arm64). ADR-0011: X11 and Waylan
 
 Runtime dependencies (Debian / Ubuntu package names): `libx11-6`, `libxtst6`, `libxrandr2`, `libturbojpeg0` / `libturbojpeg`, `util-linux` (`setsid`, `runuser`).
 
-Installed agent: `sudo apt install ./mkits-agent_<version>_amd64.deb`, then `sudo mkits-agent --install --server https://support.example.com --token <enrollment token>` (`--reenroll` for a new identity, `--uninstall` to disconnect). Log: `journalctl -u mkits-agent`. Configuration in `/etc/mkits-agent`, identity in `/var/lib/mkits-agent` (root only). The remote shell of the installed agent runs as root.
+Installed agent: `sudo apt install ./mkits-agent_<version>_amd64.deb`, then `sudo mkits-agent --install --server https://support.example.com --token <enrollment token>` (`--reenroll` for a new identity, `--uninstall` to disconnect). Log: `journalctl -u mkits-agent` (more detail with `"LogLevel": "Debug"` in `/etc/mkits-agent/agent.json`). Configuration in `/etc/mkits-agent`, identity in `/var/lib/mkits-agent` (root only). The remote shell of the installed agent runs as root.
 
 Try it on an X11 desktop: `mkits-agent --server https://support.example.com --code 12345678` (add `--terminal` for the terminal version). Customers get `MKITS-Support_<host>_<code>.AppImage` from the portal; on systems without FUSE run it with `--appimage-extract-and-run`. On Wayland desktops (GNOME, KDE) the client uses the desktop portal: the desktop asks which screens to share and whether remote control is allowed (needs `xdg-desktop-portal` with the desktop's backend and PipeWire). The installed agent uses the same portal from its session window (ADR-0026).
 

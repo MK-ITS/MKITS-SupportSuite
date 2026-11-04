@@ -18,6 +18,7 @@ the device integrations; everything protocol-related lives here.
 | `Features/InputHandler` + `IInputInjector` | normalized coordinates → desktop pixels, button transitions, stuck-key release |
 | `Features/ClipboardHandler` + `IClipboard` | text both ways, no echo, current content is not pushed to a new supporter |
 | `Features/ChatHandler` + `IChatPresenter` | chat with length limits; local arrival time is displayed |
+| `Logging/LineLoggerProvider`, `AgentLogMessages` | the agents' log (7.2): one line per entry for a platform sink (file / journal), level from the configuration; what the core logs – never secrets |
 
 Rules:
 

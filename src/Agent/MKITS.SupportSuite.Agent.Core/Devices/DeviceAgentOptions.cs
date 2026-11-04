@@ -22,6 +22,9 @@ public sealed class DeviceAgentOptions
 
     public IReadOnlyList<string> Capabilities { get; init; } = [];
 
+    /// <summary>Where the agent core logs (7.2); <c>null</c> logs nothing.</summary>
+    public Microsoft.Extensions.Logging.ILoggerFactory? LoggerFactory { get; init; }
+
     /// <summary>First retry delay after a connection loss; doubles up to <see cref="MaxReconnectDelay"/>.</summary>
     public TimeSpan MinReconnectDelay { get; init; } = TimeSpan.FromSeconds(1);
 

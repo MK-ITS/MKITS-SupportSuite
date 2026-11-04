@@ -25,6 +25,9 @@ public sealed class AgentSessionOptions
     /// <summary>Optional features this agent supports (e.g. <c>video.h264</c>, <c>shell.conpty</c>).</summary>
     public IReadOnlyList<string> Capabilities { get; init; } = [];
 
+    /// <summary>Where the agent core logs (7.2); <c>null</c> logs nothing.</summary>
+    public Microsoft.Extensions.Logging.ILoggerFactory? LoggerFactory { get; init; }
+
     /// <summary>How long the agent tries to resume after a connection loss (server grace period is 60 s).</summary>
     public TimeSpan ReconnectWindow { get; init; } = TimeSpan.FromSeconds(55);
 

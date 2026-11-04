@@ -14,6 +14,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | @bufbuild/protobuf (Protobuf-ES runtime, bundled into viewer.js) | browser viewer | Apache-2.0 | https://github.com/bufbuild/protobuf-es |
 | xterm.js (@xterm/xterm, @xterm/addon-fit; bundled into viewer.js/viewer.css) | browser viewer terminal | MIT | https://github.com/xtermjs/xterm.js |
 | System.ServiceProcess.ServiceController | Windows agent (temporary service) | MIT | https://github.com/dotnet/runtime |
+| Microsoft.Extensions.Logging.Abstractions | agent core (logging interfaces) | MIT | https://github.com/dotnet/runtime |
 | MailKit / MimeKit | server (SMTP notifications) | MIT | https://github.com/jstedfast/MailKit |
 | QRCoder | server (TOTP QR codes) | MIT | https://github.com/codebude/QRCoder |
 | Avalonia (incl. Avalonia.Desktop, Avalonia.Themes.Fluent) | Linux agent UI | MIT | https://github.com/AvaloniaUI/Avalonia |
