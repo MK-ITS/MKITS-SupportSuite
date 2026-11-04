@@ -55,7 +55,7 @@ internal static partial class AgentInstaller
                 File.Delete(AgentPaths.IdentityFile);
             }
 
-            AgentConfig.Create(parsed.Server, parsed.Token).Save(AgentPaths.ConfigFile);
+            AgentConfig.Create(parsed.Server, parsed.Token, AgentConfig.Load(AgentPaths.ConfigFile)?.LogLevel).Save(AgentPaths.ConfigFile);
             CreateOrKeepService();
             Configure("description", AgentPaths.ServiceName, "Permanent remote maintenance connection to " + parsed.Server.Host);
             Configure("failure", AgentPaths.ServiceName, "reset=", "86400", "actions=", "restart/10000/restart/30000/restart/60000");

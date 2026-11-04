@@ -9,9 +9,10 @@ namespace MKITS.SupportSuite.Agent.Linux.Permanent;
 /// <summary>
 /// Configuration of the installed agent (<c>/etc/mkits-agent/agent.json</c>, mode 0600 in a 0700 folder: root only).
 /// There is no DPAPI on Linux: the enrollment token is protected by file permissions and removed once the device is
-/// enrolled (ADR-0025).
+/// enrolled (ADR-0025). <c>LogLevel</c> (optional: <c>Debug</c>, <c>Information</c>, <c>Warning</c>, …) sets how much
+/// goes to the journal; reinstalling keeps it.
 /// </summary>
-internal sealed record AgentConfig(string ServerUri, string? Token)
+internal sealed record AgentConfig(string ServerUri, string? Token, string? LogLevel = null)
 {
     public static AgentConfig? Load(string path)
     {

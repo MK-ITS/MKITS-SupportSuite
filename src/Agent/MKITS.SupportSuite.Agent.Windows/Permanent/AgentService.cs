@@ -7,6 +7,7 @@ using MKITS.SupportSuite.Agent.Core.Bridge;
 using MKITS.SupportSuite.Agent.Core.Connection;
 using MKITS.SupportSuite.Agent.Core.Devices;
 using MKITS.SupportSuite.Agent.Core.Features;
+using MKITS.SupportSuite.Agent.Core.Logging;
 using MKITS.SupportSuite.Agent.Windows.Platform;
 using MKITS.SupportSuite.Common.Protocol.V0;
 
@@ -79,12 +80,14 @@ internal sealed class AgentService : ServiceBase
 
             var store = new EnrollmentAwareStore(
                 new FileDeviceIdentityStore(AgentPaths.IdentityFile, data => Dpapi.Protect(data, IdentityPurpose), data => Dpapi.Unprotect(data, IdentityPurpose)),
-                onSaved: () => new AgentConfig(config.ServerUri, null).Save(AgentPaths.ConfigFile)); // the token is not needed any more
+                onSaved: () => (config with { ProtectedToken = null }).Save(AgentPaths.ConfigFile)); // the token is not needed any more
 
             using var helper = new OnDemandHelper();
+            using var logs = new LineLoggerProvider(AgentLog.Write, LineLoggerProvider.ParseLevel(config.LogLevel), timestamps: false);
             var options = new DeviceAgentOptions
             {
                 ServerUri = server,
+                LoggerFactory = logs,
                 EnrollmentToken = config.ReadToken(),
                 Machine = new MachineInfo
                 {

@@ -10,17 +10,18 @@ namespace MKITS.SupportSuite.Agent.Windows.Permanent;
 
 /// <summary>
 /// Configuration of the installed agent (<c>agent.json</c> in the protected data folder). The enrollment token is
-/// DPAPI-protected and removed once the device is enrolled.
+/// DPAPI-protected and removed once the device is enrolled. <c>LogLevel</c> (optional: <c>Debug</c>, <c>Information</c>,
+/// <c>Warning</c>, …) sets how much the agent log records; reinstalling keeps it.
 /// </summary>
-internal sealed record AgentConfig(string ServerUri, string? ProtectedToken)
+internal sealed record AgentConfig(string ServerUri, string? ProtectedToken, string? LogLevel = null)
 {
     private const string TokenPurpose = "agent-enrollment-token";
 
     /// <inheritdoc cref="ServerAddress.Parse"/>
     public static Uri? ParseServer(string? value) => ServerAddress.Parse(value);
 
-    public static AgentConfig Create(Uri server, string? token) =>
-        new(server.ToString(), string.IsNullOrEmpty(token) ? null : Convert.ToBase64String(Dpapi.Protect(Encoding.UTF8.GetBytes(token), TokenPurpose)));
+    public static AgentConfig Create(Uri server, string? token, string? logLevel = null) =>
+        new(server.ToString(), string.IsNullOrEmpty(token) ? null : Convert.ToBase64String(Dpapi.Protect(Encoding.UTF8.GetBytes(token), TokenPurpose)), logLevel);
 
     /// <summary>Decrypts the token (a method, not a property: it must never be serialized).</summary>
     public string? ReadToken()

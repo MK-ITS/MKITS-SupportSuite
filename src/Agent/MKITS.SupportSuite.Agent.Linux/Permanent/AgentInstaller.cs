@@ -49,7 +49,7 @@ internal static class AgentInstaller
                 File.Delete(AgentPaths.IdentityFile);
             }
 
-            new AgentConfig(parsed.Server.ToString(), parsed.Token).Save(AgentPaths.ConfigFile);
+            new AgentConfig(parsed.Server.ToString(), parsed.Token, AgentConfig.Load(AgentPaths.ConfigFile)?.LogLevel).Save(AgentPaths.ConfigFile);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

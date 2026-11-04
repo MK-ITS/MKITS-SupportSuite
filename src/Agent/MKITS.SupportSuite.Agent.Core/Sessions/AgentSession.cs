@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) MK-ITSolutions and contributors
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MKITS.SupportSuite.Agent.Core.Connection;
+using MKITS.SupportSuite.Agent.Core.Logging;
 using MKITS.SupportSuite.Common;
 using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
@@ -24,6 +27,7 @@ public sealed record AgentSessionResult(string? EndReason, string? ErrorCode)
 public sealed class AgentSession : ISessionContext, IAsyncDisposable
 {
     private readonly AgentSessionOptions _options;
+    private readonly ILogger _log;
     private readonly IWebSocketConnector _connector;
     private readonly IAgentUserInterface _ui;
     private readonly SessionEngine _engine;
@@ -49,7 +53,8 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         _options = options;
         _connector = connector;
         _ui = ui;
-        _engine = new SessionEngine(ui, handlers.ToList(), options.ServerUri.Host);
+        _engine = new SessionEngine(ui, handlers.ToList(), options.ServerUri.Host, logger: options.LoggerFactory?.CreateLogger<SessionEngine>());
+        _log = options.LoggerFactory?.CreateLogger<AgentSession>() ?? NullLogger.Instance;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -152,6 +157,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         }
         catch (Exception ex) when (ex is System.Net.WebSockets.WebSocketException or HttpRequestException or IOException)
         {
+            _log.ConnectFailed(_options.AgentEndpoint, ex);
             return ErrorCodes.Internal;
         }
 
