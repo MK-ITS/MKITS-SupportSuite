@@ -61,7 +61,8 @@ public sealed class LineLoggerProvider(Action<string> write, LogLevel minimum = 
         {
             write(line.ToString());
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ObjectDisposedException
+            or InvalidOperationException or NotSupportedException or System.Security.SecurityException)
         {
             // logging must never break the agent
         }

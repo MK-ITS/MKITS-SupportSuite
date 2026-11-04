@@ -40,6 +40,8 @@ public sealed class AgentLoggingTests
 
         using var broken = new LineLoggerProvider(_ => throw new IOException("disk full"));
         broken.CreateLogger("X").EnrollmentRefused("AUTH_FAILED"); // must not throw
+        using var closed = new LineLoggerProvider(_ => throw new InvalidOperationException("stream closed"));
+        closed.CreateLogger("X").EnrollmentRefused("AUTH_FAILED");
         Assert.Throws<NotSupportedException>(() => broken.AddProvider(broken));
     }
 
