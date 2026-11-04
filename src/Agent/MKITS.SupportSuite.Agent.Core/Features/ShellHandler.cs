@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using Google.Protobuf;
 using MKITS.SupportSuite.Agent.Core.Sessions;
+using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Common.Protocol.V0;
 
 namespace MKITS.SupportSuite.Agent.Core.Features;
@@ -37,11 +38,16 @@ public interface IShellHost
 /// reports the exit code and closes all shells of a viewer when it leaves. Only shell types the platform offers can
 /// be started – the viewer can never choose an arbitrary program. <c>ShellOpen.elevated</c> selects
 /// <paramref name="elevatedHost"/> (ADR-0028); without one – or without a normal <paramref name="host"/> – such
-/// requests are refused (exit code -1).
+/// requests are refused (exit code -1). Administrator shells also need the viewer's
+/// <see cref="ViewerPermissions.ShellAdmin"/> permission (ADR-0029); a refused request is never downgraded.
 /// </summary>
 /// <param name="host">Shells with the rights of the logged-on user; <c>null</c> if this handler only serves elevated shells.</param>
 /// <param name="elevatedHost">Administrator/root shells; <c>null</c> if this agent cannot elevate (right now).</param>
-public sealed class ShellHandler(IShellHost? host, IShellHost? elevatedHost = null) : ISessionChannelHandler, IAsyncDisposable
+/// <param name="hostIsAdmin">
+/// <paramref name="host"/> runs with administrator rights too (the Linux service: root), so its shells need the
+/// permission as well.
+/// </param>
+public sealed class ShellHandler(IShellHost? host, IShellHost? elevatedHost = null, bool hostIsAdmin = false) : ISessionChannelHandler, IAsyncDisposable
 {
     internal const int MaxShellsPerViewer = 3;
     internal const int OutputChunkSize = 16 * 1024;
@@ -112,6 +118,11 @@ public sealed class ShellHandler(IShellHost? host, IShellHost? elevatedHost = nu
     {
         var shellId = open.ShellId;
         var selected = open.Elevated ? elevatedHost : host;
+        if ((open.Elevated || hostIsAdmin) && !context.PermissionsOf(viewerId).HasFlag(ViewerPermissions.ShellAdmin))
+        {
+            selected = null; // no "admin shell" permission for this device
+        }
+
         var available = selected?.AvailableShells ?? [];
         var type = string.IsNullOrEmpty(open.Type) ? (available.Count > 0 ? available[0] : null) : open.Type;
         var key = Key(viewerId, shellId);

@@ -45,7 +45,8 @@ authorization cookie that belongs to the logged-on user.
 
 - One program for the ad-hoc AppImage and the installed agent; servers without X work (shell only).
 - Supporters with the "shell" permission on a Linux device get root. Administrators must grant that permission
-  deliberately; it is documented in the admin guide.
+  deliberately; it is documented in the admin guide. (Superseded in this point by ADR-0029: root shells need the
+  separate "shell_admin" permission.)
 - No sandboxing in the unit (`ProtectSystem` etc.): a remote administration tool needs the whole system.
 - Auto-update (ADR-0023) uses the channel `linux-x64-deb`: the service verifies the signed package and installs it
   with `apt-get` in a transient systemd unit (`systemd-run`), outside its own control group – the package's postinst

@@ -15,7 +15,13 @@ public enum ViewerPermissions
     Files = 4,
     Shell = 8,
     Clipboard = 16,
-    All = View | Control | Files | Shell | Clipboard,
+
+    /// <summary>
+    /// Shells with administrator rights (SYSTEM on Windows, root on Linux; ADR-0029). Not a channel of its own: the
+    /// agent checks it when a shell is opened – the relay cannot see inside the encrypted shell channel.
+    /// </summary>
+    ShellAdmin = 32,
+    All = View | Control | Files | Shell | Clipboard | ShellAdmin,
 }
 
 /// <summary>
@@ -31,6 +37,7 @@ public static class ChannelPermissions
         (ViewerPermissions.Files, "files"),
         (ViewerPermissions.Shell, "shell"),
         (ViewerPermissions.Clipboard, "clipboard"),
+        (ViewerPermissions.ShellAdmin, "shell_admin"),
     ];
 
     public static ViewerPermissions Required(uint channel) => (Channel)channel switch

@@ -185,6 +185,11 @@ public sealed class DeviceService(
             permissions |= DevicePermissions.View; // every other permission implies viewing
         }
 
+        if (permissions.HasFlag(DevicePermissions.ShellAdmin))
+        {
+            permissions |= DevicePermissions.Shell; // an admin shell is a shell (the channel needs "shell")
+        }
+
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         if (!await db.DeviceGroups.AnyAsync(g => g.Id == groupId, cancellationToken).ConfigureAwait(false)
             || !await db.Users.AnyAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false))

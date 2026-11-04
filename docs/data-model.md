@@ -48,7 +48,7 @@
 | Field | Type | Notes |
 |---|---|---|
 | UserId, GroupId | Guid | composite key; cascade-deleted with the user or group |
-| Permissions | flags `View`, `Control`, `Files`, `Shell`, `Clipboard` | Admins implicitly have all; every permission implies `View`; `None` removes the row |
+| Permissions | flags `View`, `Control`, `Files`, `Shell`, `Clipboard`, `ShellAdmin` (32, ADR-0029) | Admins implicitly have all; every permission implies `View`, `ShellAdmin` also implies `Shell`; `None` removes the row |
 
 ### Device
 

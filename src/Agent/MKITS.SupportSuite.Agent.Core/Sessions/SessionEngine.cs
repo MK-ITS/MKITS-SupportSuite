@@ -42,6 +42,10 @@ internal sealed class SessionEngine : ISessionContext
     /// <inheritdoc />
     public IReadOnlyCollection<string> ReadyViewerIds => _viewers.Values.Where(v => v.Cipher is not null).Select(v => v.Id).ToList();
 
+    /// <inheritdoc />
+    public ViewerPermissions PermissionsOf(string viewerId) =>
+        _viewers.TryGetValue(viewerId, out var viewer) ? viewer.Permissions : ViewerPermissions.None;
+
     /// <summary>The connection frames are sent on (replaced after a reconnect).</summary>
     public void Attach(FrameSocket socket) => _socket = socket;
 

@@ -35,4 +35,5 @@ Statuses: Proposed · Accepted · Superseded by ADR-XXXX · Deprecated
 | [ADR-0025](0025-linux-permanent-agent.md) | Permanent Linux agent (systemd service + session window) | Accepted |
 | [ADR-0026](0026-wayland-portal.md) | Wayland through xdg-desktop-portal and PipeWire | Accepted |
 | [ADR-0027](0027-video-codecs.md) | Video codecs – negotiation, per-viewer H.264 streams, JPEG fallback | Accepted |
-| [ADR-0028](0028-elevated-shell.md) | Elevated remote shell | Accepted |
+| [ADR-0028](0028-elevated-shell.md) | Elevated remote shell | Accepted (permissions: superseded by ADR-0029) |
+| [ADR-0029](0029-admin-shell-permission.md) | A separate permission for administrator shells | Accepted |

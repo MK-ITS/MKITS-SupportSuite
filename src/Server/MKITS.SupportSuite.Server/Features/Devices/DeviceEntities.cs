@@ -26,7 +26,8 @@ public enum DevicePermissions
     Files = 4,
     Shell = 8,
     Clipboard = 16,
-    All = View | Control | Files | Shell | Clipboard,
+    ShellAdmin = 32, // administrator shell (SYSTEM/root), ADR-0029
+    All = View | Control | Files | Shell | Clipboard | ShellAdmin,
 }
 
 /// <summary>Device lifecycle (data-model.md).</summary>
