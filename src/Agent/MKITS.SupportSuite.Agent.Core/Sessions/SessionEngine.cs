@@ -82,7 +82,10 @@ internal sealed class SessionEngine : ISessionContext
                 var joined = frame.ViewerJoined;
                 var permissions = ParsePermissions(joined.Permissions);
                 _viewers[joined.ViewerId] = new ViewerState(joined.ViewerId, joined.DisplayName, permissions);
-                _log.ViewerJoined(joined.DisplayName, string.Join(", ", ChannelPermissions.ToNames(permissions)));
+                if (_log.IsEnabled(LogLevel.Information))
+                {
+                    _log.ViewerJoined(joined.DisplayName, string.Join(", ", ChannelPermissions.ToNames(permissions)));
+                }
                 PublishSupporters();
                 return true;
             case Frame.BodyOneofCase.ViewerLeft:

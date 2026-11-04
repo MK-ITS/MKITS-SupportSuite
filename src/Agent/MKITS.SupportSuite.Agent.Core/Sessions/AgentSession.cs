@@ -54,7 +54,7 @@ public sealed class AgentSession : ISessionContext, IAsyncDisposable
         _connector = connector;
         _ui = ui;
         _engine = new SessionEngine(ui, handlers.ToList(), options.ServerUri.Host, logger: options.LoggerFactory?.CreateLogger<SessionEngine>());
-        _log = options.LoggerFactory?.CreateLogger<AgentSession>() ?? NullLogger.Instance;
+        _log = (ILogger?)options.LoggerFactory?.CreateLogger<AgentSession>() ?? NullLogger.Instance;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 

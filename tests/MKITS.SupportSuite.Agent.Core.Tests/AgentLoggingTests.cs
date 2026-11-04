@@ -20,11 +20,13 @@ public sealed class AgentLoggingTests
         using var logs = new LineLoggerProvider(lines.Add, LogLevel.Information, timestamps: false);
         var logger = logs.CreateLogger("MKITS.SupportSuite.Agent.Core.Devices.DeviceAgent");
 
-        logger.LogDebug("hidden");
-        logger.LogInformation("Connected to {Server}", "support.example.test");
-        logger.LogWarning(new IOException("connection reset"), "Cannot connect");
+        logger.ViewerReady("hidden"); // Debug
+        logger.Connected("support.example.test");
+        logger.ConnectFailed(new Uri("wss://support.example.test/ws/agent"), new IOException("connection reset"));
 
-        Assert.Equal(["INFO DeviceAgent: Connected to support.example.test", "WARN DeviceAgent: Cannot connect (IOException: connection reset)"], lines);
+        Assert.Equal(
+            ["INFO DeviceAgent: Connected to support.example.test", "WARN DeviceAgent: Cannot connect to wss://support.example.test/ws/agent (IOException: connection reset)"],
+            lines);
     }
 
     [Fact]
@@ -33,11 +35,11 @@ public sealed class AgentLoggingTests
         var lines = new List<string>();
         var time = new FixedTime(new DateTimeOffset(2026, 11, 4, 12, 30, 5, TimeSpan.FromHours(1)));
         using var logs = new LineLoggerProvider(lines.Add, timeProvider: time);
-        logs.CreateLogger("X").LogError("boom");
-        Assert.Equal("2026-11-04 11:30:05Z ERROR X: boom", Assert.Single(lines));
+        logs.CreateLogger("X").EnrollmentRefused("AUTH_FAILED");
+        Assert.Equal("2026-11-04 11:30:05Z ERROR X: Enrollment refused: AUTH_FAILED", Assert.Single(lines));
 
         using var broken = new LineLoggerProvider(_ => throw new IOException("disk full"));
-        broken.CreateLogger("X").LogError("still fine"); // must not throw
+        broken.CreateLogger("X").EnrollmentRefused("AUTH_FAILED"); // must not throw
         Assert.Throws<NotSupportedException>(() => broken.AddProvider(broken));
     }
 

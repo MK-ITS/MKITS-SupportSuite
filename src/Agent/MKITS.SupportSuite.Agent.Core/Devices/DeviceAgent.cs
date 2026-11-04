@@ -64,7 +64,7 @@ public sealed class DeviceAgent : IAsyncDisposable
         _ui = ui;
         _handlers = handlers.ToList();
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _log = options.LoggerFactory?.CreateLogger<DeviceAgent>() ?? NullLogger.Instance;
+        _log = (ILogger?)options.LoggerFactory?.CreateLogger<DeviceAgent>() ?? NullLogger.Instance;
     }
 
     /// <summary>The enrolled device id (after enrollment or loading the identity).</summary>
