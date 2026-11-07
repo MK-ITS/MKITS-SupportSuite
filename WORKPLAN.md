@@ -246,7 +246,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 ### Phase 15 – Quality & security assurance
 - [ ] 15.1 Unit + integration tests per module
 - [ ] 15.2 End-to-end tests (Playwright for web UI, agent ↔ server)
-- [ ] 15.3 Security review (OWASP ASVS, dependency audit, pen test portal/relay/E2E)
+- [~] 15.3 Security review (OWASP ASVS, dependency audit, pen test portal/relay/E2E) – code-level review along ASVS done (`docs/security-review.md`: no high/critical findings; Actions pinned to SHAs, nginx connection limit for agent fleets); external penetration test open
 - [ ] 15.4 Test matrix: Windows 10/11, Server 2016–2025, Debian 12/13, Ubuntu LTS (X11 + Wayland), Android 10–16
 
 ### Phase 16 – Documentation & release
@@ -317,3 +317,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-03 | PR #58 merged. Phase 8.5 (PR #59): elevated remote shell (ADR-0028) – viewer "Admin terminal", Windows helper/service, Linux service. |
 | 2026-11-03 | PR #59 merged. ADR-0029 (PR #60): separate permission `shell_admin` for administrator shells (Windows elevated shells, all Linux service shells). |
 | 2026-11-04 | PR #60 merged. Phase 7.2 (PR #61): agent logging (`ILogger` in the core, log level in `agent.json`). |
+| 2026-11-07 | PR #63: security review (15.3, `docs/security-review.md`) – Actions pinned to commit SHAs, nginx WebSocket connection limit raised for agent fleets. |
