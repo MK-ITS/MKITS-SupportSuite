@@ -68,6 +68,22 @@ export function logBrowserProblems(page: Page): void {
   });
 }
 
+/**
+ * Opens an interactive (Blazor Server) page and waits until its circuit is up: until then the page is only
+ * prerendered, and a form would be posted the classic way (and refused).
+ */
+export async function openInteractive(page: Page, path: string): Promise<void> {
+  const circuit = page.waitForEvent("websocket", (socket) => socket.url().includes("/_blazor"));
+  await page.goto(path);
+  const socket = await circuit;
+  // Handshake, circuit start and the first render batch arrive as separate frames.
+  for (let i = 0; i < 3; i++) {
+    await socket.waitForEvent("framereceived", { timeout: 15_000 });
+  }
+
+  await page.waitForTimeout(250); // event handlers are attached right after the render batch
+}
+
 /** Clicks the submit button of the form that contains the field with the given id (pages may have other forms). */
 export async function submitFormOf(page: Page, fieldId: string): Promise<void> {
   await page.locator(`form:has(#${fieldId}) button[type=submit]`).first().click();

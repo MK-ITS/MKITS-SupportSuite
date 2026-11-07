@@ -2,28 +2,20 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 import { expect, test } from "@playwright/test";
-import { logBrowserProblems, signInAsAdmin, submitFormOf } from "./support";
+import { logBrowserProblems, openInteractive, signInAsAdmin, submitFormOf } from "./support";
 
 test("a supporter creates a session, the customer enters its code, the viewer waits for the agent", async ({ page, browser }) => {
   logBrowserProblems(page);
   await signInAsAdmin(page);
 
   // The page is interactive (Blazor Server): the form only works once its circuit is connected.
-  const circuit = page.waitForEvent("websocket", (socket) => socket.url().includes("/_blazor"));
-  await page.goto("/sessions");
-  await circuit;
   const code = page.getByTestId("session-code");
   await expect(async () => {
-    if (!(await code.isVisible())) {
-      await page.locator("#session-label").fill("E2E customer");
-      await submitFormOf(page, "session-label");
-    }
-
-    await expect(code).toBeVisible({ timeout: 3_000 });
-  }).toPass({ timeout: 30_000 }).catch(async (error: unknown) => {
-    console.log(`[page] ${page.url()}\n${(await page.locator("main").innerText().catch(() => "(no main)")).slice(0, 2000)}`);
-    throw error;
-  });
+    await openInteractive(page, "/sessions");
+    await page.locator("#session-label").fill("E2E customer");
+    await submitFormOf(page, "session-label");
+    await expect(code).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 45_000 });
   const codeText = (await code.innerText()).trim();
   expect(codeText).toMatch(/^\d{4} \d{4}$/);
 
@@ -46,7 +38,7 @@ test("a supporter creates a session, the customer enters its code, the viewer wa
   }
 
   // The supporter opens the viewer: it connects to the relay and waits for the customer's client.
-  await page.reload();
+  await openInteractive(page, "/sessions");
   const row = page.locator("tr", { hasText: "E2E customer" }).first();
   const href = await row.locator('a[href$="/view"]').getAttribute("href");
   expect(href).toMatch(/^\/sessions\/[0-9a-f-]+\/view$/);
