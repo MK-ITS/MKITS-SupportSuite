@@ -4,7 +4,6 @@
 using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using MKITS.SupportSuite.Server.Features.IpBans;
 
@@ -106,9 +105,13 @@ internal static class RateLimits
             return RateLimitBucket.Connections;
         }
 
-        return HttpMethods.IsPost(request.Method) && AuthPaths.Any(p => string.Equals(path.TrimEnd('/'), p, StringComparison.OrdinalIgnoreCase))
-            ? RateLimitBucket.Auth
-            : RateLimitBucket.None;
+        if (!HttpMethods.IsPost(request.Method))
+        {
+            return RateLimitBucket.None;
+        }
+
+        var trimmed = path.TrimEnd('/');
+        return AuthPaths.Any(p => string.Equals(trimmed, p, StringComparison.OrdinalIgnoreCase)) ? RateLimitBucket.Auth : RateLimitBucket.None;
     }
 
     /// <summary>Unknown and loopback addresses (health checks, local tools) and the IP allow list are not limited.</summary>
