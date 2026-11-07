@@ -167,7 +167,8 @@ jobs:
 
       - name: Redact the server log
         if: failure()
-        run: sed -E 's/(token: ).*/\1[redacted]/I' "$RUNNER_TEMP/server.log" > "$RUNNER_TEMP/server-redacted.log" || true
+        run: |
+          sed -E 's/(token: ).*/\1[redacted]/I' "$RUNNER_TEMP/server.log" > "$RUNNER_TEMP/server-redacted.log" || true
 
       - name: Upload report and server log
         if: failure()
