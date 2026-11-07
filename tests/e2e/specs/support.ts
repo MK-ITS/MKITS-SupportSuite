@@ -52,6 +52,22 @@ export function totp(base32Key: string, at: number = Date.now()): string {
   return code.toString().padStart(6, "0");
 }
 
+/** Writes browser console errors, page errors and failed requests to the test output (CI has no artifact access for some readers). */
+export function logBrowserProblems(page: Page): void {
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      console.log(`[browser ${message.type()}] ${message.text()}`);
+    }
+  });
+  page.on("pageerror", (error) => console.log(`[page error] ${error.message}`));
+  page.on("requestfailed", (request) => console.log(`[request failed] ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ""}`));
+  page.on("response", (response) => {
+    if (response.status() >= 400) {
+      console.log(`[http ${response.status()}] ${response.request().method()} ${response.url()}`);
+    }
+  });
+}
+
 /** Clicks the submit button of the form that contains the field with the given id (pages may have other forms). */
 export async function submitFormOf(page: Page, fieldId: string): Promise<void> {
   await page.locator(`form:has(#${fieldId}) button[type=submit]`).first().click();

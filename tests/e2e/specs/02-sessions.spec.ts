@@ -2,9 +2,10 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 import { expect, test } from "@playwright/test";
-import { signInAsAdmin, submitFormOf } from "./support";
+import { logBrowserProblems, signInAsAdmin, submitFormOf } from "./support";
 
 test("a supporter creates a session, the customer enters its code, the viewer waits for the agent", async ({ page, browser }) => {
+  logBrowserProblems(page);
   await signInAsAdmin(page);
 
   // The page is interactive (Blazor Server): the form only works once its circuit is connected.
@@ -19,7 +20,10 @@ test("a supporter creates a session, the customer enters its code, the viewer wa
     }
 
     await expect(code).toBeVisible({ timeout: 3_000 });
-  }).toPass({ timeout: 30_000 });
+  }).toPass({ timeout: 30_000 }).catch(async (error: unknown) => {
+    console.log(`[page] ${page.url()}\n${(await page.locator("main").innerText().catch(() => "(no main)")).slice(0, 2000)}`);
+    throw error;
+  });
   const codeText = (await code.innerText()).trim();
   expect(codeText).toMatch(/^\d{4} \d{4}$/);
 
