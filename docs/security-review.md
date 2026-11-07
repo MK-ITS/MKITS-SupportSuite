@@ -16,7 +16,7 @@ chapters that apply to this product. It complements the threat model in [securit
 | # | Severity | Finding | Status |
 |---|---|---|---|
 | F1 | Medium | GitHub Actions were referenced by mutable major tags (`@v7`). A compromised or re-tagged action would run with the workflow's token – in `publish.yml` with permission to push the server image. | **Fixed:** all actions pinned to commit SHAs (version in a comment); Dependabot (`github-actions`) keeps the pins current. |
-| F2 | Medium (availability) | nginx limited every client address to 50 concurrent connections, the agent WebSockets included: more than 50 installed agents behind one NAT address (a normal company network) could not all connect. | **Fixed:** `/ws/` allows 2000 connections per address; browsers keep 50. |
+| F2 | Medium (availability) | nginx limited every client address to 50 concurrent connections, the agent WebSockets included: more than 50 installed agents behind one NAT address (a normal company network) could not all connect. | **Fixed:** `/ws/agent` allows 2000 connections per address in a zone of its own; browsers (pages and `/ws/viewer`) keep 50 and are not crowded out by agents behind the same address. |
 | F3 | Low | Rate limits existed only in the nginx example; other reverse proxies left only the counting of *failed* attempts. | **Fixed (PR #62):** in-app limits per client network (`Mkits:RateLimits`). |
 
 No finding of severity *high* or *critical* was found.
