@@ -13,6 +13,7 @@ using MKITS.SupportSuite.Server.Features.Relay;
 using MKITS.SupportSuite.Server.Features.Sessions;
 using MKITS.SupportSuite.Server.Infrastructure;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
+using MKITS.SupportSuite.Server.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ builder.Services
     .AddMkitsDatabase()
     .AddMkitsAudit()
     .AddMkitsIpBans(builder.Configuration)
+    .AddMkitsRateLimits(builder.Configuration)
     .AddMkitsNotifications(builder.Configuration)
     .AddMkitsSessions(builder.Configuration)
     .AddMkitsDevices()
@@ -47,6 +49,7 @@ await app.Services.GetRequiredService<IAuditLog>()
 // ---- middleware (order matters) ----
 app.UseMkitsForwardedHeaders();       // 1. real client IP from trusted proxies
 app.UseMiddleware<IpBanMiddleware>(); // 2. reject banned networks before anything else runs (incl. WebSocket upgrades)
+app.UseRateLimiter();                 //    per-address limits for auth forms and WebSocket connections (4.4)
 app.UseWebSockets();                  //    WebSocket support for the relay (/ws/agent, /ws/viewer)
 app.UseMkitsWebBasics();              // 3. security headers, error handling, localization
 app.UseAuthentication();              // 4. who is it

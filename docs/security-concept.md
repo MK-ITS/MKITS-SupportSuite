@@ -33,7 +33,7 @@
 | # | Threat | Mitigation |
 |---|---|---|
 | T1 | Password guessing / credential stuffing | IP ban service (5 failures in 10 min → 7-day ban, allow/deny lists), ASP.NET Core Identity lockout, PBKDF2 password hashing (Identity v3 hasher), password policy, mandatory TOTP for Admins (optional-enforceable for Users) |
-| T2 | Session code guessing | 8-digit codes, 10-min validity, single use, hashed storage, failures counted by the IP ban service, rate limiting on code endpoints |
+| T2 | Session code guessing | 8-digit codes, 10-min validity, single use, hashed storage, failures counted by the IP ban service, rate limiting on code endpoints (nginx and in-app per client network, `Mkits:RateLimits`; WebSocket connection attempts too) |
 | T3 | Client IP spoofing via headers | forwarded headers accepted only from known proxies; forward limit 1 by default |
 | T4 | Session hijacking (cookies) | `__Host-` cookies, `Secure`, `HttpOnly`, `SameSite=Strict`, short sliding expiration, re-authentication for sensitive admin actions, cookie invalidation on password/2FA change |
 | T5 | CSRF / clickjacking / XSS | antiforgery tokens on all state-changing forms, `Content-Security-Policy` without `unsafe-inline` scripts, `X-Frame-Options: DENY` / `frame-ancestors 'none'`, output encoding by Razor; the viewer page additionally allows inline *styles* (xterm.js), never inline scripts |
