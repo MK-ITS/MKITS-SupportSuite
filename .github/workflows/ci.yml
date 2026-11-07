@@ -151,7 +151,8 @@ jobs:
           curl -fsS http://127.0.0.1:5080/health
           # The one-time setup token is only ever written to the log (first-run setup).
           token=$(grep -oE 'setup token: [A-Za-z0-9_-]+' "$RUNNER_TEMP/server.log" | tail -1 | awk '{print $3}')
-          test -n "$token" || { cat "$RUNNER_TEMP/server.log"; exit 1; }
+          # Diagnostics never print a token: anything after "token:" is redacted.
+          test -n "$token" || { sed -E 's/(token: ).*/\1[redacted]/I' "$RUNNER_TEMP/server.log"; exit 1; }
           echo "::add-mask::$token"
           echo "E2E_SETUP_TOKEN=$token" >> "$GITHUB_ENV"
 
@@ -164,6 +165,10 @@ jobs:
           npx playwright install --with-deps chromium
           npx playwright test
 
+      - name: Redact the server log
+        if: failure()
+        run: sed -E 's/(token: ).*/\1[redacted]/I' "$RUNNER_TEMP/server.log" > "$RUNNER_TEMP/server-redacted.log" || true
+
       - name: Upload report and server log
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -172,7 +177,7 @@ jobs:
           path: |
             tests/e2e/playwright-report
             tests/e2e/test-results
-            ${{ runner.temp }}/server.log
+            ${{ runner.temp }}/server-redacted.log
           if-no-files-found: ignore
           retention-days: 7
 

@@ -7,10 +7,20 @@ import { signInAsAdmin, submitFormOf } from "./support";
 test("a supporter creates a session, the customer enters its code, the viewer waits for the agent", async ({ page, browser }) => {
   await signInAsAdmin(page);
 
+  // The page is interactive (Blazor Server): the form only works once its circuit is connected.
+  const circuit = page.waitForEvent("websocket", (socket) => socket.url().includes("/_blazor"));
   await page.goto("/sessions");
-  await page.locator("#session-label").fill("E2E customer");
-  await submitFormOf(page, "session-label");
-  const codeText = (await page.getByTestId("session-code").innerText()).trim();
+  await circuit;
+  const code = page.getByTestId("session-code");
+  await expect(async () => {
+    if (!(await code.isVisible())) {
+      await page.locator("#session-label").fill("E2E customer");
+      await submitFormOf(page, "session-label");
+    }
+
+    await expect(code).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
+  const codeText = (await code.innerText()).trim();
   expect(codeText).toMatch(/^\d{4} \d{4}$/);
 
   // The customer (no cookies, another browser context) enters the code in the portal.
@@ -33,7 +43,7 @@ test("a supporter creates a session, the customer enters its code, the viewer wa
 
   // The supporter opens the viewer: it connects to the relay and waits for the customer's client.
   await page.reload();
-  const row = page.locator("tr", { hasText: "E2E customer" });
+  const row = page.locator("tr", { hasText: "E2E customer" }).first();
   const href = await row.locator('a[href$="/view"]').getAttribute("href");
   expect(href).toMatch(/^\/sessions\/[0-9a-f-]+\/view$/);
   await page.goto(href!);
