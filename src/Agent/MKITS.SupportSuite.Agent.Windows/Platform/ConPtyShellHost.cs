@@ -153,14 +153,40 @@ internal sealed class ConPtyShell : IShellProcess
         await CloseConsoleAsync().ConfigureAwait(false);
 
         await _output.DisposeAsync().ConfigureAwait(false);
-        _exitWait.Unregister(null);
+        UnregisterAndWait(_exitWait); // an exit callback may be running: let it finish before the handle goes
         _waitHandle.Dispose();
         _process.Dispose();
     }
 
+    /// <summary>The exit code of an exited process; -1 if it cannot be read (or the handle is already closed).</summary>
+    internal static int ExitCode(SafeProcessHandle process)
+    {
+        try
+        {
+            return GetExitCodeProcess(process, out var code) ? unchecked((int)code) : -1;
+        }
+        catch (ObjectDisposedException)
+        {
+            return -1; // disposed concurrently – the shell is being closed anyway
+        }
+    }
+
+    /// <summary>
+    /// Unregisters an exit wait and waits (briefly) until a callback already running has finished, so the handles it
+    /// uses are not disposed under it.
+    /// </summary>
+    internal static void UnregisterAndWait(RegisteredWaitHandle wait)
+    {
+        using var finished = new ManualResetEvent(false);
+        if (wait.Unregister(finished))
+        {
+            finished.WaitOne(TimeSpan.FromSeconds(5));
+        }
+    }
+
     private void OnExited()
     {
-        _exited.TrySetResult(GetExitCodeProcess(_process, out var code) ? unchecked((int)code) : -1);
+        _exited.TrySetResult(ExitCode(_process));
 
         // The pseudo console keeps the output pipe open after the shell exited: close it, so readers see the end of
         // the output (and the viewer gets the exit code).

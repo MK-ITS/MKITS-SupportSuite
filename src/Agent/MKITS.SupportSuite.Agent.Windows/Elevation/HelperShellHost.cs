@@ -4,7 +4,6 @@
 using Microsoft.Win32.SafeHandles;
 using MKITS.SupportSuite.Agent.Core.Features;
 using MKITS.SupportSuite.Agent.Windows.Platform;
-using static MKITS.SupportSuite.Agent.Windows.Native.ConPtyNative;
 
 namespace MKITS.SupportSuite.Agent.Windows.Elevation;
 
@@ -43,8 +42,7 @@ internal sealed class HelperShellProcess : IShellProcess
         _output = new FileStream(new SafeFileHandle((nint)handles.Output, ownsHandle: true), FileAccess.Read, 1);
         _process = new SafeProcessHandle((nint)handles.Process, ownsHandle: true);
         _waitHandle = new ConPtyShell.ProcessWaitHandle(_process);
-        _exitWait = ThreadPool.RegisterWaitForSingleObject(_waitHandle, (_, _) =>
-            _exited.TrySetResult(GetExitCodeProcess(_process, out var code) ? unchecked((int)code) : -1), null, Timeout.Infinite, executeOnlyOnce: true);
+        _exitWait = ThreadPool.RegisterWaitForSingleObject(_waitHandle, (_, _) => _exited.TrySetResult(ConPtyShell.ExitCode(_process)), null, Timeout.Infinite, executeOnlyOnce: true);
     }
 
     public Stream Output => _output;
@@ -69,7 +67,7 @@ internal sealed class HelperShellProcess : IShellProcess
         _client.CloseShell(_id); // the helper terminates the shell and closes its pseudo console
         await _input.DisposeAsync().ConfigureAwait(false);
         await _output.DisposeAsync().ConfigureAwait(false);
-        _exitWait.Unregister(null);
+        ConPtyShell.UnregisterAndWait(_exitWait); // an exit callback may be running: let it finish before the handle goes
         _waitHandle.Dispose();
         _process.Dispose();
     }
