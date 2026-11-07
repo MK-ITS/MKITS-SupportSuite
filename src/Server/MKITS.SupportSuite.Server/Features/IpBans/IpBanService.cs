@@ -96,6 +96,13 @@ public sealed partial class IpBanService(
         return true;
     }
 
+    /// <summary><c>true</c> if <paramref name="address"/> is on the configured or the admin-managed allow list.</summary>
+    public bool IsAllowListed(IPAddress address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        return IsAllowListed(IpNetworks.Normalize(address), _snapshot, options.CurrentValue);
+    }
+
     /// <summary>
     /// Records a failed attempt (wrong password, code, token, …). Returns <c>true</c> if this failure caused a ban.
     /// </summary>
