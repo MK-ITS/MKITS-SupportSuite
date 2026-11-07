@@ -10,6 +10,7 @@
 | [protocol.md](protocol.md) | Wire protocol, channels, end-to-end encryption |
 | [session-lifecycle.md](session-lifecycle.md) | Session codes, states, consent, ending sessions |
 | [security-concept.md](security-concept.md) | Assets, threats, mitigations, key management |
+| [security-review.md](security-review.md) | Code-level security review along OWASP ASVS (15.3): findings, verified areas, open items |
 | [data-model.md](data-model.md) | Entities and fields |
 | [coding-guidelines.md](coding-guidelines.md) | Coding rules for all languages in this repo |
 | [development.md](development.md) | Build, branches, EF Core migrations, CI diagnostics, test helpers |
