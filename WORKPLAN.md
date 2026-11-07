@@ -246,7 +246,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 15 – Quality & security assurance
 - [x] 15.1 Unit + integration tests per module – xUnit per project (server incl. relay/agent end-to-end against the test server, agent core, Windows, Linux incl. Xvfb/PipeWire/portal), vitest for the browser viewer; run on every PR (Ubuntu, Windows, arm64)
-- [ ] 15.2 End-to-end tests (Playwright for web UI, agent ↔ server)
+- [x] 15.2 End-to-end tests (Playwright for web UI, agent ↔ server) – Playwright against the published server in CI (`tests/e2e`: first-run setup, mandatory 2FA, sessions, portal code entry, viewer, admin pages, headers, language); agent ↔ server ↔ viewer end to end in `Server.Tests` (real WebSocket clients: relay, consent, E2E crypto, files, shells, devices)
 - [~] 15.3 Security review (OWASP ASVS, dependency audit, pen test portal/relay/E2E) – code-level review along ASVS done (`docs/security-review.md`: no high/critical findings; Actions pinned to SHAs, nginx connection limit for agent fleets); external penetration test open
 - [ ] 15.4 Test matrix: Windows 10/11, Server 2016–2025, Debian 12/13, Ubuntu LTS (X11 + Wayland), Android 10–16
 
@@ -321,3 +321,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-07 | PR #64: fix a crash when a Windows shell exits while it is being closed (exit callback raced the handle disposal; found by CI). |
 | 2026-11-07 | PR #64 merged. PR #62: in-app rate limits (4.4); WORKPLAN brought up to date (finished items closed, Linux H.264/XShm moved to 11.6). |
 | 2026-11-07 | PR #62 merged. PR #63: security review (15.3, `docs/security-review.md`) – Actions pinned to commit SHAs, nginx WebSocket connection limit raised for agent fleets. |
+| 2026-11-07 | PR #63 merged. Phase 15.2 (PR #65): Playwright end-to-end tests of the web UI in CI. |

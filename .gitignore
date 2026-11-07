@@ -20,6 +20,11 @@ coverage*.xml
 !.vscode/extensions.json
 !.vscode/settings.json
 
+# ---- End-to-end tests (tests/e2e) ----
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+tests/e2e/.e2e-state.json
+
 # ---- Node / web viewer ----
 node_modules/
 dist/
