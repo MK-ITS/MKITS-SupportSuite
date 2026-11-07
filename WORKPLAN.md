@@ -166,35 +166,35 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [x] 4.1 User management: Identity model, roles, password policy, lockout, admin UI (`/admin/users`, self-/last-admin protection)
 - [x] 4.2 Login/logout, cookie security (`__Host-`, SameSite=Strict), CSRF, TOTP 2FA (QR, recovery codes, mandatory for Admins), profile + language
 - [x] 4.3 IP Ban Service: fail counter, 7-day ban, CIDR allow/deny lists (config + DB), middleware, admin UI (`/admin/ip-bans`), SMTP notification (throttled, localized)
-- [~] 4.4 Rate limiting: nginx limits for auth/setup/code endpoints ✅; in-app limits follow with the session-code and enrollment endpoints (Phases 5/10)
+- [x] 4.4 Rate limiting: nginx limits for auth/setup/code endpoints; failures of codes, tokens, signatures and logins count towards IP bans; in-app limits per client network (`Mkits:RateLimits`: auth submissions, WebSocket connection attempts; loopback and allow list exempt)
 - [x] 4.5 Audit log: hash-chained store + verification, admin UI (`/admin/audit`, filter, paging, integrity check); events are added by each feature. CSV export open
 
 ### Phase 5 – Session broker & relay
 - [x] 5.1 Session codes (supporter-created, expiry, single use) – `Features/Sessions`, page `/sessions`, protobuf code generation in Common
 - [x] 5.2 WebSocket endpoints for agents and viewers, authentication – `Features/Relay` (`/ws/agent`, `/ws/viewer`, ad-hoc code, viewer ticket, resume token)
 - [x] 5.3 Relay routing per channel, backpressure, reconnect – grace period 60 s, heartbeat 30/90 s, video drop at 4 MiB, disconnect at 16 MiB
-- [~] 5.4 Consent flow + session banner – server side done (request per viewer, timeout, deny); banner/dialog in the agents (Phase 7/8)
-- [~] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display – crypto library `Common/Crypto` (ECDH P-256, HKDF, AES-256-GCM, replay protection, security code) done; relay forwards `KeyExchange`; display in agent/viewer UIs (Phases 7–9)
+- [x] 5.4 Consent flow + session banner – server side (request per viewer, timeout, deny); consent dialogs and session banners in the Windows/Linux agents (Phases 8/10/11)
+- [x] 5.5 E2E encryption handshake (agent ↔ viewer), fingerprint display – crypto library `Common/Crypto` (ECDH P-256, HKDF, AES-256-GCM, replay protection, security code); relay forwards `KeyExchange`; security code shown in agents and viewer, device-signed keys verified by the viewer
 
 ### Phase 6 – Web UI
-- [~] 6.1 Customer portal: code entry → client download (OS detection), Guest session start – portal + download with code/host in the file name done (`Features/Downloads`); session start needs the client (Phase 8)
+- [x] 6.1 Customer portal: code entry → client download (OS detection), Guest session start – portal + download with code/host in the file name (`Features/Downloads`); the downloaded client starts the session (Windows EXE, Linux AppImage)
 - [x] 6.2 Supporter area: create ad-hoc session, session list, join – `/sessions` (create/list/revoke/open), viewer page `/sessions/{id}/view`
 - [x] 6.3 Admin area: users, roles, settings, SMTP, IP bans, audit log (Phase 4)
 - [x] 6.4 i18n de/en for all texts, AGPL source link in footer
 
 ### Phase 7 – Agent core (C#, shared Windows/Linux)
-- [~] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto – `AgentSession` (handshake, code/resume auth, consent callback, key exchange per viewer, encrypted dispatch, reconnect) done, tested end-to-end against the relay
+- [x] 7.1 Connection management (WSS, reconnect, heartbeat), protocol, E2E crypto – `AgentSession` (handshake, code/resume auth, consent callback, key exchange per viewer, encrypted dispatch, reconnect) done, tested end-to-end against the relay
 - [x] 7.2 Configuration, logging, ad-hoc vs. permanent mode – ad-hoc (`AgentSession`) and permanent (`DeviceAgent`) modes; `agent.json` per platform (server, token until enrollment, optional `LogLevel`, kept on reinstall); core logging through `ILogger` (connection failures with their reason, enrollment, sessions, supporters with permissions, consent, dropped payloads at Debug) into the platform sinks (Windows `agent.log`, Linux journal) via `LineLoggerProvider`
 - [x] 7.3 Abstractions: capture → encode → send, input, clipboard, file system, shell (PTY / ConPTY) – `IScreenSource`, `IInputInjector`, `IClipboard`, `IChatPresenter`, `IFileTransferUi`, `IShellHost` done
 - [x] 7.4 Chat, file transfer, clipboard, remote shell implementations – `ScreenStreamer` (flow control, change detection, per-viewer fps/monitor), `InputHandler` (coordinate mapping, stuck-key release), `ClipboardHandler`, `ChatHandler`, `FileTransferHandler` (consent per file, sanitized names, in-order chunks, SHA-256, no overwrite), `ShellHandler` (platform-defined shells only, ≤ 3 per viewer, closed when the viewer leaves) done
 
 ### Phase 8 – Windows agent
 - [x] 8.1 Screen capture (DXGI Desktop Duplication, multi-monitor, GDI fallback) – `DesktopScreenSource`: DXGI Desktop Duplication per monitor (matched by device name, recreated after desktop switches), GDI fallback (RDP, rotated monitors, unsupported drivers; DXGI retried after 10 s), one shared BGRX frame per monitor for JPEG and H.264; helpers are per-monitor DPI aware
-- [~] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; 8.2a (ADR-0027): codec negotiation (`QualitySettings.codecs`), per-viewer stream encoders in the screen source (`CaptureStream`), keyframe rules; 8.2b: Media Foundation software H.264 encoder in the screen source; 8.2c: H.264 through the SYSTEM helper (UAC, lock screen, permanent agent) – pipe requests `StreamCodecs`/`CaptureStream`/`ReleaseStream`, ≤ 8 streams per helper, streams released on the old side when the session switches between own capture and helper (Linux still sends JPEG)
-- [~] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen done; Ctrl+Alt+Del needs the service (8.4)
-- [~] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching – elevated ad-hoc mode (ADR-0021): temporary service, SYSTEM helper following the input desktop, SendSAS, helper restart on console switch; permanent service follows in Phase 10
+- [x] 8.2 H.264 encoding (Media Foundation hardware / OpenH264), JPEG fallback – JPEG done; 8.2a (ADR-0027): codec negotiation (`QualitySettings.codecs`), per-viewer stream encoders in the screen source (`CaptureStream`), keyframe rules; 8.2b: Media Foundation software H.264 encoder in the screen source; 8.2c: H.264 through the SYSTEM helper (UAC, lock screen, permanent agent) – pipe requests `StreamCodecs`/`CaptureStream`/`ReleaseStream`, ≤ 8 streams per helper, streams released on the old side when the session switches between own capture and helper (Linux still sends JPEG – see 11.6)
+- [x] 8.3 Input injection (SendInput, keyboard layouts, special keys) – SendInput with scan codes (layout-independent), Unicode text, Win/Alt+Tab/PrintScreen; Ctrl+Alt+Del via SendSAS from the service (8.4)
+- [x] 8.4 Service (LocalSystem) + session helper, secure desktop / UAC, Ctrl+Alt+Del (SendSAS), session switching – elevated ad-hoc mode (ADR-0021): temporary service, SYSTEM helper following the input desktop, SendSAS, helper restart on console switch; permanent service `MKITSAgent` (Phase 10, ADR-0022)
 - [x] 8.5 Remote shell via ConPTY (PowerShell / cmd), optionally elevated – ConPTY with user rights (`ConPtyShellHost`); elevated shells (ADR-0028): ad-hoc through the SYSTEM helper while administrator mode is on (pipe handles duplicated into the client), installed agent in the service (`ElevatedShellRouter`); pseudo console closed when the shell exits, so the viewer gets the exit code; administrator shells need the separate permission *admin shell* (`shell_admin`, ADR-0029)
-- [~] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" done (ADR-0021)
+- [x] 8.6 Ad-hoc portable EXE (code from file name or prompt, "restart elevated") – single-file EXE (CI artifact), file name / dialog, WinForms UI (consent, status, security code, chat, end) done; "restart elevated" done (ADR-0021)
 
 ### Phase 9 – Browser viewer
 - [x] 9.1 Canvas + WebCodecs H.264 decoder, fallback – canvas with JPEG (flow-control acks, letterbox-aware scaling); 9.1b: WebCodecs H.264 (announced only if the browser supports it, gap/decoder-error → keyframe request, deltas dropped until the next keyframe)
@@ -206,19 +206,20 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 **→ M1: Windows ad-hoc remote support end-to-end (portal → download → consent → control + chat/file/clipboard/shell)**
 
 ### Phase 10 – Permanent connections (Admin)
-- [~] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata – 10A-1: data model, DeviceService (groups, permissions, hashed enrollment tokens, enrollment, ECDSA device authentication), admin page `/admin/devices`; 10A-2: enrollment and device-key authentication on the relay, online presence, supporter page `/devices`
+- [x] 10.1 Device registry, groups, per-group permissions for Users, online status, metadata – 10A-1: data model, DeviceService (groups, permissions, hashed enrollment tokens, enrollment, ECDSA device authentication), admin page `/admin/devices`; 10A-2: enrollment and device-key authentication on the relay, online presence, supporter page `/devices`
 - [x] 10.2 Deployment per group – decided without MSI (ADR-0024): the EXE with `--install` is deployed via Intune (Win32 app) or GPO startup script; documented in the admin guides
-- [~] 10.3 Unattended access incl. reboot/reconnect, consent policy per group (ask / notify / silent) – server side done in 10A-2 (permanent sessions on the presence connection, rebind after reconnect, policies, per-channel permission enforcement); 10A-3: agent-core permanent mode (`DeviceAgent`: enrollment, protected identity store, idle presence, sessions over the presence connection, reconnect with backoff), agent-side permission checks, signed key exchange verified by the browser viewer; 10B-1: Windows service `MKITSAgent` (install/uninstall, DPAPI identity, on-demand SYSTEM helper, WTSSendMessage consent/notice, ADR-0022); 10B-2: session window in the logged-on user's session (chat, files, clipboard, shell with the user's rights; consent dialog) via the agent-core bridge
+- [x] 10.3 Unattended access incl. reboot/reconnect, consent policy per group (ask / notify / silent) – server side done in 10A-2 (permanent sessions on the presence connection, rebind after reconnect, policies, per-channel permission enforcement); 10A-3: agent-core permanent mode (`DeviceAgent`: enrollment, protected identity store, idle presence, sessions over the presence connection, reconnect with backoff), agent-side permission checks, signed key exchange verified by the browser viewer; 10B-1: Windows service `MKITSAgent` (install/uninstall, DPAPI identity, on-demand SYSTEM helper, WTSSendMessage consent/notice, ADR-0022); 10B-2: session window in the logged-on user's session (chat, files, clipboard, shell with the user's rights; consent dialog) via the agent-core bridge
 - [~] 10.4 Signed agent auto-update – mechanism done (ADR-0023: release-key-signed manifest, build number, server endpoints, Windows updater with rollback); active once the release key is set up (docs/development.md)
 
 **→ M2: permanent Windows devices**
 
 ### Phase 11 – Linux agent (Debian/Ubuntu)
-- [~] 11.1 X11 capture/input – 11A: `XGetImage` per XRandR monitor + libjpeg-turbo, XTest input (evdev keycodes, Unicode text via spare keycode), quiet X error handler; terminal ad-hoc client; tests under Xvfb in CI. XShm/XDamage optimisation and the graphical client follow
+- [x] 11.1 X11 capture/input – 11A: `XGetImage` per XRandR monitor + libjpeg-turbo, XTest input (evdev keycodes, Unicode text via spare keycode), quiet X error handler; terminal ad-hoc client; tests under Xvfb in CI; graphical client (Avalonia, 11B). XShm/XDamage optimisation: see 11.6
 - [x] 11.2 Wayland via xdg-desktop-portal (ScreenCast + RemoteDesktop, PipeWire); GNOME and KDE; unattended via portal restore tokens / gnome-remote-desktop – limits documented. 11G (ADR-0026): ad-hoc client on Wayland – portal session over D-Bus (Tmds.DBus.Protocol), PipeWire capture via P/Invoke, portal input; tests with a fake portal and a private PipeWire. 11H: installed agent on Wayland – portal in the session window process (restore token in `~/.local/state/mkits-agent`), service forwards video/display/input for Wayland sessions (`SwitchableHandler` keeps its X11 handlers idle)
 - [x] 11.3 Login screen (GDM/LightDM/SDDM) access where possible – 11I: X11 login screens (logind class `greeter`) when nobody is logged on; Wayland greeters (GDM default) not possible (no portal) – documented
 - [x] 11.4 Remote shell (PTY) – PTY via `posix_openpt` + `posix_spawn` + `setsid --ctty` (job control, window size, exit code); ad-hoc client: user's rights; installed agent: root in the service (ADR-0025)
 - [x] 11.5 systemd unit, `.deb` packages (amd64, arm64) – 11C: installed agent (ADR-0025): root service with logind/Xauthority lookup of the user's X display (survives logout via `XSetIOErrorExitHandler`), session window via `runuser` + stdio bridge, `--install`/`--uninstall`, `.deb` (amd64) with systemd unit, CI job installs, configures and removes the package. 11D: `.deb` bundled in the server image, Admin download + Linux install command next to the enrollment token, guides (EN/DE). 11E: Linux auto-update (signed `.deb`, channel `linux-x64-deb`, installed via `systemd-run` + apt). 11F: arm64 AppImage and `.deb` (cross-built in the image, native CI jobs and Linux tests on arm64 runners), update channel `linux-arm64-deb`
+- [ ] 11.6 (after the first release) Linux H.264 encoder (royalty-free/OS-provided, ADR-0027) and XShm/XDamage capture
 
 **→ M3: Linux**
 
@@ -244,7 +245,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [ ] 14.3 Monitoring/metrics, log rotation
 
 ### Phase 15 – Quality & security assurance
-- [ ] 15.1 Unit + integration tests per module
+- [x] 15.1 Unit + integration tests per module – xUnit per project (server incl. relay/agent end-to-end against the test server, agent core, Windows, Linux incl. Xvfb/PipeWire/portal), vitest for the browser viewer; run on every PR (Ubuntu, Windows, arm64)
 - [ ] 15.2 End-to-end tests (Playwright for web UI, agent ↔ server)
 - [ ] 15.3 Security review (OWASP ASVS, dependency audit, pen test portal/relay/E2E)
 - [ ] 15.4 Test matrix: Windows 10/11, Server 2016–2025, Debian 12/13, Ubuntu LTS (X11 + Wayland), Android 10–16
@@ -318,3 +319,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-03 | PR #59 merged. ADR-0029 (PR #60): separate permission `shell_admin` for administrator shells (Windows elevated shells, all Linux service shells). |
 | 2026-11-04 | PR #60 merged. Phase 7.2 (PR #61): agent logging (`ILogger` in the core, log level in `agent.json`). |
 | 2026-11-07 | PR #64: fix a crash when a Windows shell exits while it is being closed (exit callback raced the handle disposal; found by CI). |
+| 2026-11-07 | PR #64 merged. PR #62: in-app rate limits (4.4); WORKPLAN brought up to date (finished items closed, Linux H.264/XShm moved to 11.6). |

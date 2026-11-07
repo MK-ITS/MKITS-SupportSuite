@@ -189,6 +189,9 @@ Environment variables (`Section__Key`) override settings from the admin UI. ✅ 
 | `Mkits__IpBan__BanDuration` | `7.00:00:00` | ✅ | ban length (d.hh:mm:ss) |
 | `Mkits__IpBan__IPv6PrefixLength` | `64` | ✅ | IPv6 aggregation |
 | `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | ✅ | CIDR lists (in addition to the admin UI) |
+| `Mkits__RateLimits__Enabled` | `true` | ✅ | in-app rate limits per client (in addition to nginx); loopback and the IP allow list are exempt |
+| `Mkits__RateLimits__AuthPerMinute` | `20` | ✅ | login, 2FA, setup and session-code submissions per client and minute (then HTTP 429) |
+| `Mkits__RateLimits__ConnectionsPerMinute` | `300` | ✅ | agent/viewer WebSocket connection attempts per client and minute – raise it if many installed agents share one NAT address |
 | `Mkits__Sessions__CodeLength` | `8` | ✅ | digits of ad-hoc codes (6–12) |
 | `Mkits__Sessions__CodeLifetime` | `00:10:00` | ✅ | validity of unused codes |
 | `Mkits__Sessions__MaxActiveCodes` | `50` | ✅ | server-wide limit of open codes (with 8 digits at most 1000) |

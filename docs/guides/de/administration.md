@@ -189,6 +189,9 @@ Umgebungsvariablen (`Abschnitt__Schlüssel`) haben Vorrang vor Einstellungen aus
 | `Mkits__IpBan__BanDuration` | `7.00:00:00` | ✅ | Sperrdauer (t.hh:mm:ss) |
 | `Mkits__IpBan__IPv6PrefixLength` | `64` | ✅ | IPv6-Zusammenfassung |
 | `Mkits__IpBan__AllowList__N` / `DenyList__N` | – | ✅ | CIDR-Listen (zusätzlich zur Admin-Oberfläche) |
+| `Mkits__RateLimits__Enabled` | `true` | ✅ | Rate-Limits in der Anwendung pro Client (zusätzlich zu nginx); Loopback und die IP-Allow-List sind ausgenommen |
+| `Mkits__RateLimits__AuthPerMinute` | `20` | ✅ | Anmelde-, 2FA-, Setup- und Sitzungscode-Absendungen pro Client und Minute (danach HTTP 429) |
+| `Mkits__RateLimits__ConnectionsPerMinute` | `300` | ✅ | WebSocket-Verbindungsversuche von Agents/Viewern pro Client und Minute – erhöhen, wenn viele installierte Agents eine NAT-Adresse teilen |
 | `Mkits__Sessions__CodeLength` | `8` | ✅ | Stellen des Adhoc-Codes (6–12) |
 | `Mkits__Sessions__CodeLifetime` | `00:10:00` | ✅ | Gültigkeit unbenutzter Codes |
 | `Mkits__Sessions__MaxActiveCodes` | `50` | ✅ | serverweite Grenze offener Codes (bei 8 Stellen höchstens 1000) |
