@@ -317,3 +317,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-03 | PR #58 merged. Phase 8.5 (PR #59): elevated remote shell (ADR-0028) – viewer "Admin terminal", Windows helper/service, Linux service. |
 | 2026-11-03 | PR #59 merged. ADR-0029 (PR #60): separate permission `shell_admin` for administrator shells (Windows elevated shells, all Linux service shells). |
 | 2026-11-04 | PR #60 merged. Phase 7.2 (PR #61): agent logging (`ILogger` in the core, log level in `agent.json`). |
+| 2026-11-07 | PR #64: fix a crash when a Windows shell exits while it is being closed (exit callback raced the handle disposal; found by CI). |
