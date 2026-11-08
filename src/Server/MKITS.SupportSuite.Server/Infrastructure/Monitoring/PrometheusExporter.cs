@@ -11,21 +11,24 @@ namespace MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 /// <summary>
 /// A small Prometheus text-format exporter (no extra dependency): listens to the server's own meter and the .NET
 /// runtime meter, sums counters, keeps the last value of observable instruments, and renders them on scrape.
-/// Histograms are not exported.
+/// Histograms are not exported. Created at startup (<see cref="MetricsSetup.MapMetricsEndpoint"/>), so no
+/// measurement before the first scrape is lost; only the server meter of its own <see cref="IMeterFactory"/> counts
+/// (several hosts in one process – tests – do not mix).
 /// </summary>
 public sealed class PrometheusExporter : IDisposable
 {
-    private static readonly string[] Meters = [MkitsMetrics.MeterName, "System.Runtime"];
+    private const string RuntimeMeter = "System.Runtime";
 
     private readonly MeterListener _listener = new();
     private readonly ConcurrentDictionary<(Instrument Instrument, string Labels), double> _values = new();
     private readonly Lock _collectGate = new();
 
-    public PrometheusExporter()
+    public PrometheusExporter(IMeterFactory meterFactory)
     {
         _listener.InstrumentPublished = (instrument, listener) =>
         {
-            if (Meters.Contains(instrument.Meter.Name, StringComparer.Ordinal) && Kind(instrument) is not null)
+            var ours = instrument.Meter.Name == MkitsMetrics.MeterName && ReferenceEquals(instrument.Meter.Scope, meterFactory);
+            if ((ours || instrument.Meter.Name == RuntimeMeter) && Kind(instrument) is not null)
             {
                 listener.EnableMeasurementEvents(instrument);
             }

@@ -25,6 +25,10 @@ public static class MetricsSetup
     public static IEndpointRouteBuilder MapMetricsEndpoint(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
+
+        // Start listening now (not at the first scrape), and create the server meter with it.
+        _ = endpoints.ServiceProvider.GetRequiredService<PrometheusExporter>();
+        _ = endpoints.ServiceProvider.GetRequiredService<MkitsMetrics>();
         endpoints.MapGet("/metrics", (HttpContext context, IOptionsMonitor<MetricsOptions> options, PrometheusExporter exporter) =>
         {
             var settings = options.CurrentValue;
