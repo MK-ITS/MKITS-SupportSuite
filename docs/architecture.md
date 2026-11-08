@@ -24,7 +24,7 @@
 
 | Component | Project | Responsibility |
 |---|---|---|
-| Server | `src/Server/MKITS.SupportSuite.Server` | Web UI, REST API, authentication, session broker, relay, device registry, IP bans, audit log, recordings, agent downloads and updates |
+| Server | `src/Server/MKITS.SupportSuite.Server` | Web UI, REST API, authentication, session broker, relay, device registry, IP bans, audit log, metrics, agent downloads and updates; recordings *(planned)* |
 | Common | `src/Common/MKITS.SupportSuite.Common` | Product info, protocol definitions (generated from `proto/`), shared value types |
 | Agent core | `src/Agent/MKITS.SupportSuite.Agent.Core` | Connection, protocol, E2E crypto, session state machine, channel handlers, platform abstractions |
 | Windows agent | `src/Agent/MKITS.SupportSuite.Agent.Windows` | DXGI/GDI capture, Media Foundation H.264, SendInput, ConPTY, SYSTEM helper, installed service (WinForms UI) |

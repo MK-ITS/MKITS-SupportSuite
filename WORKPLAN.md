@@ -252,7 +252,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 16 – Documentation & release
 - [x] 16.1 User docs (de/en): installation and administration guides (feature status, permissions incl. *Admin shell*, settings, monitoring), supporter guide (sessions, viewer tools, devices, troubleshooting) and customer guide (`docs/guides/{en,de}/`)
-- [x] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend – `docs/architecture.md` brought to the implemented state (server/agent folders, Windows and Linux process models), `docs/extending.md` (recipes), READMEs for server and common; 29 ADRs; `AGENTS.md`, development and coding guidelines
+- [x] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend – `docs/architecture.md` brought to the implemented state (server/agent folders, Windows and Linux process models), `docs/extending.md` (recipes), READMEs for server and common; 30 ADRs (0000–0029); `AGENTS.md`, development and coding guidelines
 - [ ] 16.3 Release process (SemVer), changelog, signed release artifacts
 
 ---
