@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Windows agent">
-    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.13" />
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
