@@ -2,8 +2,8 @@
 // Copyright (C) MK-ITSolutions and contributors
 
 using System.Globalization;
-using MKITS.SupportSuite.Common.Protocol;
 using MKITS.SupportSuite.Agent.Windows.UI;
+using MKITS.SupportSuite.Common.Protocol;
 
 namespace MKITS.SupportSuite.Agent.Windows.Tests;
 
