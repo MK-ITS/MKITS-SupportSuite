@@ -17,10 +17,13 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 | Adhoc-Sitzungen: Codes, Kundenportal, Windows-Client mit Zustimmung, Browser-Viewer (Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Shell), Administrator-Modus | ✅ verfügbar (Meilenstein M1) |
 | Gerätegruppen, Berechtigungen, Registrierungstokens, Geräteliste, Supporter-Seite *Geräte* | ✅ verfügbar |
 | Windows-Agent als Dienst (unbeaufsichtigter Zugriff, Zustimmungsrichtlinien, Sitzungsfenster mit Chat/Dateien/Zwischenablage/Shell) | ✅ verfügbar (siehe §5.2) |
+| H.264-Video (Windows-Agents; Browser mit WebCodecs), DXGI-Bildschirmaufnahme, Qualitätsstufen und 1:1-Ansicht im Viewer | ✅ verfügbar (Linux-Agents senden JPEG) |
+| Admin-Terminal (SYSTEM/root) mit eigener Berechtigung *Admin-Shell* | ✅ verfügbar (installierte Agents; ad hoc im Administratormodus) |
+| Rate-Limits, Prometheus-Metriken (`/metrics`), Agent-Protokoll mit Log-Level | ✅ verfügbar (siehe §10, §12) |
 | Agent-Auto-Update (signiert) | ✅ verfügbar, sobald der Release-Schlüssel eingerichtet ist |
 | MSI-Paket | ✖ nicht geplant – die EXE installiert sich selbst (ADR-0024) |
 | Linux-Adhoc-Client (AppImage für x86_64 und arm64; X11- und Wayland-Desktops – unter Wayland fragt der Desktop, welche Bildschirme freigegeben werden): Bildschirm, Eingabe, Chat, Dateien, Zwischenablage, Terminal | ✅ verfügbar |
-| Dauerhafter Linux-Agent (systemd-Dienst, .deb; Bildschirm/Eingabe auf X11- und Wayland-Desktops, root-Shell) | ✅ verfügbar (siehe §5.2) |
+| Dauerhafter Linux-Agent (systemd-Dienst, .deb; Bildschirm/Eingabe auf X11- und Wayland-Desktops, root-Shell mit *Admin-Shell*) | ✅ verfügbar (siehe §5.2) |
 | Android-Agent | 🔜 Phase 12 (M4) |
 | Desktop-Viewer, Sitzungsaufzeichnung | 🔜 Phase 13 (M5) |
 
@@ -72,7 +75,7 @@ Für Betreiber und Admins eines MKITS-SupportSuite-Servers. Installation: [insta
 |---|---|
 | Zustimmung des Benutzers am Gerät | **Jedes Mal fragen** (Ja/Nein-Meldung am Gerät; niemand angemeldet → abgelehnt), **Nur benachrichtigen** (Meldung ohne Rückfrage), **Still** (nichts – nur wo rechtlich zulässig, z. B. unbeaufsichtigte Server) |
 | Neue Geräte benötigen Freigabe | neue Geräte warten auf Freigabe, bis ein Admin sie freigibt |
-| Berechtigungen | je User: Ansehen, Steuern, Dateien, Shell, Zwischenablage (jede Berechtigung schließt Ansehen ein; Admins haben immer alle). Server und Agent setzen sie pro Funktion durch. |
+| Berechtigungen | je User: Ansehen, Steuern, Dateien, Shell, Admin-Shell, Zwischenablage (jede Berechtigung schließt Ansehen ein, *Admin-Shell* auch Shell; Admins haben immer alle). Server und Agent setzen sie pro Funktion durch. **Admin-Shell** öffnet Kommandozeilen als SYSTEM (Windows) bzw. root (Linux) – volle Kontrolle über das Gerät; unter Linux ist jede Shell des installierten Agents eine root-Shell und braucht sie (ADR-0029). Sparsam vergeben. |
 
 ### 5.2 Geräte registrieren
 
@@ -117,16 +120,21 @@ Tokens werden nur als Hash gespeichert und können widerrufen werden. Nach einem
 
 Die Geräteliste zeigt Gruppe, Betriebssystem, Agent-Version, zuletzt gesehen und letzte IP. Aktionen: freigeben, in eine andere Gruppe verschieben, deaktivieren (beendet eine laufende Sitzung und trennt das Gerät), entfernen (Agent muss neu registriert werden). Supporter sehen die Geräte, auf die sie Zugriff haben, unter **Geräte** (`/devices`) mit dem Online-Zustand und verbinden sich dort oder treten einer laufenden Sitzung bei.
 
-## 6. Ablauf Adhoc-Support *(teilweise verfügbar)*
+## 6. Ablauf Adhoc-Support
 
-Schritte 1–2 sind verfügbar (Menü *Sitzungen*, Kundenportal auf der Startseite); die übrigen Schritte folgen mit Client und Viewer.
+Die Schritt-für-Schritt-Anleitungen für den Alltag sind das [Handbuch für Supporter](supporter.md) und die
+[Anleitung für Kunden](customer.md) (zum Weitergeben an Kunden). Kurz:
 
-1. *Sitzungen → Neue Ad-hoc-Sitzung*, optional eine Notiz (z. B. Ticketnummer) eingeben und *Sitzungscode erstellen* klicken. Der Code ist 10 Minuten gültig, einmalig verwendbar und wird nur einmal angezeigt. Nicht benötigte Codes können Sie widerrufen.
-2. Den Kunden bitten, `https://support.example.com` zu öffnen und den Code einzugeben.
-3. Der Kunde lädt den Client herunter und startet ihn; dieser zeigt Ihre Serveradresse und Ihren Anzeigenamen und fragt nach der Zustimmung.
-4. Sitzung im Browser öffnen. In sensiblen Fällen den 6-stelligen **Sicherheitscode** am Telefon mit dem Kunden vergleichen – er beweist, dass niemand (auch kein kompromittierter Server) dazwischensitzt.
-5. Werkzeuge: Monitorauswahl, Strg+Alt+Entf, Chat, Dateiübertragung, Zwischenablage, Remote-Shell, *Mit Administratorrechten neu starten* (Kunde bestätigt die UAC-Abfrage).
-6. Sitzung beenden. Der Client entfernt sich selbst.
+1. *Sitzungen → Neue Ad-hoc-Sitzung*, optional eine Notiz (z. B. Ticketnummer), *Sitzungscode erstellen*. Der Code
+   gilt 10 Minuten, einmal, und wird nur einmal angezeigt; nicht mehr benötigte Codes lassen sich widerrufen.
+2. Der Kunde öffnet `https://support.example.com`, gibt den Code ein, lädt den Client herunter und startet ihn
+   (Windows-EXE, Linux-AppImage); er zeigt Namen des Supporters und Serveradresse und fragt um Zustimmung.
+3. Der Supporter öffnet die Sitzung im Browser und vergleicht – bei sensiblen Fällen – den 6-stelligen
+   **Sicherheitscode** mit dem Kunden: Er beweist, dass niemand (auch kein kompromittierter Server) dazwischensitzt.
+4. Werkzeuge: Monitor, Bildqualität, 1:1-Ansicht, Strg+Alt+Entf/Win/Alt+Tab, Chat, Dateien, Zwischenablage,
+   Terminals; unter Windows kann der Kunde *Mit Administratorrechten neu starten* (UAC) – für Sicherheitsabfragen, den
+   Sperrbildschirm und das Admin-Terminal.
+5. Das Beenden der Sitzung schließt den Client; es bleibt nichts installiert.
 
 ## 7. Sicherheitsverwaltung
 

@@ -43,6 +43,7 @@ Allow the connection?</value></data>
   <data name="Permission_files" xml:space="preserve"><value>transfer files</value></data>
   <data name="Permission_shell" xml:space="preserve"><value>command line</value></data>
   <data name="Permission_clipboard" xml:space="preserve"><value>clipboard</value></data>
+  <data name="Permission_shell_admin" xml:space="preserve"><value>command line with administrator rights (SYSTEM)</value></data>
   <data name="Connect_Title" xml:space="preserve"><value>Connect to remote support</value></data>
   <data name="Connect_Server" xml:space="preserve"><value>Server address</value></data>
   <data name="Connect_Code" xml:space="preserve"><value>Session code</value></data>

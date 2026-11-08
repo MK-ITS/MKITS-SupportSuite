@@ -64,4 +64,5 @@ You can end the session at any time.</value></data>
   <data name="Permission_files" xml:space="preserve"><value>transfer files</value></data>
   <data name="Permission_shell" xml:space="preserve"><value>open a terminal with your user rights</value></data>
   <data name="Permission_clipboard" xml:space="preserve"><value>use the clipboard</value></data>
+  <data name="Permission_shell_admin" xml:space="preserve"><value>use a command line with administrator rights (root)</value></data>
 </root>

@@ -64,6 +64,8 @@ docker run --rm -p 8080:8080 -e Mkits__PublicBaseUrl=http://localhost:8080 -v mk
 
 - Installation: [English](docs/guides/en/installation.md) · [Deutsch](docs/guides/de/installation.md)
 - Administration: [English](docs/guides/en/administration.md) · [Deutsch](docs/guides/de/administration.md)
+- Supporters: [English](docs/guides/en/supporter.md) · [Deutsch](docs/guides/de/supporter.md)
+- Customers: [English](docs/guides/en/customer.md) · [Deutsch](docs/guides/de/customer.md)
 
 ## Contributing
 

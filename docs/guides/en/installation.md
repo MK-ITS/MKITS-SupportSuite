@@ -5,7 +5,7 @@
 This guide installs the MKITS-SupportSuite **server** on Ubuntu Server with Docker, behind nginx with a Let's Encrypt certificate.
 Agents are installed on end devices later (see the [administration guide](administration.md), section 5).
 
-> **Project status:** the product is in early development (0.1.0-dev). The installation steps below already work and give you a running server with health and version endpoints. Login, sessions and agents follow in the next development phases – sections that describe planned behavior are marked *(planned)*.
+> **Project status:** feature-complete for Windows and Linux ahead of the first release (0.x); see the feature status in the [administration guide](administration.md). Sections that describe planned behavior are marked *(planned)*.
 
 ## 1. Requirements
 
@@ -175,7 +175,7 @@ sudo docker compose up -d
 sudo docker image prune -f
 ```
 
-Database migrations run automatically at startup *(from Phase 4 on)*. Pin a version tag in `.env` (`MKITS_IMAGE=…:0.2.0`) for controlled upgrades once releases exist; `edge` always follows the latest development build.
+Database migrations run automatically at startup. Pin a version tag in `.env` (`MKITS_IMAGE=…:0.2.0`) for controlled upgrades once releases exist; `edge` always follows the latest development build.
 
 ## 10. Backup and restore
 
