@@ -17,10 +17,13 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 | Ad-hoc sessions: codes, customer portal, Windows client with consent, browser viewer (screen, input, chat, files, clipboard, shell), administrator mode | ✅ available (milestone M1) |
 | Device groups, permissions, enrollment tokens, device list, supporter page *Devices* | ✅ available |
 | Windows agent as a service (unattended access, consent policies, session window with chat/files/clipboard/shell) | ✅ available (see §5.2) |
+| H.264 video (Windows agents; browsers with WebCodecs), DXGI screen capture, quality presets and 1:1 view in the viewer | ✅ available (Linux agents send JPEG) |
+| Admin terminal (SYSTEM/root) with its own permission *Admin shell* | ✅ available (installed agents; ad-hoc in administrator mode) |
+| Rate limits, Prometheus metrics (`/metrics`), agent logging with log level | ✅ available (see §10, §12) |
 | Agent auto-update (signed) | ✅ available once the release key is set up |
 | MSI package | ✖ not planned – the EXE installs itself (ADR-0024) |
 | Linux ad-hoc client (AppImage for x86_64 and arm64; X11 and Wayland desktops – on Wayland the desktop asks which screens to share): screen, input, chat, files, clipboard, terminal | ✅ available |
-| Permanent Linux agent (systemd service, .deb; screen/input on X11 and Wayland desktops, root shell) | ✅ available (see §5.2) |
+| Permanent Linux agent (systemd service, .deb; screen/input on X11 and Wayland desktops, root shell with *Admin shell*) | ✅ available (see §5.2) |
 | Android agent | 🔜 Phase 12 (M4) |
 | Desktop viewer, session recording | 🔜 Phase 13 (M5) |
 
@@ -72,7 +75,7 @@ For operators and Admins of an MKITS-SupportSuite server. Installation: [install
 |---|---|
 | Consent of the user at the device | **Ask every time** (Yes/No message on the device; nobody logged on → declined), **Notify only** (message, no question), **Silent** (nothing – only where legally allowed, e.g. unattended servers) |
 | New devices need approval | new devices stay *awaiting approval* until an Admin approves them |
-| Permissions | per User: View, Control, Files, Shell, Clipboard (every permission includes View; Admins always have all). The server and the agent enforce them per function. |
+| Permissions | per User: View, Control, Files, Shell, Admin shell, Clipboard (every permission includes View, *Admin shell* also includes Shell; Admins always have all). The server and the agent enforce them per function. **Admin shell** opens command lines as SYSTEM (Windows) or root (Linux) – full control of the device; on Linux every shell of the installed agent is a root shell and needs it (ADR-0029). Grant it sparingly. |
 
 ### 5.2 Enrolling devices
 
@@ -117,16 +120,21 @@ Tokens are stored only as hashes and can be revoked. Revoke tokens after a rollo
 
 The device list shows the group, OS, agent version, last seen and last IP. Actions: approve, move to another group, disable (ends a running session and disconnects the device), remove (the agent must be enrolled again). Supporters see the devices they have access to on **Devices** (`/devices`) with the online state and connect or join a running session from there.
 
-## 6. Ad-hoc support workflow *(partly available)*
+## 6. Ad-hoc support workflow
 
-Steps 1–2 are available (menu *Sessions*, customer portal on the start page); the remaining steps follow with the client and viewer.
+The step-by-step guides for daily work are the [supporter guide](supporter.md) and the
+[customer guide](customer.md) (to send to customers). In short:
 
-1. *Sessions → New ad-hoc session*, optionally enter a note (e.g. ticket number) and click *Create session code*. The code is valid for 10 minutes, can be used once and is shown only once. You can revoke codes you no longer need.
-2. Tell the customer to open `https://support.example.com` and enter the code.
-3. The customer downloads and runs the client; it shows your server address and your display name and asks for consent.
-4. Open the session in your browser. Compare the 6-digit **security code** with the customer on the phone if the case is sensitive – it proves that nobody (not even a compromised server) sits in between.
-5. Tools: monitor selection, Ctrl+Alt+Del, chat, file transfer, clipboard, remote shell, *Restart with administrator rights* (customer confirms the UAC prompt).
-6. End the session. The client removes itself.
+1. *Sessions → New ad-hoc session*, optionally a note (e.g. ticket number), *Create session code*. The code is valid
+   for 10 minutes, can be used once and is shown only once; codes you no longer need can be revoked.
+2. The customer opens `https://support.example.com`, enters the code, downloads and runs the client (Windows EXE,
+   Linux AppImage); it shows the supporter's name and the server address and asks for consent.
+3. The supporter opens the session in the browser and – if the case is sensitive – compares the 6-digit **security
+   code** with the customer: it proves that nobody (not even a compromised server) sits in between.
+4. Tools: monitor, picture quality, 1:1 view, Ctrl+Alt+Del/Win/Alt+Tab, chat, files, clipboard, terminals; on
+   Windows the customer can *Restart with administrator rights* (UAC) for security prompts, the lock screen and the
+   admin terminal.
+5. Ending the session closes the client; nothing stays installed.
 
 ## 7. Security administration
 

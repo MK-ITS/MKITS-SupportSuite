@@ -251,7 +251,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 - [ ] 15.4 Test matrix: Windows 10/11, Server 2016–2025, Debian 12/13, Ubuntu LTS (X11 + Wayland), Android 10–16
 
 ### Phase 16 – Documentation & release
-- [~] 16.1 User docs (de/en): administration guide written (`docs/guides/{en,de}/administration.md`, target behavior marked as planned); customer and supporter guides open
+- [x] 16.1 User docs (de/en): installation and administration guides (feature status, permissions incl. *Admin shell*, settings, monitoring), supporter guide (sessions, viewer tools, devices, troubleshooting) and customer guide (`docs/guides/{en,de}/`)
 - [ ] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend
 - [ ] 16.3 Release process (SemVer), changelog, signed release artifacts
 
@@ -324,3 +324,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-07 | PR #63 merged. Phase 15.2 (PR #67): Playwright end-to-end tests of the web UI in CI. |
 | 2026-11-08 | PR #71: AppImage build tools pinned (appimagetool 1.9.1, runtime 20251108) with SHA-256 checks and download retries instead of the moving "continuous" builds. |
 | 2026-11-08 | PR #71 merged. Phase 14.3 (PR #70): Prometheus metrics endpoint, monitoring section in the admin guide. |
+| 2026-11-08 | PR #70 merged. Phase 16.1 (PR #72): supporter and customer guides (EN/DE), admin/installation guides updated; agent consent texts for the *Admin shell* permission. |

@@ -64,4 +64,5 @@ Sie können die Sitzung jederzeit beenden.</value></data>
   <data name="Permission_files" xml:space="preserve"><value>Dateien übertragen</value></data>
   <data name="Permission_shell" xml:space="preserve"><value>ein Terminal mit Ihren Benutzerrechten öffnen</value></data>
   <data name="Permission_clipboard" xml:space="preserve"><value>die Zwischenablage verwenden</value></data>
+  <data name="Permission_shell_admin" xml:space="preserve"><value>eine Kommandozeile mit Administratorrechten (root) verwenden</value></data>
 </root>

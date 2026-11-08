@@ -5,7 +5,7 @@
 Diese Anleitung installiert den **Server** der MKITS-SupportSuite auf Ubuntu Server mit Docker, hinter nginx mit einem Let's-Encrypt-Zertifikat.
 Die Agents auf den Endgeräten werden später installiert (siehe [Administrationshandbuch](administration.md), Abschnitt 5).
 
-> **Projektstand:** Das Produkt befindet sich in früher Entwicklung (0.1.0-dev). Die folgenden Schritte funktionieren bereits und liefern einen laufenden Server mit Health- und Versions-Endpunkt. Anmeldung, Sitzungen und Agents folgen in den nächsten Entwicklungsphasen – Abschnitte mit geplantem Verhalten sind mit *(geplant)* markiert.
+> **Projektstand:** Für Windows und Linux funktionsfähig vor der ersten Version (0.x); den Funktionsstand zeigt das [Administrationshandbuch](administration.md). Abschnitte mit geplantem Verhalten sind mit *(geplant)* markiert.
 
 ## 1. Voraussetzungen
 
@@ -175,7 +175,7 @@ sudo docker compose up -d
 sudo docker image prune -f
 ```
 
-Datenbank-Migrationen laufen beim Start automatisch *(ab Phase 4)*. Sobald es Releases gibt, in `.env` eine feste Version eintragen (`MKITS_IMAGE=…:0.2.0`), um Updates kontrolliert einzuspielen; `edge` folgt immer dem neuesten Entwicklungsstand.
+Datenbank-Migrationen laufen beim Start automatisch. Sobald es Releases gibt, in `.env` eine feste Version eintragen (`MKITS_IMAGE=…:0.2.0`), um Updates kontrolliert einzuspielen; `edge` folgt immer dem neuesten Entwicklungsstand.
 
 ## 10. Sicherung und Wiederherstellung
 

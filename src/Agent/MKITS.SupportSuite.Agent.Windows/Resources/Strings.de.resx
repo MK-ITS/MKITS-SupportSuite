@@ -43,6 +43,7 @@ Verbindung erlauben?</value></data>
   <data name="Permission_files" xml:space="preserve"><value>Dateien übertragen</value></data>
   <data name="Permission_shell" xml:space="preserve"><value>Kommandozeile</value></data>
   <data name="Permission_clipboard" xml:space="preserve"><value>Zwischenablage</value></data>
+  <data name="Permission_shell_admin" xml:space="preserve"><value>Kommandozeile mit Administratorrechten (SYSTEM)</value></data>
   <data name="Connect_Title" xml:space="preserve"><value>Mit Fernwartung verbinden</value></data>
   <data name="Connect_Server" xml:space="preserve"><value>Serveradresse</value></data>
   <data name="Connect_Code" xml:space="preserve"><value>Sitzungscode</value></data>

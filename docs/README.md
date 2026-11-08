@@ -6,6 +6,8 @@
 | [../AGENTS.md](../AGENTS.md) | Rules and commands for AI agents (and humans) |
 | [guides/en/installation.md](guides/en/installation.md) · [DE](guides/de/installation.md) | Installing the server (Docker, nginx, TLS), updates, backup |
 | [guides/en/administration.md](guides/en/administration.md) · [DE](guides/de/administration.md) | Administering users, devices, security, settings reference |
+| [guides/en/supporter.md](guides/en/supporter.md) · [DE](guides/de/supporter.md) | For supporters: sessions, the viewer and its tools, installed devices |
+| [guides/en/customer.md](guides/en/customer.md) · [DE](guides/de/customer.md) | For customers: joining a session, consent, ending it (to hand out) |
 | [architecture.md](architecture.md) | Components, server/agent internals, main flows |
 | [protocol.md](protocol.md) | Wire protocol, channels, end-to-end encryption |
 | [session-lifecycle.md](session-lifecycle.md) | Session codes, states, consent, ending sessions |
