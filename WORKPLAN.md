@@ -324,3 +324,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-07 | PR #63 merged. Phase 15.2 (PR #67): Playwright end-to-end tests of the web UI in CI. |
 | 2026-11-08 | PR #71: AppImage build tools pinned (appimagetool 1.9.1, runtime 20251108) with SHA-256 checks and download retries instead of the moving "continuous" builds. |
 | 2026-11-08 | PR #71 merged. Phase 14.3 (PR #69): Prometheus metrics endpoint, monitoring section in the admin guide. |
+| 2026-11-08 | PR #71 merged. Phase 14.3 (PR #70): Prometheus metrics endpoint, monitoring section in the admin guide. |
