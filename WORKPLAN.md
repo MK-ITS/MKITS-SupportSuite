@@ -322,3 +322,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-07 | PR #64 merged. PR #62: in-app rate limits (4.4); WORKPLAN brought up to date (finished items closed, Linux H.264/XShm moved to 11.6). |
 | 2026-11-07 | PR #62 merged. PR #63: security review (15.3, `docs/security-review.md`) – Actions pinned to commit SHAs, nginx WebSocket connection limit raised for agent fleets. |
 | 2026-11-07 | PR #63 merged. Phase 15.2 (PR #67): Playwright end-to-end tests of the web UI in CI. |
+| 2026-11-08 | PR #71: AppImage build tools pinned (appimagetool 1.9.1, runtime 20251108) with SHA-256 checks and download retries instead of the moving "continuous" builds. |
