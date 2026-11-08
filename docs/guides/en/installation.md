@@ -175,7 +175,7 @@ sudo docker compose up -d
 sudo docker image prune -f
 ```
 
-Database migrations run automatically at startup. Pin a version tag in `.env` (`MKITS_IMAGE=…:0.2.0`) for controlled upgrades once releases exist; `edge` always follows the latest development build.
+Database migrations run automatically at startup. Choose the image tag in `.env` (`MKITS_IMAGE=ghcr.io/mk-its/mkits-supportsuite-server:<tag>`): a version such as `0.1.0` stays fixed, `0.1` receives bug-fix releases of 0.1, `latest` follows every release, and `edge` follows the development state of `main`. Read the release notes on the project's [releases page](https://github.com/MK-ITS/MKITS-SupportSuite/releases) (also in `CHANGELOG.md`) before upgrading to a new minor or major version. The clients bundled in the image are updated with it; installed agents update themselves (signed updates).
 
 ## 10. Backup and restore
 

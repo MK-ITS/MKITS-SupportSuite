@@ -253,7 +253,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 ### Phase 16 – Documentation & release
 - [x] 16.1 User docs (de/en): installation and administration guides (feature status, permissions incl. *Admin shell*, settings, monitoring), supporter guide (sessions, viewer tools, devices, troubleshooting) and customer guide (`docs/guides/{en,de}/`)
 - [x] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend – `docs/architecture.md` brought to the implemented state (server/agent folders, Windows and Linux process models), `docs/extending.md` (recipes), READMEs for server and common; 30 ADRs (0000–0029); `AGENTS.md`, development and coding guidelines
-- [ ] 16.3 Release process (SemVer), changelog, signed release artifacts
+- [x] 16.3 Release process (SemVer), changelog, signed release artifacts – `docs/releasing.md`: one suite version (`VersionPrefix`, `-dev` on `main`), tag `vX.Y.Z` (checked against the version, release key required) → image `X.Y.Z`/`X.Y`/`latest` with signed agent updates, GitHub release with the clients copied from the image, `SHA256SUMS`, build provenance attestations (image and files), notes from `CHANGELOG.md`; pre-releases `-rc.N`. First tag after the owner's one-time setup (release key, tag ruleset)
 
 ---
 
@@ -326,3 +326,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-08 | PR #71 merged. Phase 14.3 (PR #70): Prometheus metrics endpoint, monitoring section in the admin guide. |
 | 2026-11-08 | PR #70 merged. Phase 16.1 (PR #72): supporter and customer guides (EN/DE), admin/installation guides updated; agent consent texts for the *Admin shell* permission. |
 | 2026-11-08 | PR #72 merged. Phase 16.2 (PR #73): developer docs – architecture updated, `docs/extending.md`, server and common READMEs. |
+| 2026-11-08 | PR #73 merged. Phase 16.3 (PR #74): release process – release tags in `publish.yml` (version check, GitHub release, SHA256SUMS, attestations), version suffix in the builds, `CHANGELOG.md`, `docs/releasing.md`. |

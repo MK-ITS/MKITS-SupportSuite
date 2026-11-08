@@ -12,6 +12,8 @@ repo="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$repo/deploy/linux/arch.sh"
 out="${1:-$repo/artifacts/linux}"
 build_number="${BUILD_NUMBER:-0}"
+# "dev" unless set; release builds pass an empty suffix (docs/releasing.md).
+version_suffix="${VERSION_SUFFIX-dev}"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
@@ -22,7 +24,7 @@ app="$root/opt/mkits-agent"
 mkdir -p "$app" "$root/usr/bin" "$root/usr/lib/systemd/system" "$root/DEBIAN" "$out"
 
 dotnet publish "$repo/src/Agent/MKITS.SupportSuite.Agent.Linux/MKITS.SupportSuite.Agent.Linux.csproj" \
-  -c Release -r "$rid" --self-contained -p:BuildNumber="$build_number" -o "$app"
+  -c Release -r "$rid" --self-contained -p:BuildNumber="$build_number" -p:VersionSuffix="$version_suffix" -o "$app"
 
 turbojpeg="$(find_turbojpeg)"
 cp -L "$turbojpeg" "$app/libturbojpeg.so.0"
