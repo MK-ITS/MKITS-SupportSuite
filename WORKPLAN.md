@@ -252,7 +252,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 
 ### Phase 16 – Documentation & release
 - [x] 16.1 User docs (de/en): installation and administration guides (feature status, permissions incl. *Admin shell*, settings, monitoring), supporter guide (sessions, viewer tools, devices, troubleshooting) and customer guide (`docs/guides/{en,de}/`)
-- [ ] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend
+- [x] 16.2 Developer/agent docs: architecture, module READMEs, ADRs, how-to-extend – `docs/architecture.md` brought to the implemented state (server/agent folders, Windows and Linux process models), `docs/extending.md` (recipes), READMEs for server and common; 30 ADRs (0000–0029); `AGENTS.md`, development and coding guidelines
 - [ ] 16.3 Release process (SemVer), changelog, signed release artifacts
 
 ---
@@ -325,3 +325,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-08 | PR #71: AppImage build tools pinned (appimagetool 1.9.1, runtime 20251108) with SHA-256 checks and download retries instead of the moving "continuous" builds. |
 | 2026-11-08 | PR #71 merged. Phase 14.3 (PR #70): Prometheus metrics endpoint, monitoring section in the admin guide. |
 | 2026-11-08 | PR #70 merged. Phase 16.1 (PR #72): supporter and customer guides (EN/DE), admin/installation guides updated; agent consent texts for the *Admin shell* permission. |
+| 2026-11-08 | PR #72 merged. Phase 16.2 (PR #73): developer docs – architecture updated, `docs/extending.md`, server and common READMEs. |
