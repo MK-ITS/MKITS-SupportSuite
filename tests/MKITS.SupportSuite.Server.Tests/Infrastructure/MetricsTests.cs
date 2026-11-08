@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using MKITS.SupportSuite.Server.Features.Identity;
 using MKITS.SupportSuite.Server.Features.Sessions;
-using MKITS.SupportSuite.Server.Infrastructure.Data;
 using MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 using MKITS.SupportSuite.Server.Tests.TestSupport;
 
@@ -34,6 +33,7 @@ public sealed class MetricsTests
     [InlineData("203.0.113.5", null, HttpStatusCode.Forbidden)]
     [InlineData("203.0.113.5", "wrong-token-wrong-token-wrong-token", HttpStatusCode.Forbidden)]
     [InlineData("203.0.113.5", Token, HttpStatusCode.OK)]
+    [InlineData("203.0.113.5", "a-scrape-token-of-at-least-32-character", HttpStatusCode.Forbidden)] // one character short
     public async Task Access_LoopbackNetworksOrToken(string address, string? token, HttpStatusCode expected)
     {
         using var factory = Enabled();
@@ -79,6 +79,18 @@ public sealed class MetricsTests
             Assert.Contains("dotnet_", text, StringComparison.Ordinal); // .NET runtime meter
             Assert.DoesNotContain(created.Code, text, StringComparison.Ordinal);
         }
+    }
+
+    [Theory]
+    [InlineData("bearer " + Token, true)] // the scheme is case-insensitive
+    [InlineData("Basic " + Token, false)]
+    [InlineData(Token, false)]
+    [InlineData("", false)]
+    public void IsAllowed_ChecksSchemeAndToken(string authorization, bool expected)
+    {
+        var options = new MetricsOptions { Token = Token };
+
+        Assert.Equal(expected, MetricsSetup.IsAllowed(IPAddress.Parse("203.0.113.5"), authorization, options));
     }
 
     [Fact]

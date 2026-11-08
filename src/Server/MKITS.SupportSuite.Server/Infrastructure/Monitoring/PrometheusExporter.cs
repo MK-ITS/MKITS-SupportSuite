@@ -34,7 +34,7 @@ public sealed class PrometheusExporter : IDisposable
         {
             foreach (var key in _values.Keys.Where(k => ReferenceEquals(k.Instrument, instrument)).ToList())
             {
-                _values.TryRemove(key, out _); // its meter was disposed
+                _values.TryRemove(key, out double _); // its meter was disposed
             }
         };
         _listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) => Record(instrument, value, tags));

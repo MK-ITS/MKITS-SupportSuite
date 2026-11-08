@@ -57,11 +57,14 @@ public static class MetricsSetup
             }
         }
 
-        if (options.Token is not { Length: > 0 } token || !authorization.StartsWith("Bearer ", StringComparison.Ordinal))
+        // The scheme is case-insensitive (RFC 9110); hashing first makes the comparison constant-time for any length.
+        const string Scheme = "Bearer ";
+        if (options.Token is not { Length: > 0 } token || !authorization.StartsWith(Scheme, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(authorization["Bearer ".Length..]), Encoding.UTF8.GetBytes(token));
+        var presented = SHA256.HashData(Encoding.UTF8.GetBytes(authorization[Scheme.Length..].Trim()));
+        return CryptographicOperations.FixedTimeEquals(presented, SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     }
 }
