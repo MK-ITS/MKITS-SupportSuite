@@ -2,9 +2,10 @@
 # Builds the Linux ad-hoc client as AppImage: artifacts/linux/MKITS-Support-<x86_64|aarch64>.AppImage
 # TARGET_ARCH=arm64 builds for 64-bit ARM (cross build: needs the arm64 libturbojpeg, e.g. via dpkg multiarch).
 #
-# Requirements on the build machine: .NET SDK, libturbojpeg (bundled into the AppImage), curl.
-# appimagetool is downloaded unless APPIMAGETOOL points to it. Without FUSE (CI, containers) set
-# APPIMAGE_EXTRACT_AND_RUN=1.
+# Requirements on the build machine: .NET SDK, libturbojpeg (bundled into the AppImage), curl, sha256sum.
+# appimagetool and the AppImage runtime are downloaded in pinned versions and checked against their SHA-256 (never a
+# moving "continuous" build), unless APPIMAGETOOL / APPIMAGE_RUNTIME point to local files. Without FUSE (CI,
+# containers) set APPIMAGE_EXTRACT_AND_RUN=1.
 #
 # The application is published self-contained as a folder, not as a single file: the
 # AppImage is mounted read-only, and libturbojpeg next to the assembly is found by the .NET library probing.
@@ -36,13 +37,42 @@ chmod +x "$appdir/AppRun"
 cp "$repo/deploy/linux/mkits-support.desktop" "$appdir/"
 cp "$repo/deploy/linux/mkits-support.png" "$appdir/"
 
+# Pinned build tools (update version and hashes together).
+appimagetool_version=1.9.1
+runtime_version=20251108
+declare -A sha256=(
+  [appimagetool-x86_64]=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+  [appimagetool-aarch64]=f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158
+  [runtime-x86_64]=2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
+  [runtime-aarch64]=00cbdfcf917cc6c0ff6d3347d59e0ca1f7f45a6df1a428a0d6d8a78664d87444
+)
+
+# fetch <name> <url> <file>: download with retries (GitHub's release CDN answers 504 at times) and verify the hash.
+fetch() {
+  if [ -z "${sha256[$1]:-}" ]; then
+    echo "No SHA-256 pinned for $1 (unsupported build or target architecture?)" >&2
+    exit 1
+  fi
+  curl -fsSL --retry 10 --retry-all-errors --retry-delay 10 --max-time 900 -o "$3" "$2"
+  echo "${sha256[$1]}  $3" | sha256sum -c --quiet - || { echo "SHA-256 mismatch for $1" >&2; exit 1; }
+}
+
 tool="${APPIMAGETOOL:-}"
 if [ -z "$tool" ]; then
   tool="$work/appimagetool"
-  # the tool for the build machine; it fetches the AppImage runtime for the target ($ARCH)
-  curl -fsSL -o "$tool" "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(uname -m).AppImage"
+  # the tool runs on the build machine …
+  fetch "appimagetool-$(uname -m)" \
+    "https://github.com/AppImage/appimagetool/releases/download/$appimagetool_version/appimagetool-$(uname -m).AppImage" "$tool"
   chmod +x "$tool"
 fi
 
-ARCH="$appimage_arch" "$tool" --no-appstream "$appdir" "$out/MKITS-Support-$appimage_arch.AppImage"
+runtime="${APPIMAGE_RUNTIME:-}"
+if [ -z "$runtime" ]; then
+  runtime="$work/runtime"
+  # … the runtime is the start code inside the AppImage, for the target architecture
+  fetch "runtime-$appimage_arch" \
+    "https://github.com/AppImage/type2-runtime/releases/download/$runtime_version/runtime-$appimage_arch" "$runtime"
+fi
+
+ARCH="$appimage_arch" "$tool" --no-appstream --runtime-file "$runtime" "$appdir" "$out/MKITS-Support-$appimage_arch.AppImage"
 echo "Built $out/MKITS-Support-$appimage_arch.AppImage"
