@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Notifications;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
+using MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 
 namespace MKITS.SupportSuite.Server.Features.IpBans;
 
@@ -36,7 +37,8 @@ public sealed partial class IpBanService(
     IAuditLog auditLog,
     TimeProvider timeProvider,
     ILogger<IpBanService> logger,
-    IAdminNotificationOutbox? notifications = null)
+    IAdminNotificationOutbox? notifications = null,
+    MkitsMetrics? metrics = null)
 {
     private volatile Snapshot _snapshot = Snapshot.Empty;
     private volatile ConfiguredLists? _configuredLists;
@@ -122,6 +124,7 @@ public sealed partial class IpBanService(
             return false;
         }
 
+        metrics?.Failure(failureKind);
         var network = IpNetworks.ClientNetwork(ip, settings.IPv6PrefixLength);
         var key = network.ToString();
         var failures = failureTracker.RecordFailure(key, timeProvider.GetUtcNow(), settings.Window);
@@ -135,6 +138,7 @@ public sealed partial class IpBanService(
 
         failureTracker.Reset(key);
         await CreateBanAsync(key, $"auto:{failureKind}", settings.BanDuration, createdByUserId: null, cancellationToken).ConfigureAwait(false);
+        metrics?.Banned();
         return true;
     }
 

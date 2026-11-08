@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Threading.Channels;
 using MKITS.SupportSuite.Common.Protocol;
+using MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 using Frame = MKITS.SupportSuite.Common.Protocol.V0.Frame;
 using PeerRole = MKITS.SupportSuite.Common.Protocol.V0.PeerRole;
 
@@ -41,9 +42,11 @@ public sealed class PeerConnection : IDisposable
     private readonly CancellationTokenSource _abort = new();
     private long _queuedBytes;
     private long _lastReceivedTicks;
+    private readonly MkitsMetrics? _metrics;
     private int _aborted;
+    private int _disposed;
 
-    public PeerConnection(WebSocket socket, PeerRole role, IPAddress? remoteAddress, TimeProvider timeProvider)
+    public PeerConnection(WebSocket socket, PeerRole role, IPAddress? remoteAddress, TimeProvider timeProvider, MkitsMetrics? metrics = null)
     {
         ArgumentNullException.ThrowIfNull(socket);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -54,6 +57,8 @@ public sealed class PeerConnection : IDisposable
         RemoteAddress = remoteAddress;
         _lastReceivedTicks = timeProvider.GetUtcNow().UtcTicks;
         LastPingSent = timeProvider.GetUtcNow();
+        _metrics = metrics;
+        _metrics?.ConnectionOpened(role);
     }
 
     /// <summary>Random identifier, used as <c>peer_id</c> / <c>viewer_id</c> on the wire.</summary>
@@ -91,6 +96,7 @@ public sealed class PeerConnection : IDisposable
         var queued = Interlocked.Read(ref _queuedBytes);
         if (droppable && queued > DropThreshold)
         {
+            _metrics?.FrameDropped(Role);
             return false;
         }
 
@@ -135,6 +141,7 @@ public sealed class PeerConnection : IDisposable
             {
                 await _socket.SendAsync(message, WebSocketMessageType.Binary, endOfMessage: true, _abort.Token).ConfigureAwait(false);
                 Interlocked.Add(ref _queuedBytes, -message.Length);
+                _metrics?.Sent(Role, message.Length);
             }
 
             if (_socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
@@ -246,6 +253,7 @@ public sealed class PeerConnection : IDisposable
                 }
             }
 
+            _metrics?.Received(Role, length);
             return FrameCodec.TryDecode(buffer.AsSpan(0, length), out var frame)
                 ? (ReceiveStatus.Frame, frame)
                 : (ReceiveStatus.Malformed, null);
@@ -262,7 +270,13 @@ public sealed class PeerConnection : IDisposable
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
         Abort();
         _abort.Dispose();
+        _metrics?.ConnectionClosed(Role);
     }
 }

@@ -9,6 +9,7 @@ using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.IpBans;
 using MKITS.SupportSuite.Server.Features.Sessions;
+using MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 
 namespace MKITS.SupportSuite.Server.Features.Relay;
 
@@ -49,7 +50,8 @@ public sealed partial class RelayConnectionHandler(
     ViewerTicketStore viewerTickets,
     IpBanService ipBans,
     TimeProvider timeProvider,
-    ILogger<RelayConnectionHandler> logger)
+    ILogger<RelayConnectionHandler> logger,
+    MkitsMetrics? metrics = null)
 {
     internal static readonly TimeSpan HelloTimeout = TimeSpan.FromSeconds(10);
     internal static readonly TimeSpan AuthenticateTimeout = TimeSpan.FromSeconds(30);
@@ -77,7 +79,7 @@ public sealed partial class RelayConnectionHandler(
             DangerousEnableCompression = false, // compression of encrypted data is useless and enables CRIME-style attacks
         }).ConfigureAwait(false);
 
-        using var peer = new PeerConnection(socket, role, context.Connection.RemoteIpAddress, timeProvider);
+        using var peer = new PeerConnection(socket, role, context.Connection.RemoteIpAddress, timeProvider, metrics);
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, peer.Aborted);
         var sender = peer.RunSenderAsync();
         try

@@ -242,7 +242,7 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 ### Phase 14 – Deployment & operations
 - [x] 14.1 Published Docker image (GHCR), versioned tags (workflow `publish.yml`; `edge` from main, semver from tags)
 - [x] 14.2 Installation guide (Ubuntu 26.04 + Docker + nginx + Let's Encrypt), backup/restore, upgrade procedure – `docs/guides/{en,de}/installation.md` (extend with each feature)
-- [ ] 14.3 Monitoring/metrics, log rotation
+- [x] 14.3 Monitoring/metrics, log rotation – `/health`; Prometheus endpoint `/metrics` (off by default; loopback/allowed networks/bearer token; sessions, devices, relay connections and traffic, dropped frames, failures, bans, .NET runtime – own exporter, no extra dependency); Docker log rotation (5 × 20 MB), agent logs (Windows rotating file, Linux journal); admin guide *Monitoring*
 
 ### Phase 15 – Quality & security assurance
 - [x] 15.1 Unit + integration tests per module – xUnit per project (server incl. relay/agent end-to-end against the test server, agent core, Windows, Linux incl. Xvfb/PipeWire/portal), vitest for the browser viewer; run on every PR (Ubuntu, Windows, arm64)
@@ -323,3 +323,4 @@ Milestones: **M1** = Windows ad-hoc support via browser (MVP) · **M2** = perman
 | 2026-11-07 | PR #62 merged. PR #63: security review (15.3, `docs/security-review.md`) – Actions pinned to commit SHAs, nginx WebSocket connection limit raised for agent fleets. |
 | 2026-11-07 | PR #63 merged. Phase 15.2 (PR #67): Playwright end-to-end tests of the web UI in CI. |
 | 2026-11-08 | PR #71: AppImage build tools pinned (appimagetool 1.9.1, runtime 20251108) with SHA-256 checks and download retries instead of the moving "continuous" builds. |
+| 2026-11-08 | PR #71 merged. Phase 14.3 (PR #69): Prometheus metrics endpoint, monitoring section in the admin guide. |

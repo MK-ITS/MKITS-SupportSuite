@@ -11,6 +11,7 @@ using MKITS.SupportSuite.Common.Protocol.V0;
 using MKITS.SupportSuite.Server.Features.Audit;
 using MKITS.SupportSuite.Server.Features.Devices;
 using MKITS.SupportSuite.Server.Features.Sessions;
+using MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 using SessionOptions = MKITS.SupportSuite.Server.Features.Sessions.SessionOptions;
 using SessionStatus = MKITS.SupportSuite.Server.Features.Sessions.SessionStatus;
 using WireStatus = MKITS.SupportSuite.Common.Protocol.V0.SessionStatus;
@@ -56,7 +57,7 @@ public sealed partial class SessionHub : IDisposable
 
     public SessionHub(
         SessionService sessionService, DeviceService deviceService, IOptionsMonitor<SessionOptions> options, IAuditLog auditLog,
-        TimeProvider timeProvider, ILogger<SessionHub> logger)
+        TimeProvider timeProvider, ILogger<SessionHub> logger, MkitsMetrics? metrics = null)
     {
         _sessionService = sessionService;
         _deviceService = deviceService;
@@ -66,6 +67,7 @@ public sealed partial class SessionHub : IDisposable
         _logger = logger;
         _sessionService.SessionEnded += OnSessionEndedInDatabase;
         _deviceService.DeviceChanged += OnDeviceChanged;
+        metrics?.ObserveHub(() => _sessions.Count, () => _devices.Count);
     }
 
     /// <summary>Number of sessions with at least one connected peer.</summary>
