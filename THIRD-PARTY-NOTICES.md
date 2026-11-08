@@ -37,6 +37,7 @@ Every dependency must be listed here with its license. Only AGPL-compatible lice
 | esbuild | browser viewer bundling | MIT | https://github.com/evanw/esbuild |
 | Vitest | browser viewer tests | MIT | https://github.com/vitest-dev/vitest |
 | happy-dom | browser viewer tests (DOM) | MIT | https://github.com/capricorn86/happy-dom |
+| Playwright (`@playwright/test`) | end-to-end tests of the web UI (CI only, not shipped) | Apache-2.0 | https://github.com/microsoft/playwright |
 
 ## Planned (to be confirmed when added)
 

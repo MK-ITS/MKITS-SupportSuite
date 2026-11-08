@@ -106,6 +106,82 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
+  # End-to-end tests of the web UI (15.2): the published server with a fresh database, driven by Playwright through
+  # first-run setup, two-factor setup, sessions, the customer portal and the viewer.
+  e2e:
+    name: End-to-end tests (web UI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            src/Viewer/web/package-lock.json
+            tests/e2e/package-lock.json
+
+      - name: Build the browser viewer bundle
+        working-directory: src/Viewer/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Publish the server
+        run: dotnet publish src/Server/MKITS.SupportSuite.Server -c Release -o publish/server
+
+      - name: Start the server
+        working-directory: publish/server
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+          Kestrel__Endpoints__Http__Url: http://127.0.0.1:5080
+          Mkits__PublicBaseUrl: http://127.0.0.1:5080
+          Mkits__DataDirectory: ${{ runner.temp }}/mkits-data
+        run: |
+          nohup dotnet MKITS.SupportSuite.Server.dll > "$RUNNER_TEMP/server.log" 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:5080/health > /dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:5080/health
+          # The one-time setup token is only ever written to the log (first-run setup).
+          token=$(grep -oE 'setup token: [A-Za-z0-9_-]+' "$RUNNER_TEMP/server.log" | tail -1 | awk '{print $3}')
+          # Diagnostics never print a token: anything after "token:" is redacted.
+          test -n "$token" || { sed -E 's/(token: ).*/\1[redacted]/I' "$RUNNER_TEMP/server.log"; exit 1; }
+          echo "::add-mask::$token"
+          echo "E2E_SETUP_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: End-to-end tests
+        working-directory: tests/e2e
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5080
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npx playwright test
+
+      - name: Redact the server log
+        if: failure()
+        run: |
+          sed -E 's/(token: ).*/\1[redacted]/I' "$RUNNER_TEMP/server.log" > "$RUNNER_TEMP/server-redacted.log" || true
+
+      - name: Upload report and server log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-report
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/test-results
+            ${{ runner.temp }}/server-redacted.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   windows-client:
     name: Windows client (portable EXE)
     runs-on: windows-latest

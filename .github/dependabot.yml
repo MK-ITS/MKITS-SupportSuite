@@ -18,6 +18,15 @@ updates:
       - dependency-name: "Tmds.DBus.Protocol"
         versions: [">=0.22"]
 
+  # Browser viewer and end-to-end tests (npm).
+  - package-ecosystem: npm
+    directories: ["/src/Viewer/web", "/tests/e2e"]
+    schedule:
+      interval: weekly
+    groups:
+      protobuf:
+        patterns: ["@bufbuild/*"]
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

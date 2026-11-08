@@ -1,0 +1,13 @@
+{
+  "name": "mkits-e2e",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "description": "End-to-end tests of the web UI against a running server (15.2)",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
