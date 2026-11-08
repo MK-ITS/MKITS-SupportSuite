@@ -2,7 +2,7 @@
 # Builds the Linux ad-hoc client as AppImage: artifacts/linux/MKITS-Support-<x86_64|aarch64>.AppImage
 # TARGET_ARCH=arm64 builds for 64-bit ARM (cross build: needs the arm64 libturbojpeg, e.g. via dpkg multiarch).
 #
-# Requirements on the build machine: .NET SDK, libturbojpeg (bundled into the AppImage), curl.
+# Requirements on the build machine: .NET SDK, libturbojpeg (bundled into the AppImage), curl, sha256sum.
 # appimagetool and the AppImage runtime are downloaded in pinned versions and checked against their SHA-256 (never a
 # moving "continuous" build), unless APPIMAGETOOL / APPIMAGE_RUNTIME point to local files. Without FUSE (CI,
 # containers) set APPIMAGE_EXTRACT_AND_RUN=1.
@@ -49,6 +49,10 @@ declare -A sha256=(
 
 # fetch <name> <url> <file>: download with retries (GitHub's release CDN answers 504 at times) and verify the hash.
 fetch() {
+  if [ -z "${sha256[$1]:-}" ]; then
+    echo "No SHA-256 pinned for $1 (unsupported build or target architecture?)" >&2
+    exit 1
+  fi
   curl -fsSL --retry 10 --retry-all-errors --retry-delay 10 --max-time 900 -o "$3" "$2"
   echo "${sha256[$1]}  $3" | sha256sum -c --quiet - || { echo "SHA-256 mismatch for $1" >&2; exit 1; }
 }
