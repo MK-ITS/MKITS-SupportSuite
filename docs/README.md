@@ -17,6 +17,7 @@
 | [data-model.md](data-model.md) | Entities and fields |
 | [coding-guidelines.md](coding-guidelines.md) | Coding rules for all languages in this repo |
 | [development.md](development.md) | Build, branches, EF Core migrations, CI diagnostics, test helpers |
+| [releasing.md](releasing.md) · [../CHANGELOG.md](../CHANGELOG.md) | Versioning, release tags, release artifacts and their verification, owner setup; changes per version |
 | [adr/](adr/README.md) | Architecture Decision Records |
 | [requirements/original-requirements.de.md](requirements/original-requirements.de.md) | Original requirements (German, verbatim) |
 

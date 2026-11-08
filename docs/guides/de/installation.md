@@ -175,7 +175,7 @@ sudo docker compose up -d
 sudo docker image prune -f
 ```
 
-Datenbank-Migrationen laufen beim Start automatisch. Sobald es Releases gibt, in `.env` eine feste Version eintragen (`MKITS_IMAGE=…:0.2.0`), um Updates kontrolliert einzuspielen; `edge` folgt immer dem neuesten Entwicklungsstand.
+Datenbank-Migrationen laufen beim Start automatisch. Den Image-Tag wählen Sie in `.env` (`MKITS_IMAGE=ghcr.io/mk-its/mkits-supportsuite-server:<Tag>`): Eine Version wie `0.1.0` bleibt fest, `0.1` erhält die Fehlerbehebungen von 0.1, `latest` folgt jedem Release und `edge` dem Entwicklungsstand von `main`. Lesen Sie vor einem Update auf eine neue Minor- oder Major-Version die Release-Hinweise auf der [Release-Seite](https://github.com/MK-ITS/MKITS-SupportSuite/releases) des Projekts (auch in `CHANGELOG.md`). Die im Image enthaltenen Clients werden mit aktualisiert; installierte Agents aktualisieren sich selbst (signierte Updates).
 
 ## 10. Sicherung und Wiederherstellung
 

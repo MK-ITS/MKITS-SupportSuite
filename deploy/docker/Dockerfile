@@ -28,8 +28,10 @@ COPY proto/ proto/
 COPY src/Common/ src/Common/
 COPY src/Server/ src/Server/
 COPY --from=viewer /src/src/Server/MKITS.SupportSuite.Server/wwwroot/viewer/ src/Server/MKITS.SupportSuite.Server/wwwroot/viewer/
+# Version suffix: "dev" for builds from main, empty (or e.g. "rc.1") for release tags (docs/releasing.md).
+ARG VERSION_SUFFIX=dev
 RUN dotnet publish src/Server/MKITS.SupportSuite.Server/MKITS.SupportSuite.Server.csproj \
-    -c Release --no-restore -o /app/publish /p:UseAppHost=false
+    -c Release --no-restore -o /app/publish /p:UseAppHost=false -p:VersionSuffix=${VERSION_SUFFIX}
 
 # ---- Windows client / agent (single-file EXE, cross-compiled; EnableWindowsTargeting) ----
 # Bundled so that the customer portal and the admin agent download always serve the client of the same version.
@@ -53,8 +55,11 @@ COPY src/Tools/MKITS.SupportSuite.UpdateSigner/ src/Tools/MKITS.SupportSuite.Upd
 
 # Build number orders agent updates (CI: commit timestamp). 0 = local build, never offered as update (ADR-0023).
 ARG BUILD_NUMBER=0
+ARG VERSION_SUFFIX=dev
+# Shown to admins next to the update (release tags pass the version, e.g. "v0.1.0").
+ARG UPDATE_LABEL=
 RUN dotnet publish src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite.Agent.Windows.csproj \
-    -c Release -r win-x64 --self-contained --no-restore -p:BuildNumber=${BUILD_NUMBER} \
+    -c Release -r win-x64 --self-contained --no-restore -p:BuildNumber=${BUILD_NUMBER} -p:VersionSuffix=${VERSION_SUFFIX} \
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
     -o /out/windows-x64
 
@@ -63,7 +68,7 @@ RUN dotnet publish src/Agent/MKITS.SupportSuite.Agent.Windows/MKITS.SupportSuite
 RUN --mount=type=secret,id=agent_update_key \
     if [ -s /run/secrets/agent_update_key ] && [ "${BUILD_NUMBER}" != "0" ]; then \
       dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
-        /out/windows-x64/MKITS-Support.exe windows-x64 "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key; \
+        /out/windows-x64/MKITS-Support.exe windows-x64 "${BUILD_NUMBER}" "${UPDATE_LABEL:-build ${BUILD_NUMBER}}" /run/secrets/agent_update_key; \
     else \
       echo "Agent update not signed (no release key or local build) – agents will not update to this build."; \
     fi
@@ -98,6 +103,9 @@ COPY src/Agent/MKITS.SupportSuite.Agent.Core/ src/Agent/MKITS.SupportSuite.Agent
 COPY src/Agent/MKITS.SupportSuite.Agent.Linux/ src/Agent/MKITS.SupportSuite.Agent.Linux/
 COPY src/Tools/MKITS.SupportSuite.UpdateSigner/ src/Tools/MKITS.SupportSuite.UpdateSigner/
 ARG BUILD_NUMBER=0
+ARG VERSION_SUFFIX=dev
+ARG UPDATE_LABEL=
+ENV VERSION_SUFFIX=${VERSION_SUFFIX}
 # No FUSE during image builds: appimagetool runs extracted.
 RUN APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-appimage.sh /out/linux \
  && APPIMAGE_EXTRACT_AND_RUN=1 BUILD_NUMBER=${BUILD_NUMBER} TARGET_ARCH=arm64 TURBOJPEG=/usr/lib/aarch64-linux-gnu/libturbojpeg.so.0 \
@@ -112,9 +120,9 @@ RUN BUILD_NUMBER=${BUILD_NUMBER} deploy/linux/build-deb.sh /out/linux-deb \
 RUN --mount=type=secret,id=agent_update_key \
     if [ -s /run/secrets/agent_update_key ] && [ "${BUILD_NUMBER}" != "0" ]; then \
       dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
-        /out/linux/mkits-agent_amd64.deb linux-x64-deb "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key \
+        /out/linux/mkits-agent_amd64.deb linux-x64-deb "${BUILD_NUMBER}" "${UPDATE_LABEL:-build ${BUILD_NUMBER}}" /run/secrets/agent_update_key \
       && dotnet run --project src/Tools/MKITS.SupportSuite.UpdateSigner -c Release --no-restore -- \
-        /out/linux-arm64/mkits-agent_arm64.deb linux-arm64-deb "${BUILD_NUMBER}" "build ${BUILD_NUMBER}" /run/secrets/agent_update_key; \
+        /out/linux-arm64/mkits-agent_arm64.deb linux-arm64-deb "${BUILD_NUMBER}" "${UPDATE_LABEL:-build ${BUILD_NUMBER}}" /run/secrets/agent_update_key; \
     else \
       echo "Linux agent update not signed (no release key or local build)."; \
     fi

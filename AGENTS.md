@@ -26,7 +26,7 @@ Components:
 1. **[WORKPLAN.md](WORKPLAN.md)** – requirements, architecture, decisions, roadmap. Find the task you are working on.
 2. **[docs/adr/](docs/adr/README.md)** – architecture decisions. Do not contradict an accepted ADR; propose a new ADR that supersedes it instead.
 3. **[docs/coding-guidelines.md](docs/coding-guidelines.md)** – coding rules.
-4. **[docs/development.md](docs/development.md)** – branches, database migrations, diagnosing CI failures, test helpers.
+4. **[docs/development.md](docs/development.md)** – branches, database migrations, diagnosing CI failures, test helpers; releases in [docs/releasing.md](docs/releasing.md) (add user-visible changes to `CHANGELOG.md` under *Unreleased*).
 5. **[docs/extending.md](docs/extending.md)** – recipes for common changes (UI texts, features, protocol payloads, permissions) and the files that change together.
 6. The `README.md` of the module you are touching.
 
