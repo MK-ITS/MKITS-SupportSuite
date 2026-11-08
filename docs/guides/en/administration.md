@@ -192,6 +192,9 @@ Environment variables (`Section__Key`) override settings from the admin UI. ✅ 
 | `Mkits__RateLimits__Enabled` | `true` | ✅ | in-app rate limits per client (in addition to nginx); loopback and the IP allow list are exempt |
 | `Mkits__RateLimits__AuthPerMinute` | `20` | ✅ | login, 2FA, setup and session-code submissions per client and minute (then HTTP 429) |
 | `Mkits__RateLimits__ConnectionsPerMinute` | `300` | ✅ | agent/viewer WebSocket connection attempts per client and minute – raise it if many installed agents share one NAT address |
+| `Mkits__Metrics__Enabled` | `false` | ✅ | Prometheus endpoint `/metrics` (see § 12) |
+| `Mkits__Metrics__AllowedNetworks__N` | – | ✅ | networks that may scrape without a token (loopback always), e.g. the Docker network of Prometheus `172.18.0.0/16` |
+| `Mkits__Metrics__Token` | – | ✅ | bearer token (≥ 32 characters) for scrapers outside those networks |
 | `Mkits__Sessions__CodeLength` | `8` | ✅ | digits of ad-hoc codes (6–12) |
 | `Mkits__Sessions__CodeLifetime` | `00:10:00` | ✅ | validity of unused codes |
 | `Mkits__Sessions__MaxActiveCodes` | `50` | ✅ | server-wide limit of open codes (with 8 digits at most 1000) |
@@ -225,3 +228,10 @@ Session content (screen, keystrokes, files, chat, shell) of non-recorded session
 - Version: `https://support.example.com/api/system/version`.
 - Logs: `sudo docker compose -f /opt/mkits/docker-compose.yml logs -f server` (rotated by Docker: 5 × 20 MB).
 - Logs never contain passwords, session codes, tokens or keys.
+- Metrics (Prometheus): with `Mkits__Metrics__Enabled=true`, `GET /metrics` offers live sessions
+  (`mkits_sessions_live`), connected installed agents (`mkits_devices_online`), open relay connections by role, relay
+  traffic (`mkits_relay_bytes_total` by direction and role), dropped video frames, failed attempts by kind
+  (`mkits_auth_failures_total`), automatic IP bans and the .NET runtime (`dotnet_*`). Only counts – no session ids,
+  codes, names or addresses. Prometheus in the same Docker network scrapes the container directly (`server:8080`; add
+  that network to `Mkits__Metrics__AllowedNetworks__0`); through nginx `/metrics` answers 404.
+- Installed agents: `agent.log` (rotating) on Windows, `journalctl -u mkits-agent` on Linux.

@@ -192,6 +192,9 @@ Umgebungsvariablen (`Abschnitt__Schlüssel`) haben Vorrang vor Einstellungen aus
 | `Mkits__RateLimits__Enabled` | `true` | ✅ | Rate-Limits in der Anwendung pro Client (zusätzlich zu nginx); Loopback und die IP-Allow-List sind ausgenommen |
 | `Mkits__RateLimits__AuthPerMinute` | `20` | ✅ | Anmelde-, 2FA-, Setup- und Sitzungscode-Absendungen pro Client und Minute (danach HTTP 429) |
 | `Mkits__RateLimits__ConnectionsPerMinute` | `300` | ✅ | WebSocket-Verbindungsversuche von Agents/Viewern pro Client und Minute – erhöhen, wenn viele installierte Agents eine NAT-Adresse teilen |
+| `Mkits__Metrics__Enabled` | `false` | ✅ | Prometheus-Endpunkt `/metrics` (siehe § 12) |
+| `Mkits__Metrics__AllowedNetworks__N` | – | ✅ | Netze, die ohne Token abfragen dürfen (Loopback immer), z. B. das Docker-Netz von Prometheus `172.18.0.0/16` |
+| `Mkits__Metrics__Token` | – | ✅ | Bearer-Token (≥ 32 Zeichen) für Abfragen von außerhalb dieser Netze |
 | `Mkits__Sessions__CodeLength` | `8` | ✅ | Stellen des Adhoc-Codes (6–12) |
 | `Mkits__Sessions__CodeLifetime` | `00:10:00` | ✅ | Gültigkeit unbenutzter Codes |
 | `Mkits__Sessions__MaxActiveCodes` | `50` | ✅ | serverweite Grenze offener Codes (bei 8 Stellen höchstens 1000) |
@@ -225,3 +228,10 @@ Sitzungsinhalte (Bildschirm, Tastatureingaben, Dateien, Chat, Shell) nicht aufge
 - Version: `https://support.example.com/api/system/version`.
 - Logs: `sudo docker compose -f /opt/mkits/docker-compose.yml logs -f server` (von Docker rotiert: 5 × 20 MB).
 - Logs enthalten niemals Passwörter, Sitzungscodes, Tokens oder Schlüssel.
+- Metriken (Prometheus): Mit `Mkits__Metrics__Enabled=true` liefert `GET /metrics` laufende Sitzungen
+  (`mkits_sessions_live`), verbundene installierte Agents (`mkits_devices_online`), offene Relay-Verbindungen nach
+  Rolle, Relay-Datenvolumen (`mkits_relay_bytes_total` nach Richtung und Rolle), verworfene Videobilder, Fehlversuche
+  nach Art (`mkits_auth_failures_total`), automatische IP-Sperren und die .NET-Laufzeit (`dotnet_*`). Nur Zahlen –
+  keine Sitzungs-IDs, Codes, Namen oder Adressen. Prometheus im selben Docker-Netz fragt den Container direkt ab
+  (`server:8080`; dieses Netz in `Mkits__Metrics__AllowedNetworks__0` eintragen); über nginx antwortet `/metrics` mit 404.
+- Installierte Agents: `agent.log` (rotierend) unter Windows, `journalctl -u mkits-agent` unter Linux.

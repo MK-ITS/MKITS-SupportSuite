@@ -13,6 +13,7 @@ using MKITS.SupportSuite.Server.Features.Relay;
 using MKITS.SupportSuite.Server.Features.Sessions;
 using MKITS.SupportSuite.Server.Infrastructure;
 using MKITS.SupportSuite.Server.Infrastructure.Data;
+using MKITS.SupportSuite.Server.Infrastructure.Monitoring;
 using MKITS.SupportSuite.Server.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,7 @@ builder.Services
     .AddMkitsAudit()
     .AddMkitsIpBans(builder.Configuration)
     .AddMkitsRateLimits(builder.Configuration)
+    .AddMkitsMetrics(builder.Configuration)
     .AddMkitsNotifications(builder.Configuration)
     .AddMkitsSessions(builder.Configuration)
     .AddMkitsDevices()
@@ -58,6 +60,7 @@ app.UseAntiforgery();                 // 6. CSRF protection for forms
 
 // ---- endpoints ----
 app.MapHealthChecks("/health");
+app.MapMetricsEndpoint();
 app.MapSystemEndpoints();
 app.MapAccountEndpoints();
 app.MapRelayEndpoints();
